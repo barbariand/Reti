@@ -1,8 +1,8 @@
 use self::mathexpr::MathExpr;
 
-mod mathexpr;
+pub mod mathexpr;
 
-enum AST {
+pub enum AST {
     MathExpr(MathExpr),
     Ignore(String), // other things than math expressions?
 }

@@ -2,7 +2,7 @@ use super::MathExpr;
 
 // Represents function calls
 #[derive(Debug, Clone)]
-pub struct FunctionCall {
+pub struct UnaryFunctions {
     function: MathFunction,
     argument: MathExpr,
 }
@@ -11,5 +11,15 @@ pub struct FunctionCall {
 pub enum MathFunction {
     Sin,
     Cos,
-    Exp,
+    Tan,
+    Abs,
+    Floor,
+    Ceil,
+    ACos,
+    ASin,
+    ATan,
+    Ln,
+    Log10,
+    PowE,
+    Pow10
 }
