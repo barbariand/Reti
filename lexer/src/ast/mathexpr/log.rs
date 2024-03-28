@@ -1,8 +1,8 @@
-use super::MathExpr;
+use super::{MathExpr, MathExprKey};
 
 // Represents a logarithm, potentially with a specific base
 #[derive(Debug, Clone)]
 pub struct Logarithm {
-    base: Option<MathExpr>, // None for natural log, Some for base specified
-    argument: MathExpr,
+    base: Option<MathExprKey>, // None for natural log, Some for base specified
+    argument: MathExprKey,
 }

@@ -1,8 +1,8 @@
-use super::MathExpr;
+use super::{MathExpr, MathExprKey};
 
 // Represents a fraction
 #[derive(Debug, Clone)]
 pub struct Fraction {
-    numerator: MathExpr,
-    denominator: MathExpr,
+    numerator: MathExprKey,
+    denominator: MathExprKey,
 }

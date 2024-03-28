@@ -1,14 +1,14 @@
-use super::MathExpr;
+use super::{MathExprKey};
 
 // Represents unary operations
 #[derive(Debug, Clone)]
 pub struct UnaryOp {
     op: UnaryOperator,
-    expr: MathExpr,
+    expr: MathExprKey,
 }
 
 #[derive(Debug, Clone)]
 pub enum UnaryOperator {
     Negate,
-    Differential,
+    Derrivate
 }

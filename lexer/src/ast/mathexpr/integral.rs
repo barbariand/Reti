@@ -1,10 +1,10 @@
-use super::MathExpr;
+use super::{MathExpr, MathExprKey};
 
 // Represents an integral
 #[derive(Debug, Clone)]
 pub struct Integral {
-    integrand: MathExpr,           // Expression to be integrated
-    variable: String,              // Variable of integration
-    lower_bound: Option<MathExpr>, // Optional lower bound
-    upper_bound: Option<MathExpr>, // Optional upper bound
+    integrand: MathExprKey,           // Expression to be integrated
+    variable: String,                 // Variable of integration
+    lower_bound: Option<MathExprKey>, // Optional lower bound
+    upper_bound: Option<MathExprKey>, // Optional upper bound
 }

@@ -1,7 +1,7 @@
-use super::MathExpr;
+use super::{MathExpr, MathExprKey};
 
-#[derive(Debug,Clone)]
-pub struct Modulo{
-    val:MathExpr,
-    modulo:MathExpr,
+#[derive(Debug, Clone)]
+pub struct Modulo {
+    val: MathExprKey,
+    modulo: MathExprKey,
 }

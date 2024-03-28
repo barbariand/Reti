@@ -1,11 +1,11 @@
-use super::MathExpr;
+use super::MathExprKey;
 
 // Represents binary operations
 #[derive(Debug, Clone)]
 pub struct BinOp {
     op: BinOperator,
-    left: MathExpr,
-    right: MathExpr,
+    left: MathExprKey,
+    right: MathExprKey,
 }
 
 #[derive(Debug, Clone)]
