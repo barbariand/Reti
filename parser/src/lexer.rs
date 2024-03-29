@@ -1,7 +1,7 @@
 use std::mem::take;
 use tokio::sync::mpsc::Sender;
 
-#[derive(PartialEq, Eq,Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Token {
     Ident(String),
     CommandPrefix,
