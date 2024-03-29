@@ -7,9 +7,9 @@ pub enum Token {
     NumberLiteral(f64),
     CommandPrefix,
     ExpressionBegin, // {
-    ExpressionEnd, // }
-    BracketBegin, // [
-    BracketEnd, // ]
+    ExpressionEnd,   // }
+    BracketBegin,    // [
+    BracketEnd,      // ]
     ParenthesisBegin,
     ParenthesisEnd,
     Negative,
@@ -20,20 +20,20 @@ pub enum Token {
     Add,
     Div,
     VerticalPipe,
-    EOF
+    EOF,
 }
 
 impl Token {
     pub fn is_ident(&self, text: &str) -> bool {
         match self {
             Self::Ident(val) => val == text,
-            _ => false
+            _ => false,
         }
     }
-    pub fn take_ident(&self)->Option<&String>{
+    pub fn take_ident(&self) -> Option<&String> {
         match self {
-            Self::Ident(v)=>Some(v),
-            _=>None
+            Self::Ident(v) => Some(v),
+            _ => None,
         }
     }
 }
@@ -43,42 +43,73 @@ struct Lexer {
 }
 
 impl Lexer {
-    async fn tokenize(&self, s: &str) {
-        let mut temp = String::new();
-        for c in s.chars() {
-            if let Some(t) = Self::token(c, &mut temp) {
-                if !temp.is_empty() {
-                    self.chanel.send(Token::Ident(take(&mut temp))).await.expect("Broken pipe");
-                }
-                self.chanel.send(t).await.expect("Broken pipe");
-            }
-        }
-        self.chanel.send(Token::EOF).await.expect("Broken pipe");
+    async fn send_or_crach(&self, token: Token) {
+        self.chanel.send(token).await.expect("Broken Pipe")
     }
-    fn token(c: char, temp: &mut String) -> Option<Token> {
-    Some(match c {
-        '\\' => Token::CommandPrefix,
-        '{' => Token::ExpressionBegin,
-        '}' => Token::ExpressionEnd,
-        '[' => Token::BracketBegin,
-        ']' => Token::BracketEnd,
-        '-'=> Token::Negative,
-        '\'' =>Token::Apostrofy,
-        '_'=>Token::Underscore,
-        '^'=>Token::Caret,
-        '|'=>Token::VerticalPipe,
-        '*'=>Token::Mul,
-        '+'=>Token::Add,
-        '/'=>Token::Div,
-        ' '=>return None,
-        _ => {
-            temp.push(c);
-            return None;
-        }
-    })
-}
-}
+    async fn tokenize(&self, s: &str) {
+        let mut temp_ident = String::new();
+        let mut temp_number = String::new();
+        let mut latest_was_ident = true;
+        for c in s.chars() {
+            let t=match c {
+                '0'..='9'|'.' => {
+                    if !temp_ident.is_empty() {
+                        self.send_or_crach(Token::Ident(take(&mut temp_ident)))
+                            .await;
+                    }
+                    temp_number.push(c);
+                    continue;
+                }
+                '\\' => Token::CommandPrefix,
+                '{' => Token::ExpressionBegin,
+                '}' => Token::ExpressionEnd,
+                '[' => Token::BracketBegin,
+                ']' => Token::BracketEnd,
+                '-' => Token::Negative,
+                '\'' => Token::Apostrofy,
+                '_' => Token::Underscore,
+                '^' => Token::Caret,
+                '|' => Token::VerticalPipe,
+                '*' => Token::Mul,
+                '+' => Token::Add,
+                '/' => Token::Div,
+                ' ' => {
+                    if !temp_number.is_empty() {
+                        let num = Token::NumberLiteral(
+                            temp_number
+                                .parse()
+                                .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+                        );
+                        temp_number = String::new();
+                        self.send_or_crach(num).await;
+                    }
+                    if !temp_ident.is_empty() {
+                        self.send_or_crach(Token::Ident(take(&mut temp_ident)))
+                            .await;
+                    }
+                    temp_number.push(c);
+                    continue;
+                },
+                _ => {
+                    if !temp_number.is_empty() {
+                        let num = Token::NumberLiteral(
+                            temp_number
+                                .parse()
+                                .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+                        );
+                        temp_number = String::new();
+                        self.send_or_crach(num).await;
+                    }
+                    temp_ident.push(c);
+                    continue;
+                }
+            };
 
+            self.send_or_crach(t).await;
+        }
+        self.send_or_crach(Token::EOF).await;
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -94,17 +125,14 @@ mod tests {
 
         lexer.tokenize(text).await;
 
-        let mut vec=Vec::new();
-        while let Some(t)=rx.recv().await{
-            
-            if t==Token::EOF{
-            break;
+        let mut vec = Vec::new();
+        while let Some(t) = rx.recv().await {
+            if t == Token::EOF {
+                break;
             }
             vec.push(t);
-
         }
         vec
-        
     }
 
     #[tokio::test]
