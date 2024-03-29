@@ -1,5 +1,5 @@
 mod ast;
-mod tokenizer;
+mod lexer;
 
 fn main() {
     println!("Hello, world!");
