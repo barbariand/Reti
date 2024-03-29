@@ -13,7 +13,7 @@ impl TokenReader {
         TokenReader { tokens, next: None, eof: false, }
     }
 
-    async fn peek(&mut self) -> Option<Token> {
+    pub async fn peek(&mut self) -> Option<Token> {
         // If we already had the next token, provide it.
         if let Some(token) = &self.next {
             return Some(token.clone());
@@ -31,7 +31,7 @@ impl TokenReader {
         return Some(token);
     }
 
-    async fn read(&mut self) -> Option<Token> {
+    pub async fn read(&mut self) -> Option<Token> {
         if self.eof {
             return None;
         }
@@ -51,7 +51,7 @@ impl TokenReader {
         return Some(token);
     }
 
-    fn skip(&mut self) {
+    pub fn skip(&mut self) {
         // Read but ignore value.
         _ = self.read();
     }

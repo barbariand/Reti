@@ -5,10 +5,12 @@ use tokio::sync::mpsc::Sender;
 pub enum Token {
     Ident(String),
     CommandPrefix,
-    ExpressionBegin,
-    ExpressionEnd,
-    BracketBegin,
-    BracketEnd,
+    ExpressionBegin, // {
+    ExpressionEnd, // }
+    BracketBegin, // [
+    BracketEnd, // ]
+    ParenthesisBegin,
+    ParenthesisEnd,
     Negative,
     Apostrofy,
     Underscore,
@@ -19,6 +21,22 @@ pub enum Token {
     VerticalPipe,
     EOF
 }
+
+impl Token {
+    pub fn is_ident(&self, text: &str) -> bool {
+        match self {
+            Self::Ident(val) => val == text,
+            _ => false
+        }
+    }
+    pub fn take_ident(&self)->Option<&String>{
+        match self {
+            Self::Ident(v)=>Some(v),
+            _=>None
+        }
+    }
+}
+
 struct Lexer {
     chanel: Sender<Token>,
 }
