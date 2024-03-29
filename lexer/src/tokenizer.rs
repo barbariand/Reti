@@ -1,38 +1,36 @@
-use std::{
-    io::{BufRead, Read},
-    mem::{replace, take},
-};
-
+use std::mem::take;
+use tokio::sync::mpsc::Sender;
 pub enum Token {
+    Ident(String),
     CommandPrefix,
     ExpressionBegin,
     ExpressionEnd,
     BracketBegin,
     BracketEnd,
-    NumberLiteral(f64),
-    Constants,
-    StringLiteral(String),
     Negative,
     Apostrofy,
     Underscore,
     Caret,
+    Mul,
+    Add,
+    Div,
     VerticalPipe,
 }
-struct Tokenizer {}
+struct Tokenizer {
+    chanel: Sender<Token>,
+}
 
 impl Tokenizer {
-    fn tokenize(s: &str) -> Vec<Token> {
+    async fn tokenize(&self, s: &str) {
         let mut temp = String::new();
-        let mut tokens = Vec::new();
         for c in s.chars() {
             if let Some(t) = token(c, &mut temp) {
-                 if !temp.is_empty() {
-                    tokens.push(Token::StringLiteral(take(&mut temp)))
+                if !temp.is_empty() {
+                    self.chanel.send(Token::Ident(take(&mut temp))).await;
                 }
-                tokens.push(t);
+                self.chanel.send(t).await;
             }
         }
-        tokens
     }
 }
 fn token(c: char, temp: &mut String) -> Option<Token> {
@@ -42,6 +40,14 @@ fn token(c: char, temp: &mut String) -> Option<Token> {
         '}' => Token::ExpressionEnd,
         '[' => Token::BracketBegin,
         ']' => Token::BracketEnd,
+        '-'=> Token::Negative,
+        '\'' =>Token::Apostrofy,
+        '_'=>Token::Underscore,
+        '^'=>Token::Caret,
+        '|'=>Token::VerticalPipe,
+        '*'=>Token::Mul,
+        '+'=>Token::Add,
+        '/'=>Token::Div,
         _ => {
             temp.push(c);
             return None;
