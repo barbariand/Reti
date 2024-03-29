@@ -116,4 +116,21 @@ mod tests {
             ]
         );
     }
+
+    #[tokio::test]
+    async fn benchsqrt() {
+        assert_eq!(
+            tokenize("\\sqrt{1+2x}").await,
+            vec![
+                Token::CommandPrefix,
+                Token::Ident("sqrt".to_string()),
+                Token::ExpressionBegin,
+                Token::Ident("1".to_string()),
+                Token::Add,
+                Token::Ident("2x".to_string()),
+                Token::ExpressionEnd,
+            ]
+        );
+        todo!("Not yet working")
+    }
 }
