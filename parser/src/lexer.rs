@@ -51,8 +51,8 @@ impl Lexer {
         let mut temp_number = String::new();
         let mut latest_was_ident = true;
         for c in s.chars() {
-            let t=match c {
-                '0'..='9'|'.' => {
+            let t = match c {
+                '0'..='9' | '.' => {
                     if !temp_ident.is_empty() {
                         self.send_or_crach(Token::Ident(take(&mut temp_ident)))
                             .await;
@@ -87,9 +87,8 @@ impl Lexer {
                         self.send_or_crach(Token::Ident(take(&mut temp_ident)))
                             .await;
                     }
-                    temp_number.push(c);
                     continue;
-                },
+                }
                 _ => {
                     if !temp_number.is_empty() {
                         let num = Token::NumberLiteral(
@@ -104,6 +103,19 @@ impl Lexer {
                     continue;
                 }
             };
+            if !temp_number.is_empty() {
+                let num = Token::NumberLiteral(
+                    temp_number
+                        .parse()
+                        .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+                );
+                temp_number = String::new();
+                self.send_or_crach(num).await;
+            }
+            if !temp_ident.is_empty() {
+                self.send_or_crach(Token::Ident(take(&mut temp_ident)))
+                    .await;
+            }
 
             self.send_or_crach(t).await;
         }
@@ -143,7 +155,7 @@ mod tests {
                 Token::CommandPrefix,
                 Token::Ident("sqrt".to_string()),
                 Token::ExpressionBegin,
-                Token::Ident("1".to_string()),
+                Token::NumberLiteral(1.0),
                 Token::Add,
                 Token::NumberLiteral(2.0),
                 Token::Ident("x".to_string()),
@@ -158,7 +170,7 @@ mod tests {
             vec![
                 Token::Ident("sqrt".to_string()),
                 Token::ExpressionBegin,
-                Token::Ident("1".to_string()),
+                Token::NumberLiteral(1.0),
                 Token::Add,
                 Token::NumberLiteral(2.0),
                 Token::Ident("x".to_string()),
@@ -175,13 +187,12 @@ mod tests {
                 Token::CommandPrefix,
                 Token::Ident("sqrt".to_string()),
                 Token::ExpressionBegin,
-                Token::Ident("1".to_string()),
+                Token::NumberLiteral(1.0),
                 Token::Add,
                 Token::NumberLiteral(2.0),
                 Token::Ident("x".to_string()),
                 Token::ExpressionEnd,
             ]
         );
-        todo!("Not yet working")
     }
 }
