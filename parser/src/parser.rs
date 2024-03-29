@@ -20,7 +20,8 @@ pub enum ParseError {
 }
 #[derive(Hash, PartialEq, Eq)]
 struct Test(Box<String>);
-pub trait Parsable {
+pub(crate) trait Parsable {
+    #[allow(async_fn_in_trait)]
     async fn parse(reader: &mut Parser) -> Result<Self, ParseError>
     where
         Self: Sized;
