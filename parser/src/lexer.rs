@@ -1,7 +1,7 @@
 use std::mem::take;
 use tokio::sync::mpsc::Sender;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq,Debug)]
 pub enum Token {
     Ident(String),
     CommandPrefix,
@@ -17,6 +17,7 @@ pub enum Token {
     Add,
     Div,
     VerticalPipe,
+    EOF
 }
 struct Lexer {
     chanel: Sender<Token>,
@@ -33,6 +34,7 @@ impl Lexer {
                 self.chanel.send(t).await.expect("Broken pipe");
             }
         }
+        self.chanel.send(Token::EOF).await;
     }
 }
 fn token(c: char, temp: &mut String) -> Option<Token> {
@@ -67,20 +69,44 @@ mod tests {
     use super::Token;
 
     async fn tokenize(text: &str) -> Vec<Token> {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, mut rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
         let lexer = Lexer { chanel: tx };
 
         lexer.tokenize(text).await;
 
-        todo!("Tokenize and give me the tokens in a Vec so I can compare them easialy pls ty");
+        let mut vec=Vec::new();
+        while let Some(t)=rx.recv().await{
+            
+            if t==Token::EOF{
+            break;
+            }
+            vec.push(t);
+
+        }
+        vec
+        
     }
 
-    #[test]
+    #[tokio::test]
     async fn test1() {
         assert_eq!(
             tokenize("\\sqrt{1+2x}").await,
             vec![
                 Token::CommandPrefix,
+                Token::Ident("sqrt".to_string()),
+                Token::ExpressionBegin,
+                Token::Ident("1".to_string()),
+                Token::Add,
+                Token::Ident("2x".to_string()),
+                Token::ExpressionEnd,
+            ]
+        );
+    }
+    #[tokio::test]
+    async fn test1_fail() {
+        assert_ne!(
+            tokenize("\\sqrt{1+2x}").await,
+            vec![
                 Token::Ident("sqrt".to_string()),
                 Token::ExpressionBegin,
                 Token::Ident("1".to_string()),
