@@ -1,9 +1,10 @@
 use std::mem::take;
 use tokio::sync::mpsc::Sender;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Token {
     Ident(String),
+    NumberLiteral(f64),
     CommandPrefix,
     ExpressionBegin, // {
     ExpressionEnd, // }
@@ -45,17 +46,16 @@ impl Lexer {
     async fn tokenize(&self, s: &str) {
         let mut temp = String::new();
         for c in s.chars() {
-            if let Some(t) = token(c, &mut temp) {
+            if let Some(t) = Self::token(c, &mut temp) {
                 if !temp.is_empty() {
                     self.chanel.send(Token::Ident(take(&mut temp))).await.expect("Broken pipe");
                 }
                 self.chanel.send(t).await.expect("Broken pipe");
             }
         }
-        self.chanel.send(Token::EOF).await;
+        self.chanel.send(Token::EOF).await.expect("Broken pipe");
     }
-}
-fn token(c: char, temp: &mut String) -> Option<Token> {
+    fn token(c: char, temp: &mut String) -> Option<Token> {
     Some(match c {
         '\\' => Token::CommandPrefix,
         '{' => Token::ExpressionBegin,
@@ -77,12 +77,14 @@ fn token(c: char, temp: &mut String) -> Option<Token> {
         }
     })
 }
+}
+
 
 #[cfg(test)]
 mod tests {
     use tokio::sync::mpsc::{self, Receiver, Sender};
 
-    use crate::lexer::{token, Lexer};
+    use crate::lexer::Lexer;
 
     use super::Token;
 
@@ -115,7 +117,8 @@ mod tests {
                 Token::ExpressionBegin,
                 Token::Ident("1".to_string()),
                 Token::Add,
-                Token::Ident("2x".to_string()),
+                Token::NumberLiteral(2.0),
+                Token::Ident("x".to_string()),
                 Token::ExpressionEnd,
             ]
         );
@@ -129,7 +132,8 @@ mod tests {
                 Token::ExpressionBegin,
                 Token::Ident("1".to_string()),
                 Token::Add,
-                Token::Ident("2x".to_string()),
+                Token::NumberLiteral(2.0),
+                Token::Ident("x".to_string()),
                 Token::ExpressionEnd,
             ]
         );
@@ -145,7 +149,8 @@ mod tests {
                 Token::ExpressionBegin,
                 Token::Ident("1".to_string()),
                 Token::Add,
-                Token::Ident("2x".to_string()),
+                Token::NumberLiteral(2.0),
+                Token::Ident("x".to_string()),
                 Token::ExpressionEnd,
             ]
         );

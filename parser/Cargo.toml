@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.37.0", features = ["test-util", "tracing","macros"] }
+async-recursion = "1.1.0"
