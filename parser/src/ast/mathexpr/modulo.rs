@@ -1,4 +1,4 @@
-use super::{MathExpr, MathExprKey};
+use super::MathExprKey;
 
 #[derive(Debug, Clone)]
 pub struct Modulo {

@@ -10,7 +10,11 @@ pub struct TokenReader {
 
 impl TokenReader {
     pub fn new(tokens: Receiver<Token>) -> Self {
-        TokenReader { tokens, next: None, eof: false, }
+        TokenReader {
+            tokens,
+            next: None,
+            eof: false,
+        }
     }
 
     pub async fn peek(&mut self) -> Option<Token> {
@@ -24,7 +28,7 @@ impl TokenReader {
             None => {
                 // eof
                 return None;
-            },
+            }
         };
         // Store in next field to only peek the value without consuming it.
         self.next = Some(token.clone());
@@ -57,7 +61,6 @@ impl TokenReader {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -83,7 +86,6 @@ mod tests {
         for token in tokens {
             assert_eq!(token, reader.read().await.unwrap());
         }
-
     }
 
     #[tokio::test]
@@ -111,6 +113,5 @@ mod tests {
         assert_eq!(Token::ExpressionEnd, reader.read().await.unwrap());
         assert_eq!(Token::BracketBegin, reader.read().await.unwrap());
         assert_eq!(Token::BracketEnd, reader.read().await.unwrap());
-
     }
 }

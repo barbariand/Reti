@@ -1,4 +1,4 @@
-use super::{MathExpr, MathExprKey};
+use super::MathExprKey;
 
 // Represents a differential operation, e.g., d/dx
 #[derive(Debug, Clone)]

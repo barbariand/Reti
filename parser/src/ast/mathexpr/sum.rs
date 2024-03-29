@@ -1,4 +1,4 @@
-use super::{customfunc::CustomFunction, MathExpr, MathExprKey};
+use super::{customfunc::CustomFunction, MathExprKey};
 
 // Represents a summation
 #[derive(Debug, Clone)]

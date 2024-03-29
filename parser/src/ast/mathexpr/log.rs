@@ -1,4 +1,4 @@
-use super::{MathExpr, MathExprKey};
+use super::MathExprKey;
 
 // Represents a logarithm, potentially with a specific base
 #[derive(Debug, Clone)]

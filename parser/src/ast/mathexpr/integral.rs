@@ -1,4 +1,4 @@
-use super::{MathExpr, MathExprKey};
+use super::MathExprKey;
 
 // Represents an integral
 #[derive(Debug, Clone)]

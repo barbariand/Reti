@@ -1,6 +1,4 @@
-use std::ops::Neg;
-
-use super::{MathExpr, MathExprKey};
+use super::MathExprKey;
 
 // Represents a matrix (2D vector of expressions)
 #[derive(Debug, Clone)]

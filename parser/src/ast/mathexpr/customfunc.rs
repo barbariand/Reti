@@ -1,4 +1,4 @@
-use super::{MathExpr, MathExprKey};
+use super::MathExprKey;
 
 // Represents a custom-defined function or operator
 #[derive(Debug, Clone)]
