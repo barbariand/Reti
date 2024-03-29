@@ -22,5 +22,4 @@ pub enum MathFunction {
     Log10,
     PowE,
     Pow10,
-    
 }
