@@ -48,6 +48,7 @@ fn token(c: char, temp: &mut String) -> Option<Token> {
         '*'=>Token::Mul,
         '+'=>Token::Add,
         '/'=>Token::Div,
+        ' '=>return None,
         _ => {
             temp.push(c);
             return None;
