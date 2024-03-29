@@ -26,9 +26,9 @@ impl Tokenizer {
         for c in s.chars() {
             if let Some(t) = token(c, &mut temp) {
                 if !temp.is_empty() {
-                    self.chanel.send(Token::Ident(take(&mut temp))).await;
+                    self.chanel.send(Token::Ident(take(&mut temp))).await.expect("Broken pipe");
                 }
-                self.chanel.send(t).await;
+                self.chanel.send(t).await.expect("Broken pipe");
             }
         }
     }
