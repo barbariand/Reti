@@ -4,9 +4,7 @@ use crate::{
     ast::{
         mathexpr::{MathExpr, MathExprKey, Root},
         AST,
-    },
-    lexer::Token,
-    token_reader::TokenReader,
+    }, token::Token, token_reader::TokenReader
 };
 use async_recursion::async_recursion;
 use std::boxed::Box;
@@ -20,12 +18,13 @@ pub enum ParseError {
 }
 #[derive(Hash, PartialEq, Eq)]
 struct Test(Box<String>);
-pub(crate) trait Parsable {
-    #[allow(async_fn_in_trait)]
-    async fn parse(reader: &mut Parser) -> Result<Self, ParseError>
-    where
-        Self: Sized;
-}
+// TODO make this compile
+// pub(crate) trait Parsable {
+//     #[allow(async_fn_in_trait)]
+//     async fn parse(reader: &mut Parser) -> Result<Self, ParseError>
+//     where
+//         Self: Sized;
+// }
 pub struct Parser {
     reader: TokenReader,
 }
@@ -38,7 +37,7 @@ impl Parser {
     }
 
     pub async fn parse(&mut self) -> Result<AST, ParseError> {
-        let root_expr = self.expr(None).await?;
+        let root_expr = self.expr().await?;
         // TODO detect trailing tokens, like what if we read an expression but then we found more tokens?
         Ok(AST::MathExpr(root_expr))
     }
@@ -67,7 +66,7 @@ impl Parser {
         todo!();
     }
     #[async_recursion]
-    pub(crate) async fn expr(&mut self, until: Option<Token>) -> Result<MathExpr, ParseError> {
+    pub(crate) async fn expr(&mut self) -> Result<MathExpr, ParseError> {
         // TODO figure out how to handle trailing implicit multiplication
 
         let token = self.read().await?;

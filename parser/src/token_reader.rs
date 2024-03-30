@@ -65,7 +65,7 @@ impl TokenReader {
 mod tests {
     use tokio::sync::mpsc::{self, Receiver, Sender};
 
-    use crate::{lexer::Token, token_reader::TokenReader};
+    use crate::{lexer::Token, token::Token, token_reader::TokenReader};
 
     #[tokio::test]
     async fn read_test() {

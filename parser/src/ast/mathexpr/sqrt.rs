@@ -1,4 +1,4 @@
-use crate::{lexer::Token, parser::Parsable};
+use crate::token::Token;
 
 use super::MathExprKey;
 
@@ -8,8 +8,8 @@ pub struct Root {
     pub degree: Option<MathExprKey>, // None for square roots, Some for nth roots
     pub radicand: MathExprKey,
 }
-impl Parsable for Root {
-    async fn parse(reader: &mut crate::parser::Parser) -> Result<Root, crate::parser::ParseError> {
+impl Root {
+    pub async fn parse(reader: &mut crate::parser::Parser) -> Result<Root, crate::parser::ParseError> {
         // \sqrt{123}x
         //       <mul>
         //     /       \
@@ -46,13 +46,13 @@ impl Parsable for Root {
 
             reader.skip().await; // skip [
                                  // Read expression for degree
-            let degree_expr = reader.expr(Some(Token::BracketEnd)).await?;
+            let degree_expr = reader.expr().await?;
             reader.expect(Token::BracketEnd).await?; // expect ]
             degree = Some(reader.get_key(degree_expr));
         }
 
         reader.expect(Token::ExpressionBegin).await?;
-        let radicand_expr = reader.expr(Some(Token::ExpressionEnd)).await?;
+        let radicand_expr = reader.expr().await?;
         reader.expect(Token::ExpressionEnd).await?;
         let radicand = reader.get_key(radicand_expr);
         Ok(Root { degree, radicand })

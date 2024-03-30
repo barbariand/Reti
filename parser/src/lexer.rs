@@ -1,42 +1,6 @@
 use std::mem::take;
 use tokio::sync::mpsc::Sender;
-
-#[derive(PartialEq, Debug, Clone)]
-pub enum Token {
-    Ident(String),
-    NumberLiteral(f64),
-    CommandPrefix,
-    ExpressionBegin,  // {
-    ExpressionEnd,    // }
-    BracketBegin,     // [
-    BracketEnd,       // ]
-    ParenthesisBegin, // (
-    ParenthesisEnd,   // )
-    Negative,         // -
-    Apostrofy,        // '
-    Underscore,       // _
-    Caret,            // ^
-    Mul,              // *
-    Add,              // +
-    Div,              // \
-    VerticalPipe,     // ｜ ik its tipping
-    EOF,              // \EOF
-}
-
-impl Token {
-    pub fn is_ident(&self, text: &str) -> bool {
-        match self {
-            Self::Ident(val) => val == text,
-            _ => false,
-        }
-    }
-    pub fn take_ident(&self) -> Option<&String> {
-        match self {
-            Self::Ident(v) => Some(v),
-            _ => None,
-        }
-    }
-}
+use crate::token::Token;
 
 struct Lexer {
     chanel: Sender<Token>,
