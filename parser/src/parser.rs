@@ -252,7 +252,7 @@ mod tests {
     async fn exponent_command() {
         parse_test(
             "2^\\pi",
-            AST {
+            Ast {
                 root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
                     base: Box::new(Factor::Constant(2.0)),
                     exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Variable(
@@ -270,7 +270,7 @@ mod tests {
     async fn exponent_paren() {
         parse_test(
             "2^(1)",
-            AST {
+            Ast {
                 root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
                     base: Box::new(Factor::Constant(2.0)),
                     exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
@@ -284,7 +284,7 @@ mod tests {
     async fn exponent_split_token() {
         parse_test(
             "2^025", // this is 2^0 * 25
-            AST {
+            Ast {
                 root_expr: MathExpr::Term(Term::Multiply(
                     //2^0
                     Box::new(Term::Factor(Factor::Exponent {
@@ -337,7 +337,7 @@ mod tests {
     async fn pi() {
         parse_test(
             "\\pi",
-            AST {
+            Ast {
                 root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
                     tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
                 }))),
@@ -350,7 +350,7 @@ mod tests {
     async fn implicit_multiplication_command() {
         parse_test(
             "2\\pi",
-            AST {
+            Ast {
                 root_expr: MathExpr::Term(Term::Multiply(
                     // 2
                     Box::new(Term::Factor(Factor::Constant(2.0))),
