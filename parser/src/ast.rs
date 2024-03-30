@@ -4,7 +4,7 @@ pub mod mathexpr;
 
 #[derive(PartialEq, Debug)]
 pub struct AST {
-    root_expr: MathExpr,
+    pub root_expr: MathExpr,
 }
 
 #[derive(PartialEq, Debug)]
@@ -43,7 +43,7 @@ pub enum Factor {
 /// Examples of valid math identifiers: "x", "x_1", "F_g", "\overline{v}".
 #[derive(PartialEq, Debug)]
 pub struct MathIdentifier {
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
 }
 
 #[derive(PartialEq, Debug)]

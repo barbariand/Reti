@@ -1,15 +1,13 @@
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
-    ast::{
-        mathexpr::{MathExpr, MathExprKey, Root},
-        AST,
-    },
+    ast::{Factor, MathExpr, Term, AST},
     token::Token,
     token_reader::TokenReader,
 };
 use async_recursion::async_recursion;
 use std::boxed::Box;
+
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedToken { expected: Token, found: Token },
@@ -18,15 +16,7 @@ pub enum ParseError {
     ExpectedEndOfFile,
     InvalidToken(Token),
 }
-#[derive(Hash, PartialEq, Eq)]
-struct Test(Box<String>);
-// TODO make this compile
-// pub(crate) trait Parsable {
-//     #[allow(async_fn_in_trait)]
-//     async fn parse(reader: &mut Parser) -> Result<Self, ParseError>
-//     where
-//         Self: Sized;
-// }
+
 pub struct Parser {
     pub(crate) reader: TokenReader,
 }
@@ -41,7 +31,7 @@ impl Parser {
     pub async fn parse(&mut self) -> Result<AST, ParseError> {
         let root_expr = self.expr().await?;
         // TODO detect trailing tokens, like what if we read an expression but then we found more tokens?
-        Ok(AST::MathExpr(root_expr))
+        Ok(AST { root_expr })
     }
 
     pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
@@ -52,32 +42,144 @@ impl Parser {
         return Err(ParseError::UnexpectedToken { expected, found });
     }
 
-    pub(crate) fn get_key(&mut self, _expr: MathExpr) -> MathExprKey {
-        todo!();
+    #[async_recursion]
+    async fn expr(&mut self) -> Result<MathExpr, ParseError> {
+        let mut expr = MathExpr::Term(self.term().await?);
+
+        loop {
+            let next = self.reader.peek().await;
+            match next {
+                Token::Plus => {
+                    self.reader.skip().await;
+                    let rhs = self.term().await?;
+                    expr = MathExpr::Add(Box::new(expr), rhs);
+                }
+                Token::Minus => {
+                    self.reader.skip().await;
+                    let rhs = self.term().await?;
+                    expr = MathExpr::Subtract(Box::new(expr), rhs);
+                }
+                _ => break,
+            };
+        }
+
+        Ok(expr)
     }
 
     #[async_recursion]
-    pub(crate) async fn expr(&mut self) -> Result<MathExpr, ParseError> {
-        // TODO figure out how to handle trailing implicit multiplication
+    async fn term(&mut self) -> Result<Term, ParseError> {
+        let mut term = Term::Factor(self.factor().await?);
 
-        let token = self.reader.read().await;
-        Ok(match token {
-            Token::Backslash => {
-                let cmd = self.reader.read().await;
-                let a = cmd
-                    .take_ident()
-                    .ok_or(ParseError::UnexpectedToken {
-                        expected: Token::Identifier("".to_string()),
-                        found: cmd.clone(),
-                    })?
-                    .as_str();
-                match a {
-                    "sqrt" => MathExpr::Root(Root::parse(self).await?),
+        // TODO handle these cases:
+        //  - a \cdot b
+        //  - a \times b
+        //  - a(b)
+        while let next = self.reader.peek().await {
+            if next == Token::Asterisk {
+                self.reader.skip();
+                let rhs = self.factor().await?;
+                term = Term::Multiply(Box::new(term), rhs);
+            } else if next == Token::Slash {
+                self.reader.skip();
+                let rhs = self.factor().await?;
+                term = Term::Divide(Box::new(term), rhs);
+            } else {
+                break;
+            }
+        }
 
-                    _ => return Err(ParseError::UnexpectedEnd),
-                }
+        Ok(term)
+    }
+
+    #[async_recursion]
+    async fn factor(&mut self) -> Result<Factor, ParseError> {
+        // First read a factor, but then see if we have exponents after it.
+        // Exponents need to be baked into the factor since exponents should
+        // be evaluated before multiplications.
+        //
+        let factor = match self.reader.read().await {
+            Token::NumberLiteral(val) => Factor::Constant(val),
+            Token::LeftParen => {
+                // TODO handle "\left("
+                let expr = self.expr().await?;
+                // TODO handle "\right)"
+                self.expect(Token::RightParen).await?;
+                Factor::Expression(Box::new(expr))
             }
             _ => todo!(),
-        })
+        };
+
+        let next = self.reader.peek().await;
+        if next == Token::Caret {
+            // This factor is an exponential
+            self.reader.skip();
+            let exponent = if self.reader.peek().await == Token::LeftCurlyBracket {
+                self.reader.skip();
+                let expr = self.expr().await?;
+                self.expect(Token::RightCurlyBracket);
+                expr
+            } else {
+                // TODO this will be a problem since we will need to split the next token.......
+                todo!("Please use explicit exponetials for now, so instead of a^b please do a^{{b}}. Thanks!");
+            };
+
+            return Ok(Factor::Exponent {
+                base: Box::new(factor),
+                exponent: Box::new(exponent),
+            });
+        }
+
+        Ok(factor)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tokio::{
+        join,
+        sync::mpsc::{self, Receiver, Sender},
+    };
+
+    use crate::{
+        ast::{Factor, MathExpr, MathIdentifier, Term, AST},
+        lexer::Lexer,
+        token::Token,
+    };
+
+    use super::Parser;
+
+    async fn parse_test(text: &str, expected_ast: AST) {
+        let (tx, mut rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+
+        let lexer = Lexer::new(tx);
+        let mut parser = Parser::new(rx);
+
+        let future1 = lexer.tokenize(text);
+        let future2 = parser.parse();
+
+        let (_, ast) = join!(future1, future2);
+        let found_ast = ast.unwrap();
+
+        // Compare and print with debug and formattig otherwise.
+        if expected_ast != found_ast {
+            panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
+        }
+    }
+
+    #[tokio::test]
+    async fn addition() {
+        parse_test(
+            "1+2+3",
+            AST {
+                root_expr: MathExpr::Add(
+                    Box::new(MathExpr::Add(
+                        Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
+                        Term::Factor(Factor::Constant(2.0)),
+                    )),
+                    Term::Factor(Factor::Constant(3.0)),
+                ),
+            },
+        )
+        .await;
     }
 }

@@ -11,6 +11,7 @@ pub struct Root {
     pub degree: Option<MathExprKey>, // None for square roots, Some for nth roots
     pub radicand: MathExprKey,
 }
+/*
 impl Root {
     pub async fn parse(parser: &mut Parser) -> Result<Root, ParseError> {
         // \sqrt{123}x
@@ -61,3 +62,4 @@ impl Root {
         Ok(Root { degree, radicand })
     }
 }
+*/

@@ -2,15 +2,18 @@ use crate::token::Token;
 use std::mem::take;
 use tokio::sync::mpsc::Sender;
 
-struct Lexer {
+pub struct Lexer {
     channel: Sender<Token>,
 }
 
 impl Lexer {
+    pub fn new(channel: Sender<Token>) -> Self {
+        Self { channel }
+    }
     async fn send_or_crash(&self, token: Token) {
         self.channel.send(token).await.expect("Broken Pipe")
     }
-    async fn tokenize(&self, s: &str) {
+    pub async fn tokenize(&self, s: &str) {
         let mut temp_ident = String::new();
         let mut temp_number = String::new();
         let mut latest_was_ident = true;
@@ -112,7 +115,7 @@ mod tests {
 
     async fn tokenize(text: &str) -> Vec<Token> {
         let (tx, mut rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
-        let lexer = Lexer { channel: tx };
+        let lexer = Lexer::new(tx);
 
         lexer.tokenize(text).await;
 
