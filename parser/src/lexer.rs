@@ -132,9 +132,9 @@ mod tests {
                 Token::Backslash,
                 Token::Identifier("sqrt".to_string()),
                 Token::LeftCurlyBracket,
-                Token::NumberLiteral(1.0),
+                Token::NumberLiteral(1.into()),
                 Token::Plus,
-                Token::NumberLiteral(2.0),
+                Token::NumberLiteral(2.into()),
                 Token::Identifier("x".to_string()),
                 Token::RightCurlyBracket,
             ]
@@ -169,7 +169,7 @@ mod tests {
     async fn test_number_literals() {
         assert_eq!(
             tokenize("3.14 42").await,
-            vec![Token::NumberLiteral(3.14), Token::NumberLiteral(42.0),]
+            vec![Token::NumberLiteral("3.14".to_owned().into()), Token::NumberLiteral(42.into()),]
         );
     }
     #[tokio::test]
@@ -189,11 +189,11 @@ mod tests {
             tokenize("{3.14*R^2}").await,
             vec![
                 Token::LeftCurlyBracket,
-                Token::NumberLiteral(3.14),
+                Token::NumberLiteral("3.14".to_owned().into()),
                 Token::Asterisk,
                 Token::Identifier("R".to_string()),
                 Token::Caret,
-                Token::NumberLiteral(2.0),
+                Token::NumberLiteral(2.into()),
                 Token::RightCurlyBracket,
             ]
         );
@@ -203,10 +203,10 @@ mod tests {
         assert_eq!(
             tokenize("42x + 3.14y").await,
             vec![
-                Token::NumberLiteral(42.0),
+                Token::NumberLiteral(42.into()),
                 Token::Identifier("x".to_string()),
                 Token::Plus,
-                Token::NumberLiteral(3.14),
+                Token::NumberLiteral("3.14".to_owned().into()),
                 Token::Identifier("y".to_string()),
             ]
         );
@@ -216,7 +216,7 @@ mod tests {
         assert_eq!(
             tokenize("3.14\\piR").await,
             vec![
-                Token::NumberLiteral(3.14),
+                Token::NumberLiteral("3.14".to_owned().into()),
                 Token::Backslash,
                 Token::Identifier("piR".to_string()),
             ]
@@ -227,13 +227,13 @@ mod tests {
         assert_eq!(
             tokenize("2a + 4b - 5\\sqrt{c}").await,
             vec![
-                Token::NumberLiteral(2.0),
+                Token::NumberLiteral(2.into()),
                 Token::Identifier("a".to_string()),
                 Token::Plus,
-                Token::NumberLiteral(4.0),
+                Token::NumberLiteral(4.into()),
                 Token::Identifier("b".to_string()),
                 Token::Minus,
-                Token::NumberLiteral(5.0),
+                Token::NumberLiteral(5.into()),
                 Token::Backslash,
                 Token::Identifier("sqrt".to_string()),
                 Token::LeftCurlyBracket,
