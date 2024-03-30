@@ -74,17 +74,20 @@ impl Parser {
         //  - a \cdot b
         //  - a \times b
         //  - a(b)
-        while let next = self.reader.peek().await {
-            if next == Token::Asterisk {
-                self.reader.skip();
-                let rhs = self.factor().await?;
-                term = Term::Multiply(Box::new(term), rhs);
-            } else if next == Token::Slash {
-                self.reader.skip();
-                let rhs = self.factor().await?;
-                term = Term::Divide(Box::new(term), rhs);
-            } else {
-                break;
+        loop {
+            let next = self.reader.peek().await;
+            match next {
+                Token::Asterisk => {
+                    self.reader.skip().await;
+                    let rhs = self.factor().await?;
+                    term = Term::Multiply(Box::new(term), rhs);
+                }
+                Token::Slash => {
+                    self.reader.skip().await;
+                    let rhs = self.factor().await?;
+                    term = Term::Divide(Box::new(term), rhs);
+                }
+                _ => break,
             }
         }
 
@@ -106,17 +109,17 @@ impl Parser {
                 self.expect(Token::RightParen).await?;
                 Factor::Expression(Box::new(expr))
             }
-            _ => todo!(),
+            token => todo!("token = {:?}", token),
         };
 
         let next = self.reader.peek().await;
         if next == Token::Caret {
             // This factor is an exponential
-            self.reader.skip();
+            self.reader.skip().await;
             let exponent = if self.reader.peek().await == Token::LeftCurlyBracket {
-                self.reader.skip();
+                self.reader.skip().await;
                 let expr = self.expr().await?;
-                self.expect(Token::RightCurlyBracket);
+                self.expect(Token::RightCurlyBracket).await?;
                 expr
             } else {
                 // TODO this will be a problem since we will need to split the next token.......
@@ -149,7 +152,7 @@ mod tests {
     use super::Parser;
 
     async fn parse_test(text: &str, expected_ast: AST) {
-        let (tx, mut rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
 
         let lexer = Lexer::new(tx);
         let mut parser = Parser::new(rx);
@@ -177,6 +180,79 @@ mod tests {
                         Term::Factor(Factor::Constant(2.0)),
                     )),
                     Term::Factor(Factor::Constant(3.0)),
+                ),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn addition_multiplication_order_of_operations() {
+        parse_test(
+            "1+2+3+(4+5)*6",
+            AST {
+                root_expr: MathExpr::Add(
+                    Box::new(MathExpr::Add(
+                        Box::new(MathExpr::Add(
+                            Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
+                            Term::Factor(Factor::Constant(2.0)),
+                        )),
+                        Term::Factor(Factor::Constant(3.0)),
+                    )),
+                    Term::Multiply(
+                        Box::new(Term::Factor(Factor::Expression(Box::new(MathExpr::Add(
+                            Box::new(MathExpr::Term(Term::Factor(Factor::Constant(4.0)))),
+                            Term::Factor(Factor::Constant(5.0)),
+                        ))))),
+                        Factor::Constant(6.0),
+                    ),
+                ),
+            },
+        )
+        .await;
+    }
+    #[tokio::test]
+    async fn exponent() {
+        parse_test(
+            "2^{3}",
+            AST {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
+                    base: Box::new(Factor::Constant(2.0)),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(3.0)))),
+                })),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn implicit_multiplication_and_exponent_order_of_operations() {
+        parse_test(
+            "2x^{2} + 5xy",
+            AST {
+                root_expr: MathExpr::Add(
+                    // 2x^{2}
+                    Box::new(MathExpr::Term(Term::Multiply(
+                        // 2
+                        Box::new(Term::Factor(Factor::Constant(2.0))),
+                        // x^{2}
+                        Factor::Exponent {
+                            base: Box::new(Factor::Variable(MathIdentifier {
+                                tokens: vec![Token::Identifier("x".to_string())],
+                            })),
+                            exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(2.0)))),
+                        },
+                    ))),
+                    // 5xy
+                    Term::Multiply(
+                        // 5
+                        Box::new(Term::Factor(Factor::Constant(5.0))),
+                        // xy
+                        // TODO split into x and y
+                        Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("xy".to_string())],
+                        }),
+                    ),
                 ),
             },
         )
