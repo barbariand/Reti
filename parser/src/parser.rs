@@ -244,6 +244,57 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn exponent_command() {
+        parse_test(
+            "2^\\pi",
+            AST {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
+                    base: Box::new(Factor::Constant(2.0)),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Variable(
+                        MathIdentifier {
+                            tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                        },
+                    )))),
+                })),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn exponent_paren() {
+        parse_test(
+            "2^(1)",
+            AST {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
+                    base: Box::new(Factor::Constant(2.0)),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
+                })),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn exponent_split_token() {
+        parse_test(
+            "2^025", // this is 2^0 * 25
+            AST {
+                root_expr: MathExpr::Term(Term::Multiply(
+                    //2^0
+                    Box::new(Term::Factor(Factor::Exponent {
+                        base: Box::new(Factor::Constant(2.0)),
+                        exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(0.0)))),
+                    })),
+                    // 25
+                    Factor::Constant(25.0),
+                )),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
     async fn implicit_multiplication_and_exponent_order_of_operations() {
         parse_test(
             "2x^{2} + 5xy",
