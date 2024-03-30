@@ -87,6 +87,11 @@ impl Parser {
                     let rhs = self.factor().await?;
                     term = Term::Divide(Box::new(term), rhs);
                 }
+                Token::Backslash=>{
+                    //TODO add preprossesor step to remove the \cdot osv 
+                    self.factor().await?;
+                    
+                }
                 _ => break,
             }
         }
@@ -101,7 +106,7 @@ impl Parser {
         // be evaluated before multiplications.
         //
         let factor = match self.reader.read().await {
-            Token::NumberLiteral(val) => Factor::Constant(val),
+            Token::NumberLiteral(val) => Factor::Constant(val.parsed),
             Token::LeftParen => {
                 // TODO handle "\left("
                 let expr = self.expr().await?;

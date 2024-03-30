@@ -1,3 +1,5 @@
+use std::iter::Peekable;
+
 use tokio::sync::mpsc::Receiver;
 
 use crate::token::Token;
@@ -21,18 +23,13 @@ impl TokenReader {
     ///
     /// If end of file is reached, `Token::EOF` will be returned for subsequent
     /// reads.
-    pub async fn peek(&mut self) -> Token {
+    pub async fn peek(& mut self) -> & Token {
         // If we already had the next token, provide it.
-        if let Some(token) = &self.next {
-            return token.clone();
+        if self.next.is_none() {
+        self.next = Some(self.read().await);
         }
-        // Read next token
-        let token = self.read().await;
-
-        // Store in next field to only peek the value without consuming it.
-        self.next = Some(token.clone());
-
-        return token;
+        
+        self.next.as_ref().expect("Memory Corruption")
     }
 
     /// Read and consume the next token from the token stream.

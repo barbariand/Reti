@@ -45,9 +45,7 @@ impl Lexer {
                 ' ' => {
                     if !temp_number.is_empty() {
                         let num = Token::NumberLiteral(
-                            temp_number
-                                .parse()
-                                .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+                            temp_number.into(),
                         );
                         temp_number = String::new();
                         self.send_or_crash(num).await;
@@ -62,8 +60,7 @@ impl Lexer {
                     if !temp_number.is_empty() {
                         let num = Token::NumberLiteral(
                             temp_number
-                                .parse()
-                                .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+                                .into(),
                         );
                         temp_number = String::new();
                         self.send_or_crash(num).await;
@@ -74,9 +71,7 @@ impl Lexer {
             };
             if !temp_number.is_empty() {
                 let num = Token::NumberLiteral(
-                    temp_number
-                        .parse()
-                        .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+                    temp_number.into(),
                 );
                 temp_number = String::new();
                 self.send_or_crash(num).await;
