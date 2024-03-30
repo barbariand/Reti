@@ -1,4 +1,3 @@
-use std::iter::Peekable;
 
 use tokio::sync::mpsc::Receiver;
 
@@ -53,7 +52,7 @@ impl TokenReader {
             self.eof = true;
             return Token::EOF;
         }
-        return token;
+        token
     }
 
     /// Consume the next token.

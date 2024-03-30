@@ -39,7 +39,7 @@ impl Parser {
         if found == expected {
             return Ok(());
         }
-        return Err(ParseError::UnexpectedToken { expected, found });
+        Err(ParseError::UnexpectedToken { expected, found })
     }
 
     #[async_recursion]

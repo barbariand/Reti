@@ -1,4 +1,4 @@
-use std::{num::ParseFloatError, ops::Deref, str::FromStr};
+use std::{num::ParseFloatError, str::FromStr};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Token {

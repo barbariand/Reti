@@ -16,7 +16,7 @@ impl Lexer {
     pub async fn tokenize(&self, s: &str) {
         let mut temp_ident = String::new();
         let mut temp_number = String::new();
-        let mut latest_was_ident = true;
+        let latest_was_ident = true;
         for c in s.chars() {
             let t = match c {
                 '0'..='9' | '.' => {
