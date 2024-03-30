@@ -1,7 +1,7 @@
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
-    ast::{Factor, MathExpr, Term, Ast},
+    ast::{Factor, MathExpr, MathIdentifier, Term, Ast},
     token::Token,
     token_reader::TokenReader,
 };
@@ -74,6 +74,7 @@ impl Parser {
         //  - a \cdot b
         //  - a \times b
         //  - a(b)
+        //  - 2x
         loop {
             let next = self.reader.peek().await;
             match next {
@@ -113,6 +114,23 @@ impl Parser {
                 // TODO handle "\right)"
                 self.expect(Token::RightParen).await?;
                 Factor::Expression(Box::new(expr))
+            }
+            Token::Backslash => {
+                let token = self.reader.read().await;
+                let command = match token {
+                    Token::Identifier(val) => val,
+                    found => {
+                        return Err(ParseError::UnexpectedToken {
+                            expected: Token::Identifier("".to_string()),
+                            found,
+                        })
+                    }
+                };
+                // assume greek alphabet
+                // TODO function calls
+                Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Backslash, Token::Identifier(command)],
+                })
             }
             token => todo!("token = {:?}", token),
         };
@@ -231,6 +249,57 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn exponent_command() {
+        parse_test(
+            "2^\\pi",
+            AST {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
+                    base: Box::new(Factor::Constant(2.0)),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Variable(
+                        MathIdentifier {
+                            tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                        },
+                    )))),
+                })),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn exponent_paren() {
+        parse_test(
+            "2^(1)",
+            AST {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
+                    base: Box::new(Factor::Constant(2.0)),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
+                })),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn exponent_split_token() {
+        parse_test(
+            "2^025", // this is 2^0 * 25
+            AST {
+                root_expr: MathExpr::Term(Term::Multiply(
+                    //2^0
+                    Box::new(Term::Factor(Factor::Exponent {
+                        base: Box::new(Factor::Constant(2.0)),
+                        exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(0.0)))),
+                    })),
+                    // 25
+                    Factor::Constant(25.0),
+                )),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
     async fn implicit_multiplication_and_exponent_order_of_operations() {
         parse_test(
             "2x^{2} + 5xy",
@@ -259,6 +328,37 @@ mod tests {
                         }),
                     ),
                 ),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn pi() {
+        parse_test(
+            "\\pi",
+            AST {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                }))),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn implicit_multiplication_command() {
+        parse_test(
+            "2\\pi",
+            AST {
+                root_expr: MathExpr::Term(Term::Multiply(
+                    // 2
+                    Box::new(Term::Factor(Factor::Constant(2.0))),
+                    // \pi
+                    Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                    }),
+                )),
             },
         )
         .await;
