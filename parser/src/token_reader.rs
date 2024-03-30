@@ -72,9 +72,9 @@ mod tests {
         let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
         let tokens = vec![
-            Token::ExpressionBegin,
-            Token::Ident("5".to_string()),
-            Token::ExpressionEnd,
+            Token::LeftCurlyBracket,
+            Token::Identifier("5".to_string()),
+            Token::RightCurlyBracket,
         ];
 
         let mut reader = TokenReader::new(rx);
@@ -93,11 +93,11 @@ mod tests {
         let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
         let tokens = vec![
-            Token::CommandPrefix,
-            Token::ExpressionBegin,
-            Token::ExpressionEnd,
-            Token::BracketBegin,
-            Token::BracketEnd,
+            Token::Backslash,
+            Token::LeftCurlyBracket,
+            Token::RightCurlyBracket,
+            Token::LeftBracket,
+            Token::RightBracket,
         ];
 
         let mut reader = TokenReader::new(rx);
@@ -106,12 +106,12 @@ mod tests {
             tx.send(token.clone()).await.unwrap();
         }
 
-        assert_eq!(Token::CommandPrefix, reader.peek().await.unwrap());
-        assert_eq!(Token::CommandPrefix, reader.read().await.unwrap());
-        assert_eq!(Token::ExpressionBegin, reader.peek().await.unwrap());
-        assert_eq!(Token::ExpressionBegin, reader.read().await.unwrap());
-        assert_eq!(Token::ExpressionEnd, reader.read().await.unwrap());
-        assert_eq!(Token::BracketBegin, reader.read().await.unwrap());
-        assert_eq!(Token::BracketEnd, reader.read().await.unwrap());
+        assert_eq!(Token::Backslash, reader.peek().await.unwrap());
+        assert_eq!(Token::Backslash, reader.read().await.unwrap());
+        assert_eq!(Token::LeftCurlyBracket, reader.peek().await.unwrap());
+        assert_eq!(Token::LeftCurlyBracket, reader.read().await.unwrap());
+        assert_eq!(Token::RightCurlyBracket, reader.read().await.unwrap());
+        assert_eq!(Token::LeftBracket, reader.read().await.unwrap());
+        assert_eq!(Token::RightBracket, reader.read().await.unwrap());
     }
 }

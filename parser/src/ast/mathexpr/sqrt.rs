@@ -41,19 +41,19 @@ impl Root {
         //
         //self.state.push(MathExpr)->MathExperKey
         let mut degree: Option<MathExprKey> = None;
-        if reader.peek().await? == Token::BracketBegin {
+        if reader.peek().await? == Token::LeftBracket {
             // We found a square bracket containing the square root degree.
 
             reader.skip().await; // skip [
                                  // Read expression for degree
             let degree_expr = reader.expr().await?;
-            reader.expect(Token::BracketEnd).await?; // expect ]
+            reader.expect(Token::RightBracket).await?; // expect ]
             degree = Some(reader.get_key(degree_expr));
         }
 
-        reader.expect(Token::ExpressionBegin).await?;
+        reader.expect(Token::LeftCurlyBracket).await?;
         let radicand_expr = reader.expr().await?;
-        reader.expect(Token::ExpressionEnd).await?;
+        reader.expect(Token::RightCurlyBracket).await?;
         let radicand = reader.get_key(radicand_expr);
         Ok(Root { degree, radicand })
     }

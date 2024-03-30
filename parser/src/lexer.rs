@@ -18,27 +18,27 @@ impl Lexer {
             let t = match c {
                 '0'..='9' | '.' => {
                     if !temp_ident.is_empty() {
-                        self.send_or_crach(Token::Ident(take(&mut temp_ident)))
+                        self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
                             .await;
                     }
                     temp_number.push(c);
                     continue;
                 }
-                '\\' => Token::CommandPrefix,
-                '{' => Token::ExpressionBegin,
-                '}' => Token::ExpressionEnd,
-                '[' => Token::BracketBegin,
-                ']' => Token::BracketEnd,
-                '-' => Token::Negative,
-                '\'' => Token::Apostrofy,
+                '\\' => Token::Backslash,
+                '{' => Token::LeftCurlyBracket,
+                '}' => Token::RightCurlyBracket,
+                '[' => Token::LeftBracket,
+                ']' => Token::RightBracket,
+                '-' => Token::Minus,
+                '\'' => Token::Apostrophe,
                 '_' => Token::Underscore,
                 '^' => Token::Caret,
                 '|' => Token::VerticalPipe,
-                '*' => Token::Mul,
-                '+' => Token::Add,
-                '/' => Token::Div,
-                '(' => Token::ParenthesisBegin,
-                ')' => Token::ParenthesisEnd,
+                '*' => Token::Asterisk,
+                '+' => Token::Plus,
+                '/' => Token::Slash,
+                '(' => Token::LeftParen,
+                ')' => Token::RightParen,
                 ' ' => {
                     if !temp_number.is_empty() {
                         let num = Token::NumberLiteral(
@@ -50,7 +50,7 @@ impl Lexer {
                         self.send_or_crach(num).await;
                     }
                     if !temp_ident.is_empty() {
-                        self.send_or_crach(Token::Ident(take(&mut temp_ident)))
+                        self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
                             .await;
                     }
                     continue;
@@ -79,7 +79,7 @@ impl Lexer {
                 self.send_or_crach(num).await;
             }
             if !temp_ident.is_empty() {
-                self.send_or_crach(Token::Ident(take(&mut temp_ident)))
+                self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
                     .await;
             }
 
@@ -95,7 +95,7 @@ impl Lexer {
             self.send_or_crach(num).await;
         }
         if !temp_ident.is_empty() {
-            self.send_or_crach(Token::Ident(take(&mut temp_ident)))
+            self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
                 .await;
         }
         self.send_or_crach(Token::EOF).await;
@@ -131,14 +131,14 @@ mod tests {
         assert_eq!(
             tokenize("\\sqrt{1+2x}").await,
             vec![
-                Token::CommandPrefix,
-                Token::Ident("sqrt".to_string()),
-                Token::ExpressionBegin,
+                Token::Backslash,
+                Token::Identifier("sqrt".to_string()),
+                Token::LeftCurlyBracket,
                 Token::NumberLiteral(1.0),
-                Token::Add,
+                Token::Plus,
                 Token::NumberLiteral(2.0),
-                Token::Ident("x".to_string()),
-                Token::ExpressionEnd,
+                Token::Identifier("x".to_string()),
+                Token::RightCurlyBracket,
             ]
         );
     }
@@ -147,10 +147,10 @@ mod tests {
         assert_ne!(
             tokenize("-+*/").await,
             vec![
-                Token::Negative,
-                Token::Add,
-                Token::Mul,
-                Token::Div
+                Token::Minus,
+                Token::Plus,
+                Token::Asterisk,
+                Token::Slash
             ]
         );
     }
@@ -160,14 +160,14 @@ mod tests {
         assert_eq!(
             tokenize("()[]{}^'|").await,
             vec![
-                Token::ParenthesisBegin,
-                Token::ParenthesisEnd,
-                Token::BracketBegin,
-                Token::BracketEnd,
-                Token::ExpressionBegin,
-                Token::ExpressionEnd,
+                Token::LeftParen,
+                Token::RightParen,
+                Token::LeftBracket,
+                Token::RightBracket,
+                Token::LeftCurlyBracket,
+                Token::RightCurlyBracket,
                 Token::Caret,
-                Token::Apostrofy,
+                Token::Apostrophe,
                 Token::VerticalPipe,
             ]
         );
@@ -184,9 +184,9 @@ mod tests {
         assert_eq!(
             tokenize("\\pi R").await,
             vec![
-                Token::CommandPrefix,
-                Token::Ident("pi".to_string()),
-                Token::Ident("R".to_string()),
+                Token::Backslash,
+                Token::Identifier("pi".to_string()),
+                Token::Identifier("R".to_string()),
             ]
         );
         #[tokio::test]
@@ -194,13 +194,13 @@ mod tests {
             assert_eq!(
                 tokenize("{3.14*R^2}").await,
                 vec![
-                    Token::ExpressionBegin,
+                    Token::LeftCurlyBracket,
                     Token::NumberLiteral(3.14),
-                    Token::Mul,
-                    Token::Ident("R".to_string()),
+                    Token::Asterisk,
+                    Token::Identifier("R".to_string()),
                     Token::Caret,
                     Token::NumberLiteral(2.0),
-                    Token::ExpressionEnd,
+                    Token::RightCurlyBracket,
                 ]
             );
         }
@@ -211,10 +211,10 @@ mod tests {
             tokenize("42x + 3.14y").await,
             vec![
                 Token::NumberLiteral(42.0),
-                Token::Ident("x".to_string()),
-                Token::Add,
+                Token::Identifier("x".to_string()),
+                Token::Plus,
                 Token::NumberLiteral(3.14),
-                Token::Ident("y".to_string()),
+                Token::Identifier("y".to_string()),
             ]
         );
     }
@@ -224,8 +224,8 @@ mod tests {
             tokenize("3.14\\piR").await,
             vec![
                 Token::NumberLiteral(3.14),
-                Token::CommandPrefix,
-                Token::Ident("piR".to_string()),
+                Token::Backslash,
+                Token::Identifier("piR".to_string()),
             ]
         );
     }
@@ -235,17 +235,17 @@ mod tests {
             tokenize("2a + 4b - 5\\sqrt{c}").await,
             vec![
                 Token::NumberLiteral(2.0),
-                Token::Ident("a".to_string()),
-                Token::Add,
+                Token::Identifier("a".to_string()),
+                Token::Plus,
                 Token::NumberLiteral(4.0),
-                Token::Ident("b".to_string()),
-                Token::Negative,
+                Token::Identifier("b".to_string()),
+                Token::Minus,
                 Token::NumberLiteral(5.0),
-                Token::CommandPrefix,
-                Token::Ident("sqrt".to_string()),
-                Token::ExpressionBegin,
-                Token::Ident("c".to_string()),
-                Token::ExpressionEnd,
+                Token::Backslash,
+                Token::Identifier("sqrt".to_string()),
+                Token::LeftCurlyBracket,
+                Token::Identifier("c".to_string()),
+                Token::RightCurlyBracket,
             ]
         );
     }

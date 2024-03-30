@@ -71,12 +71,12 @@ impl Parser {
 
         let token = self.read().await?;
         Ok(match token {
-            Token::CommandPrefix => {
+            Token::Backslash => {
                 let cmd = self.read().await?;
                 let a = cmd
                     .take_ident()
                     .ok_or(ParseError::UnexpectedToken {
-                        expected: Token::Ident("".to_string()),
+                        expected: Token::Identifier("".to_string()),
                         found: cmd.clone(),
                     })?
                     .as_str();

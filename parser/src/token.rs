@@ -1,36 +1,36 @@
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Token {
-    Ident(String),
+    Identifier(String),
     NumberLiteral(f64),
-    CommandPrefix,
-    ExpressionBegin,  // {
-    ExpressionEnd,    // }
-    BracketBegin,     // [
-    BracketEnd,       // ]
-    ParenthesisBegin, // (
-    ParenthesisEnd,   // )
-    Negative,         // -
-    Apostrofy,        // '
-    Underscore,       // _
-    Caret,            // ^
-    Mul,              // *
-    Add,              // +
-    Div,              // \
-    VerticalPipe,     // ｜ ik its tipping
-    EOF,              // \EOF
+    Backslash,          // \
+    LeftCurlyBracket,   // {
+    RightCurlyBracket,  // }
+    LeftBracket,        // [
+    RightBracket,       // ]
+    LeftParen,          // (
+    RightParen,         // )
+    Plus,               // +
+    Minus,              // -
+    Asterisk,           // *
+    Slash,              // /
+    Apostrophe,         // '
+    Underscore,         // _
+    Caret,              // ^
+    VerticalPipe,       // | and |
+    EOF,                // A special token that represents the end of content.
 }
 
 impl Token {
     pub fn is_ident(&self, text: &str) -> bool {
         match self {
-            Self::Ident(val) => val == text,
+            Self::Identifier(val) => val == text,
             _ => false,
         }
     }
     pub fn take_ident(&self) -> Option<&String> {
         match self {
-            Self::Ident(v) => Some(v),
+            Self::Identifier(v) => Some(v),
             _ => None,
         }
     }
@@ -38,9 +38,9 @@ impl Token {
     /// Determine if the token marks the end of an expression.
     pub fn is_end(&self) -> bool {
         match self {
-            Token::ExpressionEnd => true,
-            Token::BracketEnd => true,
-            Token::ParenthesisEnd => true,
+            Token::RightCurlyBracket => true,
+            Token::RightBracket => true,
+            Token::RightParen => true,
             Token::EOF => true,
             _ => false,
         }
