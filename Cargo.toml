@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 parser={path="./parser"}
 
-workspace = { members = ["parser"] }
+[workspace]
+members = ["parser"]

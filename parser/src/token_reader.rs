@@ -37,7 +37,7 @@ impl TokenReader {
     /// reads.
     pub async fn read(&mut self) -> Token {
         if self.eof {
-            return Token::EOF;
+            return Token::EndOfContent;
         }
         // If we already had it peaked, just consume and return that.
         if let Some(token) = &self.next {
@@ -48,9 +48,9 @@ impl TokenReader {
         // Read from channel
         let token = self.tokens.recv().await.expect("Broken pipe");
         // Handle end of file
-        if token == Token::EOF {
+        if token == Token::EndOfContent {
             self.eof = true;
-            return Token::EOF;
+            return Token::EndOfContent;
         }
         token
     }

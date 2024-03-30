@@ -19,7 +19,7 @@ pub enum Token {
     Underscore,        // _
     Caret,             // ^
     VerticalPipe,      // | and |
-    EOF,               // A special token that represents the end of content.
+    EndOfContent,               // A special token that represents the end of content.
 }
 
 impl Token {
@@ -38,13 +38,7 @@ impl Token {
 
     /// Determine if the token marks the end of an expression.
     pub fn is_end(&self) -> bool {
-        match self {
-            Token::RightCurlyBracket => true,
-            Token::RightBracket => true,
-            Token::RightParen => true,
-            Token::EOF => true,
-            _ => false,
-        }
+        matches!(self, Token::RightCurlyBracket | Token::RightBracket | Token::RightParen | Token::EndOfContent)
     }
 }
 impl PartialEq<Token> for &Token{
@@ -58,7 +52,7 @@ impl PartialEq<&Token> for Token{
     }
 }
 #[derive(Debug,Clone)]
-pub(crate)struct NumberLiteral{
+pub struct NumberLiteral{
     raw:String,
     pub parsed:f64,
 }

@@ -17,20 +17,20 @@ impl Normalizer{
     }
     async fn normalize(&mut self){
         let mut previous=self.input.read().await;
-        if previous==Token::EOF{
+        if previous==Token::EndOfContent{
                 self.send_or_crash(previous).await;
                 return;
             }
         loop {
             let next=self.input.read().await;
-            if next==Token::EOF{
+            if next==Token::EndOfContent{
                 self.send_or_crash(previous).await;
-                self.send_or_crash(Token::EOF).await;
+                self.send_or_crash(Token::EndOfContent).await;
                 return;
             }
             match previous{
                 Token::Backslash=>{},
-                Token::EOF => unreachable!(),
+                Token::EndOfContent => unreachable!(),
                 _=>todo!()
             }
             self.send_or_crash(replace(&mut previous,next)).await;

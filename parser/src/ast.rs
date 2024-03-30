@@ -3,7 +3,7 @@ use crate::token::Token;
 pub mod mathexpr;
 
 #[derive(PartialEq, Debug)]
-pub struct AST {
+pub struct Ast {
     pub root_expr: MathExpr,
 }
 

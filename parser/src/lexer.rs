@@ -16,7 +16,6 @@ impl Lexer {
     pub async fn tokenize(&self, s: &str) {
         let mut temp_ident = String::new();
         let mut temp_number = String::new();
-        let latest_was_ident = true;
         for c in s.chars() {
             let t = match c {
                 '0'..='9' | '.' => {
@@ -89,14 +88,14 @@ impl Lexer {
                     .parse()
                     .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
             );
-            temp_number = String::new();
+
             self.send_or_crash(num).await;
         }
         if !temp_ident.is_empty() {
             self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
                 .await;
         }
-        self.send_or_crash(Token::EOF).await;
+        self.send_or_crash(Token::EndOfContent).await;
     }
 }
 
@@ -116,7 +115,7 @@ mod tests {
 
         let mut vec = Vec::new();
         while let Some(t) = rx.recv().await {
-            if t == Token::EOF {
+            if t == Token::EndOfContent {
                 break;
             }
             vec.push(t);

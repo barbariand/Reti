@@ -1,12 +1,12 @@
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
-    ast::{Factor, MathExpr, Term, AST},
+    ast::{Factor, MathExpr, Term, Ast},
     token::Token,
     token_reader::TokenReader,
 };
 use async_recursion::async_recursion;
-use std::boxed::Box;
+
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -28,10 +28,10 @@ impl Parser {
         }
     }
 
-    pub async fn parse(&mut self) -> Result<AST, ParseError> {
+    pub async fn parse(&mut self) -> Result<Ast, ParseError> {
         let root_expr = self.expr().await?;
         // TODO detect trailing tokens, like what if we read an expression but then we found more tokens?
-        Ok(AST { root_expr })
+        Ok(Ast { root_expr })
     }
 
     pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
@@ -149,14 +149,14 @@ mod tests {
     };
 
     use crate::{
-        ast::{Factor, MathExpr, MathIdentifier, Term, AST},
+        ast::{Factor, MathExpr, MathIdentifier, Term, Ast},
         lexer::Lexer,
         token::Token,
     };
 
     use super::Parser;
 
-    async fn parse_test(text: &str, expected_ast: AST) {
+    async fn parse_test(text: &str, expected_ast: Ast) {
         let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
 
         let lexer = Lexer::new(tx);
@@ -178,7 +178,7 @@ mod tests {
     async fn addition() {
         parse_test(
             "1+2+3",
-            AST {
+            Ast {
                 root_expr: MathExpr::Add(
                     Box::new(MathExpr::Add(
                         Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
@@ -195,7 +195,7 @@ mod tests {
     async fn addition_multiplication_order_of_operations() {
         parse_test(
             "1+2+3+(4+5)*6",
-            AST {
+            Ast {
                 root_expr: MathExpr::Add(
                     Box::new(MathExpr::Add(
                         Box::new(MathExpr::Add(
@@ -220,7 +220,7 @@ mod tests {
     async fn exponent() {
         parse_test(
             "2^{3}",
-            AST {
+            Ast {
                 root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
                     base: Box::new(Factor::Constant(2.0)),
                     exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(3.0)))),
@@ -234,7 +234,7 @@ mod tests {
     async fn implicit_multiplication_and_exponent_order_of_operations() {
         parse_test(
             "2x^{2} + 5xy",
-            AST {
+            Ast {
                 root_expr: MathExpr::Add(
                     // 2x^{2}
                     Box::new(MathExpr::Term(Term::Multiply(
