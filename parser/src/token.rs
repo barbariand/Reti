@@ -1,24 +1,23 @@
-
 #[derive(PartialEq, Debug, Clone)]
 pub enum Token {
     Identifier(String),
     NumberLiteral(f64),
-    Backslash,          // \
-    LeftCurlyBracket,   // {
-    RightCurlyBracket,  // }
-    LeftBracket,        // [
-    RightBracket,       // ]
-    LeftParen,          // (
-    RightParen,         // )
-    Plus,               // +
-    Minus,              // -
-    Asterisk,           // *
-    Slash,              // /
-    Apostrophe,         // '
-    Underscore,         // _
-    Caret,              // ^
-    VerticalPipe,       // | and |
-    EOF,                // A special token that represents the end of content.
+    Backslash,         // \
+    LeftCurlyBracket,  // {
+    RightCurlyBracket, // }
+    LeftBracket,       // [
+    RightBracket,      // ]
+    LeftParen,         // (
+    RightParen,        // )
+    Plus,              // +
+    Minus,             // -
+    Asterisk,          // *
+    Slash,             // /
+    Apostrophe,        // '
+    Underscore,        // _
+    Caret,             // ^
+    VerticalPipe,      // | and |
+    EOF,               // A special token that represents the end of content.
 }
 
 impl Token {

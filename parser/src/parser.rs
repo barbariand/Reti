@@ -4,7 +4,9 @@ use crate::{
     ast::{
         mathexpr::{MathExpr, MathExprKey, Root},
         AST,
-    }, token::Token, token_reader::TokenReader
+    },
+    token::Token,
+    token_reader::TokenReader,
 };
 use async_recursion::async_recursion;
 use std::boxed::Box;
@@ -26,7 +28,7 @@ struct Test(Box<String>);
 //         Self: Sized;
 // }
 pub struct Parser {
-    reader: TokenReader,
+    pub(crate) reader: TokenReader,
 }
 
 impl Parser {
@@ -42,37 +44,26 @@ impl Parser {
         Ok(AST::MathExpr(root_expr))
     }
 
-    pub(crate) async fn read(&mut self) -> Result<Token, ParseError> {
-        Ok(self.reader.read().await.ok_or(ParseError::UnexpectedEnd)?)
-    }
-
-    pub(crate) async fn peek(&mut self) -> Result<Token, ParseError> {
-        Ok(self.reader.peek().await.ok_or(ParseError::UnexpectedEnd)?)
-    }
-
-    pub(crate) async fn skip(&mut self) {
-        self.reader.skip();
-    }
-
     pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
-        let found = self.reader.read().await.ok_or(ParseError::UnexpectedEnd)?;
+        let found = self.reader.read().await;
         if found == expected {
             return Ok(());
         }
         return Err(ParseError::UnexpectedToken { expected, found });
     }
 
-    pub(crate) fn get_key(&mut self, expr: MathExpr) -> MathExprKey {
+    pub(crate) fn get_key(&mut self, _expr: MathExpr) -> MathExprKey {
         todo!();
     }
+
     #[async_recursion]
     pub(crate) async fn expr(&mut self) -> Result<MathExpr, ParseError> {
         // TODO figure out how to handle trailing implicit multiplication
 
-        let token = self.read().await?;
+        let token = self.reader.read().await;
         Ok(match token {
             Token::Backslash => {
-                let cmd = self.read().await?;
+                let cmd = self.reader.read().await;
                 let a = cmd
                     .take_ident()
                     .ok_or(ParseError::UnexpectedToken {

@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Receiver;
 
-use crate::lexer::Token;
+use crate::token::Token;
 
 pub struct TokenReader {
     tokens: Receiver<Token>,
@@ -17,47 +17,52 @@ impl TokenReader {
         }
     }
 
-    pub async fn peek(&mut self) -> Option<Token> {
+    /// Look at the next token without consuming it.
+    ///
+    /// If end of file is reached, `Token::EOF` will be returned for subsequent
+    /// reads.
+    pub async fn peek(&mut self) -> Token {
         // If we already had the next token, provide it.
         if let Some(token) = &self.next {
-            return Some(token.clone());
+            return token.clone();
         }
         // Read next token
-        let token = match self.read().await {
-            Some(token) => token,
-            None => {
-                // eof
-                return None;
-            }
-        };
+        let token = self.read().await;
+
         // Store in next field to only peek the value without consuming it.
         self.next = Some(token.clone());
-        return Some(token);
+
+        return token;
     }
 
-    pub async fn read(&mut self) -> Option<Token> {
+    /// Read and consume the next token from the token stream.
+    ///
+    /// If end of file is reached, `Token::EOF` will be returned for subsequent
+    /// reads.
+    pub async fn read(&mut self) -> Token {
         if self.eof {
-            return None;
+            return Token::EOF;
         }
         // If we already had it peaked, just consume and return that.
         if let Some(token) = &self.next {
             let ugly_code = token.clone();
             self.next = None;
-            return Some(ugly_code);
+            return ugly_code;
         }
         // Read from channel
         let token = self.tokens.recv().await.expect("Broken pipe");
         // Handle end of file
         if token == Token::EOF {
             self.eof = true;
-            return None;
+            return Token::EOF;
         }
-        return Some(token);
+        return token;
     }
 
-    pub fn skip(&mut self) {
+    /// Consume the next token.
+    pub async fn skip(&mut self) {
         // Read but ignore value.
-        _ = self.read();
+        _ = self.read().await;
     }
 }
 
@@ -65,7 +70,7 @@ impl TokenReader {
 mod tests {
     use tokio::sync::mpsc::{self, Receiver, Sender};
 
-    use crate::{lexer::Token, token::Token, token_reader::TokenReader};
+    use crate::{token::Token, token_reader::TokenReader};
 
     #[tokio::test]
     async fn read_test() {
@@ -84,7 +89,7 @@ mod tests {
         }
 
         for token in tokens {
-            assert_eq!(token, reader.read().await.unwrap());
+            assert_eq!(token, reader.read().await);
         }
     }
 
@@ -106,12 +111,12 @@ mod tests {
             tx.send(token.clone()).await.unwrap();
         }
 
-        assert_eq!(Token::Backslash, reader.peek().await.unwrap());
-        assert_eq!(Token::Backslash, reader.read().await.unwrap());
-        assert_eq!(Token::LeftCurlyBracket, reader.peek().await.unwrap());
-        assert_eq!(Token::LeftCurlyBracket, reader.read().await.unwrap());
-        assert_eq!(Token::RightCurlyBracket, reader.read().await.unwrap());
-        assert_eq!(Token::LeftBracket, reader.read().await.unwrap());
-        assert_eq!(Token::RightBracket, reader.read().await.unwrap());
+        assert_eq!(Token::Backslash, reader.peek().await);
+        assert_eq!(Token::Backslash, reader.read().await);
+        assert_eq!(Token::LeftCurlyBracket, reader.peek().await);
+        assert_eq!(Token::LeftCurlyBracket, reader.read().await);
+        assert_eq!(Token::RightCurlyBracket, reader.read().await);
+        assert_eq!(Token::LeftBracket, reader.read().await);
+        assert_eq!(Token::RightBracket, reader.read().await);
     }
 }

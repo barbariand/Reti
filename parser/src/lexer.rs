@@ -1,14 +1,14 @@
+use crate::token::Token;
 use std::mem::take;
 use tokio::sync::mpsc::Sender;
-use crate::token::Token;
 
 struct Lexer {
-    chanel: Sender<Token>,
+    channel: Sender<Token>,
 }
 
 impl Lexer {
-    async fn send_or_crach(&self, token: Token) {
-        self.chanel.send(token).await.expect("Broken Pipe")
+    async fn send_or_crash(&self, token: Token) {
+        self.channel.send(token).await.expect("Broken Pipe")
     }
     async fn tokenize(&self, s: &str) {
         let mut temp_ident = String::new();
@@ -18,7 +18,7 @@ impl Lexer {
             let t = match c {
                 '0'..='9' | '.' => {
                     if !temp_ident.is_empty() {
-                        self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
+                        self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
                             .await;
                     }
                     temp_number.push(c);
@@ -47,10 +47,10 @@ impl Lexer {
                                 .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
                         );
                         temp_number = String::new();
-                        self.send_or_crach(num).await;
+                        self.send_or_crash(num).await;
                     }
                     if !temp_ident.is_empty() {
-                        self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
+                        self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
                             .await;
                     }
                     continue;
@@ -63,7 +63,7 @@ impl Lexer {
                                 .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
                         );
                         temp_number = String::new();
-                        self.send_or_crach(num).await;
+                        self.send_or_crash(num).await;
                     }
                     temp_ident.push(c);
                     continue;
@@ -76,14 +76,14 @@ impl Lexer {
                         .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
                 );
                 temp_number = String::new();
-                self.send_or_crach(num).await;
+                self.send_or_crash(num).await;
             }
             if !temp_ident.is_empty() {
-                self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
+                self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
                     .await;
             }
 
-            self.send_or_crach(t).await;
+            self.send_or_crash(t).await;
         }
         if !temp_number.is_empty() {
             let num = Token::NumberLiteral(
@@ -92,13 +92,13 @@ impl Lexer {
                     .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
             );
             temp_number = String::new();
-            self.send_or_crach(num).await;
+            self.send_or_crash(num).await;
         }
         if !temp_ident.is_empty() {
-            self.send_or_crach(Token::Identifier(take(&mut temp_ident)))
+            self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
                 .await;
         }
-        self.send_or_crach(Token::EOF).await;
+        self.send_or_crash(Token::EOF).await;
     }
 }
 
@@ -112,7 +112,7 @@ mod tests {
 
     async fn tokenize(text: &str) -> Vec<Token> {
         let (tx, mut rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
-        let lexer = Lexer { chanel: tx };
+        let lexer = Lexer { channel: tx };
 
         lexer.tokenize(text).await;
 
@@ -144,14 +144,9 @@ mod tests {
     }
     #[tokio::test]
     async fn test_all_simple_operations() {
-        assert_ne!(
+        assert_eq!(
             tokenize("-+*/").await,
-            vec![
-                Token::Minus,
-                Token::Plus,
-                Token::Asterisk,
-                Token::Slash
-            ]
+            vec![Token::Minus, Token::Plus, Token::Asterisk, Token::Slash]
         );
     }
 
@@ -189,21 +184,21 @@ mod tests {
                 Token::Identifier("R".to_string()),
             ]
         );
-        #[tokio::test]
-        async fn test_complex_expressions() {
-            assert_eq!(
-                tokenize("{3.14*R^2}").await,
-                vec![
-                    Token::LeftCurlyBracket,
-                    Token::NumberLiteral(3.14),
-                    Token::Asterisk,
-                    Token::Identifier("R".to_string()),
-                    Token::Caret,
-                    Token::NumberLiteral(2.0),
-                    Token::RightCurlyBracket,
-                ]
-            );
-        }
+    }
+    #[tokio::test]
+    async fn test_complex_expressions() {
+        assert_eq!(
+            tokenize("{3.14*R^2}").await,
+            vec![
+                Token::LeftCurlyBracket,
+                Token::NumberLiteral(3.14),
+                Token::Asterisk,
+                Token::Identifier("R".to_string()),
+                Token::Caret,
+                Token::NumberLiteral(2.0),
+                Token::RightCurlyBracket,
+            ]
+        );
     }
     #[tokio::test]
     async fn test_number_followed_by_identifier() {

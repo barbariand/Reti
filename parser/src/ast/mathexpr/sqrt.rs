@@ -1,4 +1,7 @@
-use crate::token::Token;
+use crate::{
+    parser::{ParseError, Parser},
+    token::Token,
+};
 
 use super::MathExprKey;
 
@@ -9,7 +12,7 @@ pub struct Root {
     pub radicand: MathExprKey,
 }
 impl Root {
-    pub async fn parse(reader: &mut crate::parser::Parser) -> Result<Root, crate::parser::ParseError> {
+    pub async fn parse(parser: &mut Parser) -> Result<Root, ParseError> {
         // \sqrt{123}x
         //       <mul>
         //     /       \
@@ -41,20 +44,20 @@ impl Root {
         //
         //self.state.push(MathExpr)->MathExperKey
         let mut degree: Option<MathExprKey> = None;
-        if reader.peek().await? == Token::LeftBracket {
+        if parser.reader.peek().await == Token::LeftBracket {
             // We found a square bracket containing the square root degree.
 
-            reader.skip().await; // skip [
-                                 // Read expression for degree
-            let degree_expr = reader.expr().await?;
-            reader.expect(Token::RightBracket).await?; // expect ]
-            degree = Some(reader.get_key(degree_expr));
+            parser.reader.skip().await; // skip [
+                                        // Read expression for degree
+            let degree_expr = parser.expr().await?;
+            parser.expect(Token::RightBracket).await?; // expect ]
+            degree = Some(parser.get_key(degree_expr));
         }
 
-        reader.expect(Token::LeftCurlyBracket).await?;
-        let radicand_expr = reader.expr().await?;
-        reader.expect(Token::RightCurlyBracket).await?;
-        let radicand = reader.get_key(radicand_expr);
+        parser.expect(Token::LeftCurlyBracket).await?;
+        let radicand_expr = parser.expr().await?;
+        parser.expect(Token::RightCurlyBracket).await?;
+        let radicand = parser.get_key(radicand_expr);
         Ok(Root { degree, radicand })
     }
 }
