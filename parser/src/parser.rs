@@ -136,6 +136,11 @@ impl Parser {
                 let command = self.read_identifier().await?;
                 self.factor_command(&*command).await?
             }
+            Token::VerticalPipe => {
+                let expr = self.expr().await?;
+                self.expect(Token::VerticalPipe).await?;
+                Factor::Abs(Box::new(expr))
+            }
             // TODO handle multiple variables in one string, for example
             // "xy". But this should maybe be done by the normalizer
             Token::Identifier(ident) => Factor::Variable(MathIdentifier {
@@ -509,6 +514,17 @@ mod tests {
             "\\frac{1}{2}",
             Ast {
                 root_expr: Factor::Fraction(1f64.into(), 2f64.into()).into(),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn abs() {
+        parse_test(
+            "|3|",
+            Ast {
+                root_expr: Factor::Abs(3f64.into()).into(),
             },
         )
         .await;
