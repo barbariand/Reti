@@ -227,6 +227,17 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn constant() {
+        parse_test(
+            "1",
+            Ast {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Constant(1.0))),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
     async fn addition() {
         parse_test(
             "1+2+3",
