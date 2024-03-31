@@ -4,11 +4,11 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::{token::Token, token_reader::TokenReader};
 
-struct Normalizer {
+pub struct Normalizer {
     queue: QueueSender,
 }
 impl Normalizer {
-    fn new(input: Receiver<Token>, output: Sender<Token>) -> Self {
+    pub fn new(input: Receiver<Token>, output: Sender<Token>) -> Self {
         Self {
             queue: QueueSender {
                 input: TokenReader::new(input),
@@ -17,7 +17,7 @@ impl Normalizer {
             },
         }
     }
-    async fn normalize(&mut self) {
+    pub async fn normalize(&mut self) {
         if self.queue.start_read().await.is_break() {
             return;
         }

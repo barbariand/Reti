@@ -263,16 +263,20 @@ mod tests {
     use crate::{
         ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
         lexer::Lexer,
+        normalizer::Normalizer,
         token::Token,
     };
 
     use super::Parser;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx1, rx1): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx2, rx2): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
-        let lexer = Lexer::new(tx);
-        let mut parser = Parser::new(rx);
+        let lexer = Lexer::new(tx1);
+        let mut normalizer = Normalizer::new(rx1, tx2);
+        normalizer.normalize().await;
+        let mut parser = Parser::new(rx2);
 
         let future1 = lexer.tokenize(text);
         let future2 = parser.parse();
