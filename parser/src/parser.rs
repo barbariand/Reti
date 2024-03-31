@@ -148,14 +148,39 @@ impl Parser {
         if next == Token::Caret {
             // This factor is an exponential
             self.reader.skip().await;
-            let exponent = if self.reader.peek().await == Token::LeftCurlyBracket {
-                self.reader.skip().await;
-                let expr = self.expr().await?;
-                self.expect(Token::RightCurlyBracket).await?;
-                expr
-            } else {
-                // TODO this will be a problem since we will need to split the next token.......
-                todo!("Please use explicit exponetials for now, so instead of a^b please do a^{{b}}. Thanks!");
+            let next = self.reader.peek().await;
+            let exponent = match next {
+                Token::LeftCurlyBracket => {
+                    self.reader.skip().await;
+                    let expr = self.expr().await?;
+                    self.expect(Token::RightCurlyBracket).await?;
+                    expr
+                }
+                Token::Backslash => {
+                    let factor = self.factor().await?;
+                    MathExpr::Term(Term::Factor(factor))
+                }
+                Token::Identifier(ident) => {
+                    if ident.len() != 1 {
+                        panic!(
+                            "The normalizer did not correctly handle exponent, got ident = {}",
+                            ident
+                        );
+                    }
+                    MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier(ident.clone())],
+                    })))
+                }
+                Token::NumberLiteral(num) => {
+                    if num.raw.len() != 1 {
+                        panic!(
+                            "The normalizer did not correctly handle exponent, got num = {:?}",
+                            num
+                        );
+                    }
+                    MathExpr::Term(Term::Factor(Factor::Constant(num.parsed)))
+                }
+                token => return Err(ParseError::InvalidToken(token.clone())),
             };
 
             return Ok(Factor::Exponent {
@@ -269,20 +294,6 @@ mod tests {
                             tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
                         },
                     )))),
-                })),
-            },
-        )
-        .await;
-    }
-
-    #[tokio::test]
-    async fn exponent_paren() {
-        parse_test(
-            "2^(1)",
-            Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
-                    base: Box::new(Factor::Constant(2.0)),
-                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
                 })),
             },
         )

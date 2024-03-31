@@ -49,7 +49,7 @@ impl PartialEq<&Token> for Token {
 }
 #[derive(Debug, Clone)]
 pub struct NumberLiteral {
-    raw: String,
+    pub raw: String,
     pub parsed: f64,
 }
 impl PartialEq for NumberLiteral {
