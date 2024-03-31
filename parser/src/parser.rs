@@ -1,7 +1,8 @@
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
-    ast::{Ast, Factor, MathExpr, MathIdentifier, Term},
+    ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
+    context::MathContext,
     token::Token,
     token_reader::TokenReader,
 };
@@ -18,13 +19,15 @@ pub enum ParseError {
 }
 
 pub struct Parser {
-    pub(crate) reader: TokenReader,
+    reader: TokenReader,
+    context: MathContext,
 }
 
 impl Parser {
-    pub fn new(tokens: Receiver<Token>) -> Self {
+    pub fn new(tokens: Receiver<Token>, context: MathContext) -> Self {
         Parser {
             reader: TokenReader::new(tokens),
+            context,
         }
     }
 
@@ -196,9 +199,19 @@ impl Parser {
             }
             _ => {
                 // assume greek alphabet
-                Factor::Variable(MathIdentifier {
+                let math_identifier = MathIdentifier {
                     tokens: vec![Token::Backslash, Token::Identifier(command.to_string())],
-                })
+                };
+                // This might be a function.
+                if self.context.is_function(&math_identifier)
+                    && self.reader.peek().await == Token::LeftParenthesis
+                {
+                    // TODO indexes, for example \log_2(x)
+
+                    self.factor_function_call(math_identifier).await?
+                } else {
+                    Factor::Variable(math_identifier)
+                }
             }
         })
     }
@@ -252,6 +265,29 @@ impl Parser {
             exponent: Box::new(exponent),
         });
     }
+
+    async fn factor_function_call(
+        &mut self,
+        function_name: MathIdentifier,
+    ) -> Result<Factor, ParseError> {
+        // TODO handle function arguments without parenthesis, for example \ln 2
+        let mut arguments = Vec::new();
+        self.expect(Token::LeftParenthesis).await?;
+        loop {
+            let next = self.reader.peek().await;
+            if next == Token::RightParenthesis {
+                break;
+            }
+            let expr = self.expr().await?;
+            arguments.push(expr);
+        }
+        self.expect(Token::RightParenthesis).await?;
+
+        Ok(Factor::FunctionCall(FunctionCall {
+            function_name,
+            arguments,
+        }))
+    }
 }
 
 #[cfg(test)]
@@ -263,6 +299,7 @@ mod tests {
 
     use crate::{
         ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
+        context::MathContext,
         lexer::Lexer,
         normalizer::Normalizer,
         token::Token,
@@ -274,9 +311,17 @@ mod tests {
         let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
         let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
+        let mut context = MathContext::new();
+        context.functions.insert(
+            MathIdentifier {
+                tokens: vec![Token::Backslash, Token::Identifier("ln".to_string())],
+            },
+            |val| val[0].eval().ln(),
+        );
+
         let lexer = Lexer::new(lexer_in);
         let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let mut parser = Parser::new(normalizer_out);
+        let mut parser = Parser::new(normalizer_out, context);
 
         let future1 = lexer.tokenize(text);
         let future2 = normalizer.normalize();
@@ -497,13 +542,16 @@ mod tests {
                             })
                             .into(),
                         ),
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("x".to_string())],
-                        }),
+                        Factor::Expression(Box::new(
+                            Factor::Variable(MathIdentifier {
+                                tokens: vec![Token::Identifier("x".to_string())],
+                            })
+                            .into(),
+                        )),
                     )),
                     Factor::FunctionCall(FunctionCall {
                         function_name: MathIdentifier {
-                            tokens: vec![Token::Identifier("ln".to_string())],
+                            tokens: vec![Token::Backslash, Token::Identifier("ln".to_string())],
                         },
                         arguments: vec![Factor::Variable(MathIdentifier {
                             tokens: vec![Token::Identifier("x".to_string())],

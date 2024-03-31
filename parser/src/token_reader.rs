@@ -1,4 +1,3 @@
-
 use tokio::sync::mpsc::Receiver;
 
 use crate::token::Token;
@@ -22,12 +21,12 @@ impl TokenReader {
     ///
     /// If end of file is reached, `Token::EOF` will be returned for subsequent
     /// reads.
-    pub async fn peek(& mut self) -> & Token {
+    pub async fn peek(&mut self) -> &Token {
         // If we already had the next token, provide it.
         if self.next.is_none() {
-        self.next = Some(self.read().await);
+            self.next = Some(self.read().await);
         }
-        
+
         self.next.as_ref().expect("Memory Corruption")
     }
 

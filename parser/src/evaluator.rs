@@ -55,6 +55,7 @@ mod tests {
 
     use crate::{
         ast::{Ast, MathExpr, Term},
+        context::MathContext,
         lexer::Lexer,
         parser::Parser,
         token::Token,
@@ -71,8 +72,9 @@ mod tests {
     async fn eval_test_from_str(expected: f64, text: &str) {
         let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
 
+        let context = MathContext::new();
         let lexer = Lexer::new(tx);
-        let mut parser = Parser::new(rx);
+        let mut parser = Parser::new(rx, context);
 
         let future1 = lexer.tokenize(text);
         let future2 = parser.parse();

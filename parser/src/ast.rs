@@ -110,7 +110,7 @@ impl From<FunctionCall> for Factor {
 /// A mathematical identifier, for example variable or function names.
 ///
 /// Examples of valid math identifiers: "x", "x_1", "F_g", "\overline{v}".
-#[derive(PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Hash, Clone)]
 pub struct MathIdentifier {
     pub tokens: Vec<Token>,
 }

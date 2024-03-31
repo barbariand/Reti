@@ -1,6 +1,6 @@
-use std::{num::ParseFloatError, str::FromStr};
+use std::{hash::Hash, num::ParseFloatError, str::FromStr};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum Token {
     Identifier(String),
     NumberLiteral(NumberLiteral),
@@ -65,6 +65,11 @@ impl PartialEq for NumberLiteral {
     }
 }
 impl Eq for NumberLiteral {}
+impl Hash for NumberLiteral {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.raw.hash(state)
+    }
+}
 
 impl FromStr for NumberLiteral {
     type Err = ParseFloatError;
