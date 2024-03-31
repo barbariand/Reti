@@ -40,6 +40,7 @@ impl Factor {
                 Some(0.0) => 1.0,
                 Some(degree) => radicand.eval().powf(1.0 / degree),
             },
+            Factor::Fraction(a, b) => a.eval() / b.eval(),
             Factor::Abs(val) => val.eval().abs(),
         }
     }
@@ -113,5 +114,14 @@ mod tests {
     #[tokio::test]
     async fn parenthesis_and_exponent() {
         eval_test_from_str(54.0, "2(3)^3").await;
+    }
+
+    #[tokio::test]
+    async fn fraction_sqrt_cube_root() {
+        eval_test_from_str(
+            3.0,
+            "\\frac{2( 1+1)^{3} +5}{\\sqrt{\\frac{49}{3}\\sqrt[3]{27}}}",
+        )
+        .await;
     }
 }

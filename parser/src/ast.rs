@@ -82,6 +82,7 @@ pub enum Factor {
         degree: Option<Box<MathExpr>>,
         radicand: Box<MathExpr>,
     },
+    Fraction(Box<MathExpr>, Box<MathExpr>),
     Abs(Box<MathExpr>),
 }
 

@@ -169,6 +169,15 @@ impl Parser {
                 self.expect(Token::RightCurlyBracket).await?;
                 Factor::Root { degree, radicand }
             }
+            "frac" => {
+                self.expect(Token::LeftCurlyBracket).await?;
+                let numerator = Box::new(self.expr().await?);
+                self.expect(Token::RightCurlyBracket).await?;
+                self.expect(Token::LeftCurlyBracket).await?;
+                let denomminator = Box::new(self.expr().await?);
+                self.expect(Token::RightCurlyBracket).await?;
+                Factor::Fraction(numerator, denomminator)
+            }
             _ => {
                 // assume greek alphabet
                 Factor::Variable(MathIdentifier {
@@ -489,6 +498,17 @@ mod tests {
                     // 3
                     Term::Factor(Factor::Constant(3.0)),
                 ),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn fraction() {
+        parse_test(
+            "\\frac{1}{2}",
+            Ast {
+                root_expr: Factor::Fraction(1f64.into(), 2f64.into()).into(),
             },
         )
         .await;
