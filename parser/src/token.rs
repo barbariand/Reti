@@ -9,8 +9,8 @@ pub enum Token {
     RightCurlyBracket, // }
     LeftBracket,       // [
     RightBracket,      // ]
-    LeftParen,         // (
-    RightParen,        // )
+    LeftParenthesis,   // (
+    RightParenthesis,  // )
     Plus,              // +
     Minus,             // -
     Asterisk,          // *
@@ -38,7 +38,7 @@ impl Token {
 
     /// Determine if the token marks the end of an expression.
     pub fn is_end(&self) -> bool {
-        matches!(self, Token::RightCurlyBracket | Token::RightBracket | Token::RightParen | Token::EndOfContent)
+        matches!(self, Token::RightCurlyBracket | Token::RightBracket | Token::RightParenthesis | Token::EndOfContent)
     }
 }
 impl PartialEq<Token> for &Token{
@@ -62,7 +62,7 @@ impl PartialEq for NumberLiteral{
     }
 }
 impl Eq for NumberLiteral{
-    
+
 }
 
 impl FromStr for NumberLiteral{
