@@ -54,6 +54,11 @@ pub struct NumberLiteral {
     pub raw: String,
     pub parsed: f64,
 }
+impl NumberLiteral {
+    pub fn reparse_from_raw(&mut self) {
+        self.parsed = self.raw.parse().expect("INTERNAL PARSING BUG")
+    }
+}
 impl PartialEq for NumberLiteral {
     fn eq(&self, other: &Self) -> bool {
         self.raw == other.raw
@@ -75,9 +80,7 @@ impl FromStr for NumberLiteral {
 impl From<&str> for NumberLiteral {
     fn from(value: &str) -> Self {
         Self {
-            parsed: value
-                .parse()
-                .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+            parsed: value.parse().expect("INTERNAL PARSING BUG"),
             raw: value.to_owned(),
         }
     }
@@ -85,9 +88,7 @@ impl From<&str> for NumberLiteral {
 impl From<String> for NumberLiteral {
     fn from(value: String) -> Self {
         Self {
-            parsed: value
-                .parse()
-                .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
+            parsed: value.parse().expect("INTERNAL PARSING BUG"),
             raw: value,
         }
     }
