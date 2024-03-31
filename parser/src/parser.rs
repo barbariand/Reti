@@ -14,6 +14,7 @@ pub enum ParseError {
     UnexpectedEnd,
     ExpectedEndOfFile,
     InvalidToken(Token),
+    TrailingToken(Token),
 }
 
 pub struct Parser {
@@ -28,8 +29,16 @@ impl Parser {
     }
 
     pub async fn parse(&mut self) -> Result<Ast, ParseError> {
+        // Parse expression
         let root_expr = self.expr().await?;
-        // TODO detect trailing tokens, like what if we read an expression but then we found more tokens?
+
+        // Check if we have more to read, if so we have trailing tokens
+        // which means we failed to parse the expression fully.
+        let trailing = self.reader.read().await;
+        if trailing != Token::EndOfContent {
+            return Err(ParseError::TrailingToken(trailing));
+        }
+
         Ok(Ast { root_expr })
     }
 
