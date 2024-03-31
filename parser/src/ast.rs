@@ -14,9 +14,24 @@ pub enum MathExpr {
     Subtract(Box<MathExpr>, Term),
 }
 
-impl From<Term> for MathExpr {
-    fn from(value: Term) -> Self {
-        MathExpr::Term(value)
+impl From<Factor> for MathExpr {
+    fn from(value: Factor) -> Self {
+        MathExpr::Term(Term::Factor(value))
+    }
+}
+impl From<f64> for MathExpr {
+    fn from(value: f64) -> Self {
+        MathExpr::Term(Term::from(value))
+    }
+}
+impl From<FunctionCall> for MathExpr {
+    fn from(value: FunctionCall) -> Self {
+        MathExpr::Term(Term::from(value))
+    }
+}
+impl From<MathIdentifier> for MathExpr {
+    fn from(value: MathIdentifier) -> Self {
+        MathExpr::Term(Term::from(value))
     }
 }
 
@@ -30,6 +45,21 @@ pub enum Term {
 impl From<Factor> for Term {
     fn from(value: Factor) -> Self {
         Self::Factor(value)
+    }
+}
+impl From<f64> for Term {
+    fn from(value: f64) -> Self {
+        Term::Factor(Factor::Constant(value))
+    }
+}
+impl From<MathIdentifier> for Term {
+    fn from(value: MathIdentifier) -> Self {
+        Term::Factor(Factor::Variable(value))
+    }
+}
+impl From<FunctionCall> for Term {
+    fn from(value: FunctionCall) -> Self {
+        Term::Factor(Factor::FunctionCall(value))
     }
 }
 
@@ -70,7 +100,6 @@ impl From<FunctionCall> for Factor {
         Factor::FunctionCall(value)
     }
 }
-
 
 /// A mathematical identifier, for example variable or function names.
 ///
