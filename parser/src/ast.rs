@@ -80,9 +80,24 @@ pub enum Factor {
     Abs(Box<MathExpr>),
 }
 
+impl From<f64> for Factor {
+    fn from(value: f64) -> Self {
+        Factor::Constant(value)
+    }
+}
 impl From<Box<MathExpr>> for Factor {
     fn from(value: Box<MathExpr>) -> Self {
         Factor::Expression(value)
+    }
+}
+impl From<MathIdentifier> for Factor {
+    fn from(value: MathIdentifier) -> Self {
+        Factor::Variable(value)
+    }
+}
+impl From<FunctionCall> for Factor {
+    fn from(value: FunctionCall) -> Self {
+        Factor::FunctionCall(value)
     }
 }
 
