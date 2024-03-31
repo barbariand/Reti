@@ -39,13 +39,11 @@ impl Lexer {
                 '*' => Token::Asterisk,
                 '+' => Token::Plus,
                 '/' => Token::Slash,
-                '(' => Token::LeftParen,
-                ')' => Token::RightParen,
+                '(' => Token::LeftParenthesis,
+                ')' => Token::RightParenthesis,
                 ' ' => {
                     if !temp_number.is_empty() {
-                        let num = Token::NumberLiteral(
-                            temp_number.into(),
-                        );
+                        let num = Token::NumberLiteral(temp_number.into());
                         temp_number = String::new();
                         self.send_or_crash(num).await;
                     }
@@ -57,10 +55,7 @@ impl Lexer {
                 }
                 _ => {
                     if !temp_number.is_empty() {
-                        let num = Token::NumberLiteral(
-                            temp_number
-                                .into(),
-                        );
+                        let num = Token::NumberLiteral(temp_number.into());
                         temp_number = String::new();
                         self.send_or_crash(num).await;
                     }
@@ -69,9 +64,7 @@ impl Lexer {
                 }
             };
             if !temp_number.is_empty() {
-                let num = Token::NumberLiteral(
-                    temp_number.into(),
-                );
+                let num = Token::NumberLiteral(temp_number.into());
                 temp_number = String::new();
                 self.send_or_crash(num).await;
             }
@@ -152,8 +145,8 @@ mod tests {
         assert_eq!(
             tokenize("()[]{}^'|").await,
             vec![
-                Token::LeftParen,
-                Token::RightParen,
+                Token::LeftParenthesis,
+                Token::RightParenthesis,
                 Token::LeftBracket,
                 Token::RightBracket,
                 Token::LeftCurlyBracket,
@@ -168,7 +161,10 @@ mod tests {
     async fn test_number_literals() {
         assert_eq!(
             tokenize("3.14 42").await,
-            vec![Token::NumberLiteral("3.14".to_owned().into()), Token::NumberLiteral(42.into()),]
+            vec![
+                Token::NumberLiteral("3.14".to_owned().into()),
+                Token::NumberLiteral(42.into()),
+            ]
         );
     }
     #[tokio::test]

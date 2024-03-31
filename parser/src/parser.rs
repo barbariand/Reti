@@ -1,12 +1,11 @@
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
-    ast::{Factor, MathExpr, MathIdentifier, Term, Ast},
+    ast::{Ast, Factor, MathExpr, MathIdentifier, Term},
     token::Token,
     token_reader::TokenReader,
 };
 use async_recursion::async_recursion;
-
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -88,10 +87,9 @@ impl Parser {
                     let rhs = self.factor().await?;
                     term = Term::Divide(Box::new(term), rhs);
                 }
-                Token::Backslash=>{
-                    //TODO add preprossesor step to remove the \cdot osv 
+                Token::Backslash => {
+                    //TODO add preprossesor step to remove the \cdot osv
                     self.factor().await?;
-                    
                 }
                 _ => break,
             }
@@ -108,11 +106,11 @@ impl Parser {
         //
         let factor = match self.reader.read().await {
             Token::NumberLiteral(val) => Factor::Constant(val.parsed),
-            Token::LeftParen => {
+            Token::LeftParenthesis => {
                 // TODO handle "\left("
                 let expr = self.expr().await?;
                 // TODO handle "\right)"
-                self.expect(Token::RightParen).await?;
+                self.expect(Token::RightParenthesis).await?;
                 Factor::Expression(Box::new(expr))
             }
             Token::Backslash => {
@@ -167,7 +165,7 @@ mod tests {
     };
 
     use crate::{
-        ast::{Factor, MathExpr, MathIdentifier, Term, Ast},
+        ast::{Ast, Factor, MathExpr, MathIdentifier, Term},
         lexer::Lexer,
         token::Token,
     };
