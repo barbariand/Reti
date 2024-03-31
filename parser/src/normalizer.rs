@@ -62,6 +62,7 @@ mod tests {
 
         while let Some(t) = rx2.recv().await {
             if t == Token::EndOfContent {
+                result.push(Token::EndOfContent);
                 break;
             }
             result.push(t);
