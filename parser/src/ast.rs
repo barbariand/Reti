@@ -19,19 +19,6 @@ impl From<Term> for MathExpr {
         MathExpr::Term(value)
     }
 }
-trait MathExprOperation {
-    fn as_addition(self) -> MathExpr;
-    fn as_subtraction(self) -> MathExpr;
-}
-impl MathExprOperation for (Box<MathExpr>, Term) {
-    fn as_addition(self) -> MathExpr {
-        MathExpr::Add(self.0, self.1)
-    }
-
-    fn as_subtraction(self) -> MathExpr {
-        MathExpr::Subtract(self.0, self.1)
-    }
-}
 
 #[derive(PartialEq, Debug)]
 pub enum Term {
@@ -43,21 +30,6 @@ pub enum Term {
 impl From<Factor> for Term {
     fn from(value: Factor) -> Self {
         Self::Factor(value)
-    }
-}
-
-trait TermOperation {
-    fn as_multiplication(self) -> Term;
-    fn as_division(self) -> Term;
-}
-
-impl TermOperation for (Box<Term>, Factor) {
-    fn as_multiplication(self) -> Term {
-        Term::Multiply(self.0, self.1)
-    }
-
-    fn as_division(self) -> Term {
-        Term::Divide(self.0, self.1)
     }
 }
 
