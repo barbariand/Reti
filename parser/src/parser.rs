@@ -153,6 +153,7 @@ impl Parser {
             Token::Identifier(ident) => Factor::Variable(MathIdentifier {
                 tokens: vec![Token::Identifier(ident)],
             }),
+            Token::Minus => Factor::Constant(-1.0),
             token => todo!("token = {:?}", token),
         };
 
@@ -560,9 +561,13 @@ mod tests {
     #[tokio::test]
     async fn abs() {
         parse_test(
-            "|3|",
+            "|-3|",
             Ast {
-                root_expr: Factor::Abs(3f64.into()).into(),
+                root_expr: Factor::Abs(Box::new(MathExpr::Term(Term::Multiply(
+                    Box::new((-1f64).into()),
+                    3f64.into(),
+                ))))
+                .into(),
             },
         )
         .await;
