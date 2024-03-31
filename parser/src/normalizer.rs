@@ -29,7 +29,7 @@ impl Normalizer {
         self.normalize_tokens(0, 1).await;
         loop {
             let is_end = self.read_into_queue().await;
-            println!("vec is {:?}", self.queue);
+
             self.normalize_tokens(1, 2).await;
             if is_end {
                 self.empty_queue().await;
@@ -42,11 +42,20 @@ impl Normalizer {
     async fn normalize_tokens(&mut self, tok: usize, tok2: usize) {
         match (&self.queue[tok], &self.queue[tok2]) {
             (Token::Backslash, Token::Identifier(v)) => match v.as_str() {
-                "cdot" => self.replace_2_last_and_get_new(Token::Asterisk).await,
+                "cdot" | "cdotp" | "times" => {
+                    self.replace_2_last_and_get_new(Token::Asterisk).await
+                }
+                "left" | "right" => self.replace_2_last_with_new().await,
                 _ => {}
             },
             _ => {}
         }
+    }
+    async fn replace_2_last_with_new(&mut self) {
+        let _ = self.queue.pop_back().expect("Queue has changed size");
+        let _ = self.queue.pop_back().expect("Queue has changed size");
+        self.read_into_queue().await;
+        self.read_into_queue().await;
     }
     async fn replace_2_last_and_get_new(&mut self, tok: Token) {
         let _ = self.queue.pop_back().expect("Queue has changed size");
@@ -61,7 +70,6 @@ impl Normalizer {
         ret
     }
     async fn empty_queue(&mut self) {
-        println!("flushing buffer {:?}", self.queue);
         while let Some(tok) = self.queue.pop_front() {
             self.send_or_crash(tok).await;
         }
@@ -71,7 +79,6 @@ impl Normalizer {
         self.send_or_crash(tok).await;
     }
     async fn send_or_crash(&self, token: Token) {
-        println!("sending tok:{:?}", token);
         self.output.send(token).await.expect("Broken Pipe")
     }
 }
