@@ -1,4 +1,6 @@
-use parser::{lexer::Lexer, parser::Parser, token::Token};
+use parser::{
+    context::MathContext, lexer::Lexer, normalizer::Normalizer, parser::Parser, token::Token,
+};
 use tokio::{
     join,
     sync::mpsc::{self, Receiver, Sender},
@@ -52,15 +54,19 @@ impl Prompt {
     }
 
     async fn run(&self, text: &str) {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
-        let lexer = Lexer::new(tx);
-        let mut parser = Parser::new(rx);
+        let context = MathContext::new();
+        let lexer = Lexer::new(lexer_in);
+        let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
+        let mut parser = Parser::new(normalizer_out, context);
 
         let future1 = lexer.tokenize(text);
-        let future2 = parser.parse();
+        let future2 = normalizer.normalize();
+        let future3 = parser.parse();
 
-        let (_, ast) = join!(future1, future2);
+        let (_, _, ast) = join!(future1, future2, future3);
         let ast = match ast {
             Ok(ast) => ast,
             Err(err) => {
