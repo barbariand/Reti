@@ -361,4 +361,35 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn division_order_of_operations() {
+        parse_test(
+            "5/2x + 3",
+            // This is a bit mathematically abvigous, but it means
+            // 5/2 * x + 3 because multiplication and division are
+            // on the same level, so it is evaluated left to right.
+            Ast {
+                root_expr: MathExpr::Add(
+                    // 5/2x
+                    Box::new(MathExpr::Term(Term::Multiply(
+                        // 5/2
+                        Box::new(Term::Divide(
+                            // 5
+                            Box::new(Term::Factor(Factor::Constant(5.0))),
+                            // 2
+                            Factor::Constant(5.0),
+                        )),
+                        // x
+                        Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("x".to_string())],
+                        }),
+                    ))),
+                    // 3
+                    Term::Factor(Factor::Constant(3.0)),
+                ),
+            },
+        )
+        .await;
+    }
 }
