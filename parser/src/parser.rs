@@ -63,6 +63,8 @@ impl Parser {
         }
     }
 
+    /// Parse a mathematical expression that consists of multiple terms added and
+    /// subtracted.
     #[async_recursion]
     async fn expr(&mut self) -> Result<MathExpr, ParseError> {
         let mut expr = MathExpr::Term(self.term().await?);
@@ -87,6 +89,9 @@ impl Parser {
         Ok(expr)
     }
 
+    /// Parse a term that consists of multiple factors multiplied and divided. Will
+    /// handle implicit multiplication and continues to read until the end of the
+    /// term.
     #[async_recursion]
     async fn term(&mut self) -> Result<Term, ParseError> {
         let mut term = Term::Factor(self.factor().await?);
@@ -119,6 +124,8 @@ impl Parser {
         Ok(term)
     }
 
+    /// Parse a factor, and if the factor has an exponent attached to it, parse the
+    /// exponent too.
     #[async_recursion]
     async fn factor(&mut self) -> Result<Factor, ParseError> {
         // First read a factor, but then see if we have exponents after it.
@@ -159,6 +166,9 @@ impl Parser {
         Ok(factor)
     }
 
+    /// Parse a factor that is a LaTeX command.
+    ///
+    /// The `command` parameter is the LaTeX command.
     async fn factor_command(&mut self, command: &str) -> Result<Factor, ParseError> {
         Ok(match &*command {
             "sqrt" => {
@@ -192,6 +202,10 @@ impl Parser {
         })
     }
 
+    /// Parse the exponent part of a factor.
+    ///
+    /// The `factor` parameter is the base, and the tokens to be parsed by this
+    /// function is the exponent.
     async fn factor_exponent(&mut self, factor: Factor) -> Result<Factor, ParseError> {
         let next = self.reader.peek().await;
         let exponent = match next {
@@ -247,7 +261,7 @@ mod tests {
     };
 
     use crate::{
-        ast::{Ast, Factor, MathExpr, MathIdentifier, Term},
+        ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
         lexer::Lexer,
         token::Token,
     };
@@ -465,13 +479,33 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn implicit_multiplication() {
+    async fn implicit_multiplication_vs_function_call() {
         parse_test(
-            "\\pi(x)\\ln(x)",
+            "\\pi(x)\\ln(x)", // this is pi * x * ln(x)
             Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
-                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
-                }))),
+                root_expr: MathExpr::Term(Term::Multiply(
+                    // \pi(x)
+                    Box::new(Term::Multiply(
+                        Box::new(
+                            Factor::Variable(MathIdentifier {
+                                tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                            })
+                            .into(),
+                        ),
+                        Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("x".to_string())],
+                        }),
+                    )),
+                    Factor::FunctionCall(FunctionCall {
+                        function_name: MathIdentifier {
+                            tokens: vec![Token::Identifier("ln".to_string())],
+                        },
+                        arguments: vec![Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("x".to_string())],
+                        })
+                        .into()],
+                    }),
+                )),
             },
         )
         .await;
