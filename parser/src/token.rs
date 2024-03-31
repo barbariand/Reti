@@ -38,16 +38,6 @@ impl Token {
     pub fn is_eof(&self) -> bool {
         self == Token::EndOfContent
     }
-    /// Determine if the token marks the end of an expression.
-    pub fn is_end(&self) -> bool {
-        matches!(
-            self,
-            Token::RightCurlyBracket
-                | Token::RightBracket
-                | Token::RightParenthesis
-                | Token::EndOfContent
-        )
-    }
 }
 impl PartialEq<Token> for &Token {
     fn eq(&self, other: &Token) -> bool {

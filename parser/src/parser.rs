@@ -78,11 +78,6 @@ impl Parser {
     async fn term(&mut self) -> Result<Term, ParseError> {
         let mut term = Term::Factor(self.factor().await?);
 
-        // TODO handle these cases:
-        //  - a \cdot b
-        //  - a \times b
-        //  - a(b)
-        //  - 2x
         loop {
             let next = self.reader.peek().await;
             match next {
@@ -120,9 +115,7 @@ impl Parser {
         let factor = match self.reader.read().await {
             Token::NumberLiteral(val) => Factor::Constant(val.parsed),
             Token::LeftParenthesis => {
-                // TODO handle "\left("
                 let expr = self.expr().await?;
-                // TODO handle "\right)"
                 self.expect(Token::RightParenthesis).await?;
                 Factor::Expression(Box::new(expr))
             }
@@ -155,14 +148,39 @@ impl Parser {
         if next == Token::Caret {
             // This factor is an exponential
             self.reader.skip().await;
-            let exponent = if self.reader.peek().await == Token::LeftCurlyBracket {
-                self.reader.skip().await;
-                let expr = self.expr().await?;
-                self.expect(Token::RightCurlyBracket).await?;
-                expr
-            } else {
-                // TODO this will be a problem since we will need to split the next token.......
-                todo!("Please use explicit exponetials for now, so instead of a^b please do a^{{b}}. Thanks!");
+            let next = self.reader.peek().await;
+            let exponent = match next {
+                Token::LeftCurlyBracket => {
+                    self.reader.skip().await;
+                    let expr = self.expr().await?;
+                    self.expect(Token::RightCurlyBracket).await?;
+                    expr
+                }
+                Token::Backslash => {
+                    let factor = self.factor().await?;
+                    MathExpr::Term(Term::Factor(factor))
+                }
+                Token::Identifier(ident) => {
+                    if ident.len() != 1 {
+                        panic!(
+                            "The normalizer did not correctly handle exponent, got ident = {}",
+                            ident
+                        );
+                    }
+                    MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier(ident.clone())],
+                    })))
+                }
+                Token::NumberLiteral(num) => {
+                    if num.raw.len() != 1 {
+                        panic!(
+                            "The normalizer did not correctly handle exponent, got num = {:?}",
+                            num
+                        );
+                    }
+                    MathExpr::Term(Term::Factor(Factor::Constant(num.parsed)))
+                }
+                token => return Err(ParseError::InvalidToken(token.clone())),
             };
 
             return Ok(Factor::Exponent {
@@ -206,6 +224,17 @@ mod tests {
         if expected_ast != found_ast {
             panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
         }
+    }
+
+    #[tokio::test]
+    async fn constant() {
+        parse_test(
+            "1",
+            Ast {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Constant(1.0))),
+            },
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -283,20 +312,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn exponent_paren() {
-        parse_test(
-            "2^(1)",
-            Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
-                    base: Box::new(Factor::Constant(2.0)),
-                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
-                })),
-            },
-        )
-        .await;
-    }
-
-    #[tokio::test]
     async fn exponent_split_token() {
         parse_test(
             "2^025", // this is 2^0 * 25
@@ -363,18 +378,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn implicit_multiplication_command() {
+    async fn implicit_multiplication() {
         parse_test(
-            "2\\pi",
+            "\\pi(x)\\ln(x)",
             Ast {
-                root_expr: MathExpr::Term(Term::Multiply(
-                    // 2
-                    Box::new(Term::Factor(Factor::Constant(2.0))),
-                    // \pi
-                    Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
-                    }),
-                )),
+                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                }))),
             },
         )
         .await;
