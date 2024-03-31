@@ -270,18 +270,18 @@ mod tests {
     use super::Parser;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let (tx1, rx1): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-        let (tx2, rx2): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
-        let lexer = Lexer::new(tx1);
-        let mut normalizer = Normalizer::new(rx1, tx2);
-        normalizer.normalize().await;
-        let mut parser = Parser::new(rx2);
+        let lexer = Lexer::new(lexer_in);
+        let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
+        let mut parser = Parser::new(normalizer_out);
 
         let future1 = lexer.tokenize(text);
-        let future2 = parser.parse();
+        let future2 = normalizer.normalize();
+        let future3 = parser.parse();
 
-        let (_, ast) = join!(future1, future2);
+        let (_, _, ast) = join!(future1, future2, future3);
         let found_ast = ast.unwrap();
 
         // Compare and print with debug and formattig otherwise.
