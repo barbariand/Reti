@@ -78,11 +78,6 @@ impl Parser {
     async fn term(&mut self) -> Result<Term, ParseError> {
         let mut term = Term::Factor(self.factor().await?);
 
-        // TODO handle these cases:
-        //  - a \cdot b
-        //  - a \times b
-        //  - a(b)
-        //  - 2x
         loop {
             let next = self.reader.peek().await;
             match next {
@@ -120,9 +115,7 @@ impl Parser {
         let factor = match self.reader.read().await {
             Token::NumberLiteral(val) => Factor::Constant(val.parsed),
             Token::LeftParenthesis => {
-                // TODO handle "\left("
                 let expr = self.expr().await?;
-                // TODO handle "\right)"
                 self.expect(Token::RightParenthesis).await?;
                 Factor::Expression(Box::new(expr))
             }
