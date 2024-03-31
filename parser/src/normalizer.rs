@@ -98,4 +98,111 @@ mod tests {
             ]
         );
     }
+
+    #[tokio::test]
+    async fn exponent_split() {
+        assert_eq!(
+            normalize(vec![
+                Token::NumberLiteral("2".to_owned().into()),
+                Token::Caret,
+                Token::NumberLiteral("025".to_owned().into()),
+                Token::EndOfContent,
+            ])
+            .await,
+            vec![
+                Token::NumberLiteral("2".to_owned().into()),
+                Token::Caret,
+                Token::NumberLiteral("0".to_owned().into()),
+                Token::NumberLiteral("25".to_owned().into()),
+                Token::EndOfContent,
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn replace_cdot_with_asterisk() {
+        assert_eq!(
+            normalize(vec![
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Backslash,
+                Token::Identifier("cdot".to_string()),
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::EndOfContent,
+            ])
+            .await,
+            vec![
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Asterisk,
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::EndOfContent,
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn replace_cdotp_with_asterisk() {
+        assert_eq!(
+            normalize(vec![
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Backslash,
+                Token::Identifier("cdotp".to_string()),
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::EndOfContent,
+            ])
+            .await,
+            vec![
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Asterisk,
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::EndOfContent,
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn replace_times_with_asterisk() {
+        assert_eq!(
+            normalize(vec![
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Backslash,
+                Token::Identifier("times".to_string()),
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::EndOfContent,
+            ])
+            .await,
+            vec![
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Asterisk,
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::EndOfContent,
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn remove_left_right() {
+        assert_eq!(
+            normalize(vec![
+                Token::Backslash,
+                Token::Identifier("left".to_string()),
+                Token::LeftParenthesis,
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Plus,
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Backslash,
+                Token::Identifier("right".to_string()),
+                Token::RightParenthesis,
+                Token::EndOfContent,
+            ])
+            .await,
+            vec![
+                Token::LeftParenthesis,
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::Plus,
+                Token::NumberLiteral("1".to_owned().into()),
+                Token::RightParenthesis,
+                Token::EndOfContent,
+            ]
+        );
+    }
 }
