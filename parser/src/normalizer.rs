@@ -33,13 +33,27 @@ impl Normalizer {
     async fn normalize_tokens(&mut self) -> ControlFlow<()> {
         match self.queue.get_toks() {
             (Token::Backslash, Token::Identifier(v)) => match v.as_str() {
-                "cdot" | "cdotp" | "times" => self.queue.replace_queued_with(Token::Asterisk).await,
-                "left" | "right" => self.queue.replace_queue().await,
-                _ => ControlFlow::Continue(()),
+                "cdot" | "cdotp" | "times" => {
+                    return self.queue.replace_queued_with(Token::Asterisk).await
+                }
+                "left" | "right" => return self.queue.replace_queue().await,
+                _ => {}
             },
-            (Token::Caret, Token::NumberLiteral(n)) => ControlFlow::Continue(()),
-            _ => ControlFlow::Continue(()),
+            (Token::Caret, Token::NumberLiteral(n)) => {
+                if n.raw.len() == 0 {
+                    panic!("string is wierd");
+                }
+                if n.raw.len() != 1 {
+                    let mut s = n.raw.clone();
+                    let new2 = Token::NumberLiteral(s.split_off(1).into());
+                    let new1 = Token::NumberLiteral(s.into());
+                    self.queue.replace_second_with(new1);
+                    self.queue.continue_queue_with(new2).await;
+                }
+            }
+            _ => {}
         }
+        ControlFlow::Continue(())
     }
 }
 
@@ -76,6 +90,7 @@ impl QueueSender {
             self.send_or_crash(Token::EndOfContent).await;
             return ControlFlow::Break(());
         }
+        self.move_one_step(next);
         ControlFlow::Continue(())
     }
     pub async fn replace_queue(&mut self) -> ControlFlow<()> {
@@ -87,9 +102,10 @@ impl QueueSender {
     }
     fn get_toks(&mut self) -> (&Token, &Token) {
         let queue = self.get_queue_or_crash();
+
         (&queue[0], &queue[1])
     }
-    fn move_one_step(&mut self, token: Token) -> Token {
+    pub fn move_one_step(&mut self, token: Token) -> Token {
         let queue = self.get_queue_or_crash();
         let temp = replace(&mut queue[1], token);
         replace(&mut queue[0], temp)
@@ -107,6 +123,10 @@ impl QueueSender {
             false => ControlFlow::Continue(()),
         }
     }
+    pub async fn continue_queue_with(&mut self, next: Token) {
+        let temp = self.move_one_step(next);
+        self.send_or_crash(temp).await;
+    }
     async fn read(&mut self) -> Token {
         self.input.read().await
     }
@@ -118,6 +138,9 @@ impl QueueSender {
         for t in queue.into_iter() {
             self.send_or_crash(t).await;
         }
+    }
+    pub fn replace_second_with(&mut self, token: Token) {
+        self.get_queue_or_crash()[1] = token;
     }
 }
 
