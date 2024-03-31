@@ -1,4 +1,4 @@
-use std::mem::replace;
+use std::collections::VecDeque;
 
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -7,42 +7,79 @@ use crate::{token::Token, token_reader::TokenReader};
 struct Normalizer {
     input: TokenReader,
     output: Sender<Token>,
+    queue: VecDeque<Token>,
 }
 impl Normalizer {
     fn new(input: Receiver<Token>, output: Sender<Token>) -> Self {
         Self {
             input: TokenReader::new(input),
             output,
+            queue: VecDeque::new(),
         }
     }
     async fn normalize(&mut self) {
-        let mut previous = self.input.read().await;
-        if previous == Token::EndOfContent {
-            self.send_or_crash(previous).await;
+        if self.read_into_queue().await {
+            self.empty_queue().await;
             return;
         }
+        if self.read_into_queue().await {
+            self.empty_queue().await;
+            return;
+        }
+        self.normalize_tokens(0, 1).await;
         loop {
-            let next = self.input.read().await;
-            if next == Token::EndOfContent {
-                self.send_or_crash(previous).await;
-                self.send_or_crash(Token::EndOfContent).await;
+            let is_end = self.read_into_queue().await;
+            println!("vec is {:?}", self.queue);
+            self.normalize_tokens(1, 2).await;
+            if is_end {
+                self.empty_queue().await;
                 return;
+            } else {
+                self.send_last_queued_items().await;
             }
-            match previous {
-                Token::Backslash => {}
-                Token::EndOfContent => unreachable!(),
-                _ => todo!(),
-            }
-            self.send_or_crash(replace(&mut previous, next)).await;
         }
     }
+    async fn normalize_tokens(&mut self, tok: usize, tok2: usize) {
+        match (&self.queue[tok], &self.queue[tok2]) {
+            (Token::Backslash, Token::Identifier(v)) => match v.as_str() {
+                "cdot" => self.replace_2_last_and_get_new(Token::Asterisk).await,
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+    async fn replace_2_last_and_get_new(&mut self, tok: Token) {
+        let _ = self.queue.pop_back().expect("Queue has changed size");
+        let _ = self.queue.pop_back().expect("Queue has changed size");
+        self.queue.push_back(tok);
+        self.read_into_queue().await;
+    }
+    async fn read_into_queue(&mut self) -> bool {
+        let tok = self.input.read().await;
+        let ret = tok.is_eof();
+        self.queue.push_back(tok);
+        ret
+    }
+    async fn empty_queue(&mut self) {
+        println!("flushing buffer {:?}", self.queue);
+        while let Some(tok) = self.queue.pop_front() {
+            self.send_or_crash(tok).await;
+        }
+    }
+    async fn send_last_queued_items(&mut self) {
+        let tok = self.queue.pop_front().expect("Queue is empty");
+        self.send_or_crash(tok).await;
+    }
     async fn send_or_crash(&self, token: Token) {
+        println!("sending tok:{:?}", token);
         self.output.send(token).await.expect("Broken Pipe")
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::hint::black_box;
+
     use super::Normalizer;
     use crate::token::Token;
     use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -69,7 +106,14 @@ mod tests {
 
         result
     }
-
+    #[tokio::test]
+    async fn direct_eof() {
+        black_box(normalize(vec![Token::EndOfContent]).await);
+    }
+    #[tokio::test]
+    async fn second_is_eof() {
+        black_box(normalize(vec![Token::Backslash, Token::EndOfContent]).await);
+    }
     #[tokio::test]
     async fn all_tokens_returned() {
         assert_eq!(
