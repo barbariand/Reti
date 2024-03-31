@@ -24,6 +24,11 @@ impl From<f64> for MathExpr {
         MathExpr::Term(Term::from(value))
     }
 }
+impl From<f64> for Box<MathExpr> {
+    fn from(value: f64) -> Self {
+        Box::new(value.into())
+    }
+}
 impl From<FunctionCall> for MathExpr {
     fn from(value: FunctionCall) -> Self {
         MathExpr::Term(Term::from(value))
