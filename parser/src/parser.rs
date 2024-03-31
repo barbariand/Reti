@@ -227,6 +227,17 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn constant() {
+        parse_test(
+            "1",
+            Ast {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Constant(1.0))),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
     async fn addition() {
         parse_test(
             "1+2+3",
@@ -367,18 +378,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn implicit_multiplication_command() {
+    async fn implicit_multiplication() {
         parse_test(
-            "2\\pi",
+            "\\pi(x)\\ln(x)",
             Ast {
-                root_expr: MathExpr::Term(Term::Multiply(
-                    // 2
-                    Box::new(Term::Factor(Factor::Constant(2.0))),
-                    // \pi
-                    Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
-                    }),
-                )),
+                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                }))),
             },
         )
         .await;
