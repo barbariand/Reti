@@ -87,9 +87,13 @@ impl Parser {
                     let rhs = self.factor().await?;
                     term = Term::Divide(Box::new(term), rhs);
                 }
-                Token::Backslash => {
-                    //TODO add preprossesor step to remove the \cdot osv
-                    self.factor().await?;
+                // Implicit multiplication
+                Token::Identifier(_)
+                | Token::NumberLiteral(_)
+                | Token::Backslash
+                | Token::LeftParenthesis => {
+                    let rhs = self.factor().await?;
+                    term = Term::Multiply(Box::new(term), rhs);
                 }
                 _ => break,
             }
@@ -130,6 +134,11 @@ impl Parser {
                     tokens: vec![Token::Backslash, Token::Identifier(command)],
                 })
             }
+            // TODO handle multiple variables in one string, for example
+            // "xy". But this should maybe be done by the normalizer
+            Token::Identifier(ident) => Factor::Variable(MathIdentifier {
+                tokens: vec![Token::Identifier(ident)],
+            }),
             token => todo!("token = {:?}", token),
         };
 
@@ -366,7 +375,7 @@ mod tests {
     async fn division_order_of_operations() {
         parse_test(
             "5/2x + 3",
-            // This is a bit mathematically abvigous, but it means
+            // This is a bit mathematically ambiguous, but it means
             // 5/2 * x + 3 because multiplication and division are
             // on the same level, so it is evaluated left to right.
             Ast {
@@ -378,7 +387,7 @@ mod tests {
                             // 5
                             Box::new(Term::Factor(Factor::Constant(5.0))),
                             // 2
-                            Factor::Constant(5.0),
+                            Factor::Constant(2.0),
                         )),
                         // x
                         Factor::Variable(MathIdentifier {
