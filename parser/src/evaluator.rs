@@ -47,9 +47,38 @@ impl Factor {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Ast, MathExpr, Term};
+    use tokio::{
+        join,
+        sync::mpsc::{self, Receiver, Sender},
+    };
 
-    fn eval_test(expected: f64, ast: Ast) {
+    use crate::{
+        ast::{Ast, MathExpr, Term},
+        lexer::Lexer,
+        parser::Parser,
+        token::Token,
+    };
+
+    fn eval_test_from_ast(expected: f64, ast: Ast) {
+        let found = ast.eval();
+
+        if (found - expected).abs() > f64::EPSILON {
+            panic!("Found {} expected {}", found, expected);
+        }
+    }
+
+    async fn eval_test_from_str(expected: f64, text: &str) {
+        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+
+        let lexer = Lexer::new(tx);
+        let mut parser = Parser::new(rx);
+
+        let future1 = lexer.tokenize(text);
+        let future2 = parser.parse();
+
+        let (_, ast) = join!(future1, future2);
+        let ast = ast.unwrap();
+
         let found = ast.eval();
 
         if (found - expected).abs() > f64::EPSILON {
@@ -59,7 +88,7 @@ mod tests {
 
     #[test]
     fn eval_1_plus_1() {
-        eval_test(
+        eval_test_from_ast(
             2.0,
             Ast {
                 root_expr: MathExpr::Add(Box::new(1.0.into()), 1.0.into()),
@@ -69,7 +98,7 @@ mod tests {
 
     #[test]
     fn eval_multiplication() {
-        eval_test(
+        eval_test_from_ast(
             17.0,
             // 2+3*5
             Ast {
@@ -79,5 +108,10 @@ mod tests {
                 ),
             },
         );
+    }
+
+    #[tokio::test]
+    async fn parenthesis_and_exponent() {
+        eval_test_from_str(54.0, "2(3)^3").await;
     }
 }

@@ -42,10 +42,7 @@ impl Parser {
         Ok(Ast { root_expr })
     }
 
-    pub(crate) async fn expect(
-        &mut self,
-        expected: Token,
-    ) -> Result<(), ParseError> {
+    pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
         let found = self.reader.read().await;
         if found == expected {
             return Ok(());
@@ -164,17 +161,17 @@ impl Parser {
                     MathExpr::Term(Term::Factor(factor))
                 }
                 Token::Identifier(ident) => {
+                    let ident = ident.clone();
+                    self.reader.skip().await;
                     if ident.len() != 1 {
                         panic!(
                             "The normalizer did not correctly handle exponent, got ident = {}",
                             ident
                         );
                     }
-                    MathExpr::Term(Term::Factor(Factor::Variable(
-                        MathIdentifier {
-                            tokens: vec![Token::Identifier(ident.clone())],
-                        },
-                    )))
+                    MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier(ident)],
+                    })))
                 }
                 Token::NumberLiteral(num) => {
                     if num.raw.len() != 1 {
@@ -183,7 +180,9 @@ impl Parser {
                             num
                         );
                     }
-                    MathExpr::Term(Term::Factor(Factor::Constant(num.parsed)))
+                    let parsed = num.parsed;
+                    self.reader.skip().await;
+                    MathExpr::Term(Term::Factor(Factor::Constant(parsed)))
                 }
                 token => return Err(ParseError::InvalidToken(token.clone())),
             };
@@ -263,16 +262,14 @@ mod tests {
             Ast {
                 root_expr: MathExpr::Add(
                     Box::new(MathExpr::Add(
-                        Box::new(MathExpr::Add(
-                            Box::new(1f64.into()),
-                            2f64.into(),
-                        )),
+                        Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
                         3f64.into(),
                     )),
                     Term::Multiply(
-                        Box::new(Term::Factor(Factor::Expression(Box::new(
-                            MathExpr::Add(Box::new(4f64.into()), 5f64.into()),
-                        )))),
+                        Box::new(Term::Factor(Factor::Expression(Box::new(MathExpr::Add(
+                            Box::new(4f64.into()),
+                            5f64.into(),
+                        ))))),
                         6f64.into(),
                     ),
                 ),
@@ -287,9 +284,7 @@ mod tests {
             Ast {
                 root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
                     base: Box::new(Factor::Constant(2.0)),
-                    exponent: Box::new(MathExpr::Term(Term::Factor(
-                        Factor::Constant(3.0),
-                    ))),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(3.0)))),
                 })),
             },
         )
@@ -303,14 +298,11 @@ mod tests {
             Ast {
                 root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
                     base: Box::new(Factor::Constant(2.0)),
-                    exponent: Box::new(MathExpr::Term(Term::Factor(
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![
-                                Token::Backslash,
-                                Token::Identifier("pi".to_string()),
-                            ],
-                        }),
-                    ))),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Variable(
+                        MathIdentifier {
+                            tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                        },
+                    )))),
                 })),
             },
         )
@@ -326,12 +318,29 @@ mod tests {
                     //2^0
                     Box::new(Term::Factor(Factor::Exponent {
                         base: Box::new(Factor::Constant(2.0)),
-                        exponent: Box::new(MathExpr::Term(Term::Factor(
-                            Factor::Constant(0.0),
-                        ))),
+                        exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(0.0)))),
                     })),
                     // 25
                     Factor::Constant(25.0),
+                )),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn parenthesis_and_exponent() {
+        parse_test(
+            "2(3)^3",
+            Ast {
+                root_expr: MathExpr::Term(Term::Multiply(
+                    // 2
+                    Box::new(2f64.into()),
+                    // (3)^3
+                    Factor::Exponent {
+                        base: Box::new(Factor::Expression(Box::new(3f64.into()))),
+                        exponent: Box::new(3f64.into()),
+                    },
                 )),
             },
         )
@@ -351,13 +360,9 @@ mod tests {
                         // x^{2}
                         Factor::Exponent {
                             base: Box::new(Factor::Variable(MathIdentifier {
-                                tokens: vec![Token::Identifier(
-                                    "x".to_string(),
-                                )],
+                                tokens: vec![Token::Identifier("x".to_string())],
                             })),
-                            exponent: Box::new(MathExpr::Term(Term::Factor(
-                                Factor::Constant(2.0),
-                            ))),
+                            exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(2.0)))),
                         },
                     ))),
                     // 5xy
@@ -381,14 +386,9 @@ mod tests {
         parse_test(
             "\\pi",
             Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(
-                    MathIdentifier {
-                        tokens: vec![
-                            Token::Backslash,
-                            Token::Identifier("pi".to_string()),
-                        ],
-                    },
-                ))),
+                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                }))),
             },
         )
         .await;
@@ -399,14 +399,9 @@ mod tests {
         parse_test(
             "\\pi(x)\\ln(x)",
             Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(
-                    MathIdentifier {
-                        tokens: vec![
-                            Token::Backslash,
-                            Token::Identifier("pi".to_string()),
-                        ],
-                    },
-                ))),
+                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                }))),
             },
         )
         .await;
