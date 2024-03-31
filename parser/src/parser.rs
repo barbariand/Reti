@@ -50,6 +50,21 @@ impl Parser {
         Err(ParseError::UnexpectedToken { expected, found })
     }
 
+    async fn read_identifier(&mut self) -> Result<String, ParseError> {
+        let token = self.reader.read().await;
+        match token {
+            Token::Identifier(val) => Ok(val),
+            found => {
+                return Err(ParseError::UnexpectedToken {
+                    expected: Token::Identifier("".to_string()),
+                    found,
+                })
+            }
+        }
+    }
+
+    /// Parse a mathematical expression that consists of multiple terms added and
+    /// subtracted.
     #[async_recursion]
     async fn expr(&mut self) -> Result<MathExpr, ParseError> {
         let mut expr = MathExpr::Term(self.term().await?);
@@ -74,6 +89,9 @@ impl Parser {
         Ok(expr)
     }
 
+    /// Parse a term that consists of multiple factors multiplied and divided. Will
+    /// handle implicit multiplication and continues to read until the end of the
+    /// term.
     #[async_recursion]
     async fn term(&mut self) -> Result<Term, ParseError> {
         let mut term = Term::Factor(self.factor().await?);
@@ -106,6 +124,8 @@ impl Parser {
         Ok(term)
     }
 
+    /// Parse a factor, and if the factor has an exponent attached to it, parse the
+    /// exponent too.
     #[async_recursion]
     async fn factor(&mut self) -> Result<Factor, ParseError> {
         // First read a factor, but then see if we have exponents after it.
@@ -120,21 +140,13 @@ impl Parser {
                 Factor::Expression(Box::new(expr))
             }
             Token::Backslash => {
-                let token = self.reader.read().await;
-                let command = match token {
-                    Token::Identifier(val) => val,
-                    found => {
-                        return Err(ParseError::UnexpectedToken {
-                            expected: Token::Identifier("".to_string()),
-                            found,
-                        })
-                    }
-                };
-                // assume greek alphabet
-                // TODO function calls
-                Factor::Variable(MathIdentifier {
-                    tokens: vec![Token::Backslash, Token::Identifier(command)],
-                })
+                let command = self.read_identifier().await?;
+                self.factor_command(&*command).await?
+            }
+            Token::VerticalPipe => {
+                let expr = self.expr().await?;
+                self.expect(Token::VerticalPipe).await?;
+                Factor::Abs(Box::new(expr))
             }
             // TODO handle multiple variables in one string, for example
             // "xy". But this should maybe be done by the normalizer
@@ -148,48 +160,96 @@ impl Parser {
         if next == Token::Caret {
             // This factor is an exponential
             self.reader.skip().await;
-            let next = self.reader.peek().await;
-            let exponent = match next {
-                Token::LeftCurlyBracket => {
-                    self.reader.skip().await;
-                    let expr = self.expr().await?;
-                    self.expect(Token::RightCurlyBracket).await?;
-                    expr
-                }
-                Token::Backslash => {
-                    let factor = self.factor().await?;
-                    MathExpr::Term(Term::Factor(factor))
-                }
-                Token::Identifier(ident) => {
-                    if ident.len() != 1 {
-                        panic!(
-                            "The normalizer did not correctly handle exponent, got ident = {}",
-                            ident
-                        );
-                    }
-                    MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Identifier(ident.clone())],
-                    })))
-                }
-                Token::NumberLiteral(num) => {
-                    if num.raw.len() != 1 {
-                        panic!(
-                            "The normalizer did not correctly handle exponent, got num = {:?}",
-                            num
-                        );
-                    }
-                    MathExpr::Term(Term::Factor(Factor::Constant(num.parsed)))
-                }
-                token => return Err(ParseError::InvalidToken(token.clone())),
-            };
-
-            return Ok(Factor::Exponent {
-                base: Box::new(factor),
-                exponent: Box::new(exponent),
-            });
+            return self.factor_exponent(factor).await;
         }
 
         Ok(factor)
+    }
+
+    /// Parse a factor that is a LaTeX command.
+    ///
+    /// The `command` parameter is the LaTeX command.
+    async fn factor_command(&mut self, command: &str) -> Result<Factor, ParseError> {
+        Ok(match &*command {
+            "sqrt" => {
+                let next = self.reader.peek().await;
+                let mut degree = None;
+                if next == Token::LeftBracket {
+                    self.reader.skip().await;
+                    degree = Some(Box::new(self.expr().await?));
+                    self.expect(Token::RightBracket).await?;
+                }
+                self.expect(Token::LeftCurlyBracket).await?;
+                let radicand = Box::new(self.expr().await?);
+                self.expect(Token::RightCurlyBracket).await?;
+                Factor::Root { degree, radicand }
+            }
+            "frac" => {
+                self.expect(Token::LeftCurlyBracket).await?;
+                let numerator = Box::new(self.expr().await?);
+                self.expect(Token::RightCurlyBracket).await?;
+                self.expect(Token::LeftCurlyBracket).await?;
+                let denomminator = Box::new(self.expr().await?);
+                self.expect(Token::RightCurlyBracket).await?;
+                Factor::Fraction(numerator, denomminator)
+            }
+            _ => {
+                // assume greek alphabet
+                Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Backslash, Token::Identifier(command.to_string())],
+                })
+            }
+        })
+    }
+
+    /// Parse the exponent part of a factor.
+    ///
+    /// The `factor` parameter is the base, and the tokens to be parsed by this
+    /// function is the exponent.
+    async fn factor_exponent(&mut self, factor: Factor) -> Result<Factor, ParseError> {
+        let next = self.reader.peek().await;
+        let exponent = match next {
+            Token::LeftCurlyBracket => {
+                self.reader.skip().await;
+                let expr = self.expr().await?;
+                self.expect(Token::RightCurlyBracket).await?;
+                expr
+            }
+            Token::Backslash => {
+                let factor = self.factor().await?;
+                MathExpr::Term(Term::Factor(factor))
+            }
+            Token::Identifier(ident) => {
+                let ident = ident.clone();
+                self.reader.skip().await;
+                if ident.len() != 1 {
+                    panic!(
+                        "The normalizer did not correctly handle exponent, got ident = {}",
+                        ident
+                    );
+                }
+                MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Identifier(ident)],
+                })))
+            }
+            Token::NumberLiteral(num) => {
+                if num.raw.len() != 1 {
+                    panic!(
+                        "The normalizer did not correctly handle exponent, got num = {:?}",
+                        num
+                    );
+                }
+                let parsed = num.parsed;
+                self.reader.skip().await;
+                MathExpr::Term(Term::Factor(Factor::Constant(parsed)))
+            }
+            token => return Err(ParseError::InvalidToken(token.clone())),
+        };
+
+        return Ok(Factor::Exponent {
+            base: Box::new(factor),
+            exponent: Box::new(exponent),
+        });
     }
 }
 
@@ -201,7 +261,7 @@ mod tests {
     };
 
     use crate::{
-        ast::{Ast, Factor, MathExpr, MathIdentifier, Term},
+        ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
         lexer::Lexer,
         token::Token,
     };
@@ -231,7 +291,7 @@ mod tests {
         parse_test(
             "1",
             Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Constant(1.0))),
+                root_expr: 1f64.into(),
             },
         )
         .await;
@@ -243,11 +303,8 @@ mod tests {
             "1+2+3",
             Ast {
                 root_expr: MathExpr::Add(
-                    Box::new(MathExpr::Add(
-                        Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
-                        Term::Factor(Factor::Constant(2.0)),
-                    )),
-                    Term::Factor(Factor::Constant(3.0)),
+                    Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
+                    3f64.into(),
                 ),
             },
         )
@@ -261,24 +318,49 @@ mod tests {
             Ast {
                 root_expr: MathExpr::Add(
                     Box::new(MathExpr::Add(
-                        Box::new(MathExpr::Add(
-                            Box::new(MathExpr::Term(Term::Factor(Factor::Constant(1.0)))),
-                            Term::Factor(Factor::Constant(2.0)),
-                        )),
-                        Term::Factor(Factor::Constant(3.0)),
+                        Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
+                        3f64.into(),
                     )),
                     Term::Multiply(
                         Box::new(Term::Factor(Factor::Expression(Box::new(MathExpr::Add(
-                            Box::new(MathExpr::Term(Term::Factor(Factor::Constant(4.0)))),
-                            Term::Factor(Factor::Constant(5.0)),
+                            Box::new(4f64.into()),
+                            5f64.into(),
                         ))))),
-                        Factor::Constant(6.0),
+                        6f64.into(),
                     ),
                 ),
             },
         )
         .await;
     }
+    #[tokio::test]
+    async fn sqrt() {
+        parse_test(
+            "\\sqrt{9}",
+            Ast {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Root {
+                    degree: None,
+                    radicand: 9f64.into(),
+                })),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn cube_root() {
+        parse_test(
+            "\\sqrt[3]{27}",
+            Ast {
+                root_expr: MathExpr::Term(Term::Factor(Factor::Root {
+                    degree: Some(3f64.into()),
+                    radicand: 27f64.into(),
+                })),
+            },
+        )
+        .await;
+    }
+
     #[tokio::test]
     async fn exponent() {
         parse_test(
@@ -324,6 +406,25 @@ mod tests {
                     })),
                     // 25
                     Factor::Constant(25.0),
+                )),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn parenthesis_and_exponent() {
+        parse_test(
+            "2(3)^3",
+            Ast {
+                root_expr: MathExpr::Term(Term::Multiply(
+                    // 2
+                    Box::new(2f64.into()),
+                    // (3)^3
+                    Factor::Exponent {
+                        base: Box::new(Factor::Expression(Box::new(3f64.into()))),
+                        exponent: Box::new(3f64.into()),
+                    },
                 )),
             },
         )
@@ -378,13 +479,33 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn implicit_multiplication() {
+    async fn implicit_multiplication_vs_function_call() {
         parse_test(
-            "\\pi(x)\\ln(x)",
+            "\\pi(x)\\ln(x)", // this is pi * x * ln(x)
             Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
-                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
-                }))),
+                root_expr: MathExpr::Term(Term::Multiply(
+                    // \pi(x)
+                    Box::new(Term::Multiply(
+                        Box::new(
+                            Factor::Variable(MathIdentifier {
+                                tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                            })
+                            .into(),
+                        ),
+                        Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("x".to_string())],
+                        }),
+                    )),
+                    Factor::FunctionCall(FunctionCall {
+                        function_name: MathIdentifier {
+                            tokens: vec![Token::Identifier("ln".to_string())],
+                        },
+                        arguments: vec![Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("x".to_string())],
+                        })
+                        .into()],
+                    }),
+                )),
             },
         )
         .await;
@@ -416,6 +537,28 @@ mod tests {
                     // 3
                     Term::Factor(Factor::Constant(3.0)),
                 ),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn fraction() {
+        parse_test(
+            "\\frac{1}{2}",
+            Ast {
+                root_expr: Factor::Fraction(1f64.into(), 2f64.into()).into(),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn abs() {
+        parse_test(
+            "|3|",
+            Ast {
+                root_expr: Factor::Abs(3f64.into()).into(),
             },
         )
         .await;
