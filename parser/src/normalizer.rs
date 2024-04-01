@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, future::Future, mem::replace, ops::ControlFlow};
+use std::{mem::replace, ops::ControlFlow};
 
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -36,7 +36,7 @@ impl Normalizer {
                 "cdot" | "cdotp" | "times" => {
                     return self.queue.replace_queued_with(Token::Asterisk).await
                 }
-                "left" | "right" => return self.queue.replace_queue().await,
+                "left" | "middle" | "right" => return self.queue.replace_queue().await,
                 _ => {}
             },
             (Token::Caret, Token::NumberLiteral(n)) => {
@@ -293,14 +293,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn remove_left_right() {
+    async fn remove_left_middle_right() {
         assert_eq!(
             normalize(vec![
                 Token::Backslash,
                 Token::Identifier("left".to_string()),
                 Token::LeftParenthesis,
                 Token::NumberLiteral("1".to_owned().into()),
-                Token::Plus,
+                Token::Backslash,
+                Token::Identifier("middle".to_string()),
+                Token::Slash,
                 Token::NumberLiteral("1".to_owned().into()),
                 Token::Backslash,
                 Token::Identifier("right".to_string()),
@@ -311,7 +313,7 @@ mod tests {
             vec![
                 Token::LeftParenthesis,
                 Token::NumberLiteral("1".to_owned().into()),
-                Token::Plus,
+                Token::Slash,
                 Token::NumberLiteral("1".to_owned().into()),
                 Token::RightParenthesis,
                 Token::EndOfContent,
