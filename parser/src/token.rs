@@ -19,6 +19,8 @@ pub enum Token {
     Underscore,        // _
     Caret,             // ^
     VerticalPipe,      // | and |
+    Comma,             // ,
+    Ampersand,         // &
     EndOfContent,      // A special token that represents the end of content.
 }
 
