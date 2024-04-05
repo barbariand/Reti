@@ -1,10 +1,12 @@
+use std::collections::VecDeque;
+
 use tokio::sync::mpsc::Receiver;
 
 use crate::token::Token;
 
 pub struct TokenReader {
     tokens: Receiver<Token>,
-    next: Option<Token>,
+    next: VecDeque<Token>,
     eof: bool,
 }
 
@@ -12,22 +14,26 @@ impl TokenReader {
     pub fn new(tokens: Receiver<Token>) -> Self {
         TokenReader {
             tokens,
-            next: None,
+            next: VecDeque::new(),
             eof: false,
         }
     }
 
     /// Look at the next token without consuming it.
     ///
-    /// If end of file is reached, `Token::EOF` will be returned for subsequent
-    /// reads.
+    /// If end of content is reached, `Token::EndOfContent` will be returned for
+    /// subsequent reads.
     pub async fn peek(&mut self) -> &Token {
-        // If we already had the next token, provide it.
-        if self.next.is_none() {
-            self.next = Some(self.read().await);
+        if self.next.len() == 0 {
+            let token = self.read().await;
+            self.next.push_back(token);
         }
 
-        self.next.as_ref().expect("Memory Corruption")
+        return &self.next[0];
+    }
+
+    pub async fn peek_at(&mut self, index: usize) -> &Token {
+        todo!("Peek forward more than one token");
     }
 
     /// Read and consume the next token from the token stream.
@@ -39,10 +45,8 @@ impl TokenReader {
             return Token::EndOfContent;
         }
         // If we already had it peaked, just consume and return that.
-        if let Some(token) = &self.next {
-            let ugly_code = token.clone();
-            self.next = None;
-            return ugly_code;
+        if let Some(token) = self.next.remove(0) {
+            return token;
         }
         // Read from channel
         let token = self.tokens.recv().await.expect("Broken pipe");
