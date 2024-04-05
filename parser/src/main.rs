@@ -1,5 +1,6 @@
 use parser::{
-    context::MathContext, lexer::Lexer, normalizer::Normalizer, parser::Parser, token::Token,
+    ast::MathIdentifier, context::MathContext, lexer::Lexer, normalizer::Normalizer,
+    parser::Parser, token::Token,
 };
 use tokio::{
     join,
@@ -57,7 +58,20 @@ impl Prompt {
         let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
         let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
-        let context = MathContext::new();
+        let mut context = MathContext::new();
+        context.variables.insert(
+            MathIdentifier {
+                tokens: vec![Token::Identifier("x".to_string())],
+            },
+            3.0,
+        );
+        context.variables.insert(
+            MathIdentifier {
+                tokens: vec![Token::Identifier("y".to_string())],
+            },
+            7.0,
+        );
+
         let lexer = Lexer::new(lexer_in);
         let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
         let mut parser = Parser::new(normalizer_out, context);
