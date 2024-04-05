@@ -21,6 +21,8 @@ impl TokenReader {
 
     /// Look at the next token without consuming it.
     ///
+    /// Equivalent to `peekn(0)`.
+    ///
     /// If end of content is reached, `Token::EndOfContent` will be returned for
     /// subsequent reads.
     pub async fn peek(&mut self) -> &Token {
@@ -32,8 +34,18 @@ impl TokenReader {
         return &self.next[0];
     }
 
-    pub async fn peek_at(&mut self, index: usize) -> &Token {
-        todo!("Peek forward more than one token");
+    pub async fn peekn(&mut self, n: usize) -> &Token {
+        println!("len = {}", self.next.len());
+        if self.next.len() == n {
+            let token = self.read().await;
+            println!("pushing");
+            self.next.push_back(token);
+        } else if self.next.len() < n {
+            panic!("Jump peek detected. This is usually a bug.");
+        }
+
+        println!("len = {}", self.next.len());
+        return &self.next[n];
     }
 
     /// Read and consume the next token from the token stream.
@@ -111,6 +123,34 @@ mod tests {
         }
 
         assert_eq!(Token::Backslash, reader.peek().await);
+        assert_eq!(Token::Backslash, reader.read().await);
+        assert_eq!(Token::LeftCurlyBracket, reader.peek().await);
+        assert_eq!(Token::LeftCurlyBracket, reader.read().await);
+        assert_eq!(Token::RightCurlyBracket, reader.read().await);
+        assert_eq!(Token::LeftBracket, reader.read().await);
+        assert_eq!(Token::RightBracket, reader.read().await);
+    }
+
+    #[tokio::test]
+    async fn peekn_test() {
+        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+
+        let tokens = vec![
+            Token::Backslash,
+            Token::LeftCurlyBracket,
+            Token::RightCurlyBracket,
+            Token::LeftBracket,
+            Token::RightBracket,
+        ];
+
+        let mut reader = TokenReader::new(rx);
+
+        for token in &tokens {
+            tx.send(token.clone()).await.unwrap();
+        }
+
+        assert_eq!(Token::Backslash, reader.peek().await);
+        assert_eq!(Token::LeftCurlyBracket, reader.peekn(1).await);
         assert_eq!(Token::Backslash, reader.read().await);
         assert_eq!(Token::LeftCurlyBracket, reader.peek().await);
         assert_eq!(Token::LeftCurlyBracket, reader.read().await);
