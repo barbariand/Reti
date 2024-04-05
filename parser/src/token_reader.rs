@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, ops::RangeInclusive};
 
 use tokio::sync::mpsc::Receiver;
 
@@ -74,7 +74,7 @@ impl TokenReader {
     /// reads.
     pub async fn read(&mut self) -> Token {
         // If we already had it peeked, just consume and return that.
-        if let Some(token) = self.next.remove(0) {
+        if let Some(token) = self.next.pop_front() {
             return token;
         }
         // Read from channel
@@ -85,6 +85,39 @@ impl TokenReader {
     pub async fn skip(&mut self) {
         // Read but ignore value.
         _ = self.read().await;
+    }
+
+    /// Replace a range of tokens that have been peeked with a vector of replacements.
+    ///
+    /// ## Pseudocode Example
+    /// ```ignore
+    /// peeked tokens before:
+    /// [1, Backslash, "cdot", Two]
+    ///
+    /// replace(1..=2, vec![Asterisk])
+    ///
+    /// peeked tokens after:
+    /// [1, Asterisk, Two]
+    /// ```
+    ///
+    /// ## Panics
+    /// You must peek tokens before calling replace. In other words, you need to
+    /// know what you are replacing before calling this function.
+    pub async fn replace(&mut self, range: RangeInclusive<usize>, replacement: Vec<Token>) {
+        if self.next.len() <= *range.end() {
+            panic!(
+                "Please call peekn before calling replace. You must know what you are replacing! range = {:?}",
+                range
+            );
+        }
+        let start = range.start().clone();
+        for _ in range.clone() {
+            // Always remove start index because it shifts elements down.
+            self.next.remove(start).expect("length already checked");
+        }
+        for token in replacement {
+            self.next.insert(range.start().clone(), token);
+        }
     }
 }
 
@@ -214,5 +247,63 @@ mod tests {
 
         assert_eq!(Token::Backslash, reader.peekn(0).await);
         assert_eq!(Token::RightCurlyBracket, reader.peekn(2).await);
+    }
+
+    #[tokio::test]
+    async fn replace_test() {
+        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+
+        let tokens = vec![
+            Token::LeftBracket,
+            Token::Backslash,
+            Token::Identifier("left".to_string()),
+            Token::RightCurlyBracket,
+            Token::LeftBracket,
+            Token::RightBracket,
+            Token::EndOfContent,
+        ];
+
+        let mut reader = TokenReader::new(rx);
+
+        for token in &tokens {
+            tx.send(token.clone()).await.unwrap();
+        }
+
+        assert_eq!(Token::LeftBracket, reader.read().await);
+        assert_eq!(Token::Backslash, reader.peekn(0).await);
+        assert_eq!(Token::Identifier("left".to_string()), reader.peekn(1).await);
+        // Replace \cdot with asterisk.
+        reader.replace(0..=1, vec![Token::Asterisk]).await;
+        assert_eq!(Token::Asterisk, reader.read().await);
+
+        assert_eq!(Token::RightCurlyBracket, reader.read().await);
+        assert_eq!(Token::LeftBracket, reader.read().await);
+        assert_eq!(Token::RightBracket, reader.read().await);
+        assert_eq!(Token::EndOfContent, reader.read().await);
+    }
+
+    #[should_panic]
+    #[tokio::test]
+    async fn replace_without_peeking_panics() {
+        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+
+        let tokens = vec![
+            Token::LeftBracket,
+            Token::Backslash,
+            Token::Identifier("left".to_string()),
+            Token::RightCurlyBracket,
+            Token::LeftBracket,
+            Token::RightBracket,
+            Token::EndOfContent,
+        ];
+
+        let mut reader = TokenReader::new(rx);
+
+        for token in &tokens {
+            tx.send(token.clone()).await.unwrap();
+        }
+
+        assert_eq!(Token::LeftBracket, reader.read().await);
+        reader.replace(0..=1, vec![Token::Asterisk]).await;
     }
 }
