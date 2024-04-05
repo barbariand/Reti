@@ -68,6 +68,20 @@ impl TokenReader {
         return &self.next[n];
     }
 
+    /// Peek a range of tokens at once.
+    pub async fn peek_range(&mut self, range: RangeInclusive<usize>) -> Vec<&Token> {
+        // Ensure we have peeked the tokens.
+        for n in range.clone() {
+            self.peekn(n).await;
+        }
+
+        let mut vec = Vec::new();
+        for n in range {
+            vec.push(&self.next[n]);
+        }
+        vec
+    }
+
     /// Read and consume the next token from the token stream.
     ///
     /// If end of file is reached, `Token::EOF` will be returned for subsequent
@@ -115,7 +129,7 @@ impl TokenReader {
             // Always remove start index because it shifts elements down.
             self.next.remove(start).expect("length already checked");
         }
-        for token in replacement {
+        for token in replacement.into_iter().rev() {
             self.next.insert(range.start().clone(), token);
         }
     }
@@ -256,7 +270,7 @@ mod tests {
         let tokens = vec![
             Token::LeftBracket,
             Token::Backslash,
-            Token::Identifier("left".to_string()),
+            Token::Identifier("test".to_string()),
             Token::RightCurlyBracket,
             Token::LeftBracket,
             Token::RightBracket,
@@ -271,15 +285,34 @@ mod tests {
 
         assert_eq!(Token::LeftBracket, reader.read().await);
         assert_eq!(Token::Backslash, reader.peekn(0).await);
-        assert_eq!(Token::Identifier("left".to_string()), reader.peekn(1).await);
-        // Replace \cdot with asterisk.
-        reader.replace(0..=1, vec![Token::Asterisk]).await;
-        assert_eq!(Token::Asterisk, reader.read().await);
+        assert_eq!(Token::Identifier("test".to_string()), reader.peekn(1).await);
+        reader.replace(0..=1, vec![Token::Plus, Token::Minus]).await;
+        assert_eq!(Token::Plus, reader.read().await);
+        assert_eq!(Token::Minus, reader.read().await);
 
         assert_eq!(Token::RightCurlyBracket, reader.read().await);
         assert_eq!(Token::LeftBracket, reader.read().await);
         assert_eq!(Token::RightBracket, reader.read().await);
         assert_eq!(Token::EndOfContent, reader.read().await);
+    }
+
+    #[tokio::test]
+    async fn replace_one() {
+        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+
+        let tokens = vec![Token::LeftBracket, Token::Plus, Token::RightBracket];
+
+        let mut reader = TokenReader::new(rx);
+
+        for token in &tokens {
+            tx.send(token.clone()).await.unwrap();
+        }
+
+        assert_eq!(Token::LeftBracket, reader.read().await);
+        assert_eq!(Token::Plus, reader.peekn(0).await);
+        reader.replace(0..=0, vec![Token::Minus]).await;
+        assert_eq!(Token::Minus, reader.read().await);
+        assert_eq!(Token::RightBracket, reader.read().await);
     }
 
     #[should_panic]
