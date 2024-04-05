@@ -1,8 +1,5 @@
 /// A simple single-threaded evaluator for an AST.
-use crate::{
-    ast::{Ast, Factor, MathExpr, Term},
-    token::Token,
-};
+use crate::ast::{Ast, Factor, MathExpr, Term};
 
 impl Ast {
     pub fn eval(&self) -> f64 {
@@ -35,15 +32,7 @@ impl Factor {
         match self {
             Factor::Constant(c) => *c,
             Factor::Expression(expr) => expr.eval(),
-            Factor::Variable(var) => match &var.tokens[..] {
-                // TODO use MathContext to look up variables
-                [Token::Identifier(str)] => match str.as_str() {
-                    "x" => 3.0,
-                    "y" => 7.0,
-                    _ => todo!("I don't know the value of the variable {:?}", var),
-                },
-                _ => todo!("I don't know the value of the variable {:?}", var),
-            },
+            Factor::Variable(x) => todo!("I don't know the value of the variable {:?}", x),
             Factor::FunctionCall(call) => todo!("call = {:?}", call),
             Factor::Exponent { base, exponent } => base.eval().powf(exponent.eval()),
             Factor::Root { degree, radicand } => match degree.as_ref().map(|expr| expr.eval()) {
