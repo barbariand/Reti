@@ -131,6 +131,20 @@ impl Parser {
     /// exponent too.
     #[async_recursion]
     async fn factor(&mut self) -> Result<Factor, ParseError> {
+        // Split identifiers into single characters
+        match self.reader.peek().await {
+            Token::Identifier(text) => {
+                if text.len() > 1 {
+                    let mut tokens = Vec::new();
+                    for c in text.chars() {
+                        tokens.push(Token::Identifier(c.to_string()));
+                    }
+                    self.reader.replace(0..=0, tokens).await;
+                }
+            }
+            _ => {}
+        }
+
         // First read a factor, but then see if we have exponents after it.
         // Exponents need to be baked into the factor since exponents should
         // be evaluated before multiplications.
@@ -501,15 +515,49 @@ mod tests {
                     ))),
                     // 5xy
                     Term::Multiply(
-                        // 5
-                        Box::new(Term::Factor(Factor::Constant(5.0))),
-                        // xy
-                        // TODO split into x and y
+                        // 5x
+                        Box::new(Term::Multiply(
+                            // 5
+                            Box::new(5f64.into()),
+                            // x
+                            Factor::Variable(MathIdentifier {
+                                tokens: vec![Token::Identifier("x".to_string())],
+                            }),
+                        )),
+                        // y
                         Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("xy".to_string())],
+                            tokens: vec![Token::Identifier("y".to_string())],
                         }),
                     ),
                 ),
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn implicit_multiplication_single_identifier_token() {
+        parse_test(
+            "2xy^2",
+            Ast {
+                root_expr: MathExpr::Term(Term::Multiply(
+                    // 2x
+                    Box::new(Term::Multiply(
+                        // 2
+                        Box::new(2f64.into()),
+                        // x
+                        Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("x".to_string())],
+                        }),
+                    )),
+                    // y^2
+                    Factor::Exponent {
+                        base: Box::new(Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("y".to_string())],
+                        })),
+                        exponent: 2f64.into(),
+                    },
+                )),
             },
         )
         .await;
