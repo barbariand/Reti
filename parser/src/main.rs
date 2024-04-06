@@ -1,3 +1,4 @@
+use clap::{command, Parser as ClapParser};
 use parser::{
     context::MathContext, lexer::Lexer, normalizer::Normalizer, parser::Parser, token::Token,
 };
@@ -5,21 +6,31 @@ use tokio::{
     join,
     sync::mpsc::{self, Receiver, Sender},
 };
-
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 #[tokio::main]
 pub async fn main() {
-    Prompt::new().start().await;
+    let mut prompt = Prompt::parse();
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(prompt.tracing_level.into())
+                .from_env_lossy(),
+        )
+        .init();
+    prompt.start().await;
 }
-
+#[derive(ClapParser, Debug)]
+#[command(version, about, long_about = None)]
 struct Prompt {
+    #[arg(short, long, default_value_t = false)]
     ast_mode: bool,
+    #[arg(default_value_t=LevelFilter::WARN)]
+    tracing_level: LevelFilter,
 }
 
 impl Prompt {
-    pub fn new() -> Self {
-        Prompt { ast_mode: false }
-    }
-
     async fn start(&mut self) {
         println!("Welcome to the Reti prompt.");
         println!("Type 1+1 and press Enter to get started.");
