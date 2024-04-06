@@ -77,13 +77,14 @@ impl Prompt {
             }
         };
 
+        if self.ast_mode {
+            println!("{:#?}", ast);
+        }
+
         let result = ast.eval();
 
         println!("> {}", result);
 
-        if self.ast_mode {
-            println!("{:#?}", ast);
-        }
         println!();
     }
 }

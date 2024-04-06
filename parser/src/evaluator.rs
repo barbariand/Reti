@@ -36,8 +36,7 @@ impl Factor {
             Factor::FunctionCall(call) => todo!("call = {:?}", call),
             Factor::Exponent { base, exponent } => base.eval().powf(exponent.eval()),
             Factor::Root { degree, radicand } => match degree.as_ref().map(|expr| expr.eval()) {
-                Some(2.0) | None => radicand.eval().sqrt(),
-                Some(0.0) => 1.0,
+                None => radicand.eval().sqrt(),
                 Some(degree) => radicand.eval().powf(1.0 / degree),
             },
             Factor::Fraction(a, b) => a.eval() / b.eval(),
