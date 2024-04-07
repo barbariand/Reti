@@ -12,3 +12,5 @@ colored = "2.1.0"
 clap = { version = "4.5.4", features = ["derive"] }
 tracing = { version = "0.1.40", features = ["async-await"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+rustyline = "14.0.0"
+futures = "0.3.30"
