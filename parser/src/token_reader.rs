@@ -55,7 +55,8 @@ impl TokenReader {
         if self.next.is_empty() {
             let token = self.read_internal().await;
             self.next.push_back(token);
-        } else if self.next.len() < n {
+        }
+        if self.next.len() < n {
             panic!(
                 "Jump peek detected. This is usually a bug. \
                 Previous peek: {:?}, this peek: {}",
