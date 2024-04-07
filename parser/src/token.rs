@@ -1,4 +1,4 @@
-use std::{hash::Hash, num::ParseFloatError, str::FromStr};
+use std::{fmt::Display, hash::Hash, num::ParseFloatError, str::FromStr};
 
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum Token {
@@ -23,7 +23,38 @@ pub enum Token {
     Ampersand,         // &
     EndOfContent,      // A special token that represents the end of content.
 }
-
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Token::Identifier(c) => c.as_str(),
+                Token::NumberLiteral(n) => {
+                    return writeln!(f, "{}", n);
+                }
+                Token::Backslash => "\\",
+                Token::LeftCurlyBracket => "{",
+                Token::RightCurlyBracket => "}",
+                Token::LeftBracket => "[",
+                Token::RightBracket => "]",
+                Token::LeftParenthesis => "(",
+                Token::RightParenthesis => ")",
+                Token::Plus => "+",
+                Token::Minus => "-",
+                Token::Asterisk => "*",
+                Token::Slash => "/",
+                Token::Apostrophe => "'",
+                Token::Underscore => "_",
+                Token::Caret => "^",
+                Token::VerticalPipe => "|",
+                Token::Comma => ",",
+                Token::Ampersand => "&",
+                Token::EndOfContent => "EOF",
+            }
+        )
+    }
+}
 impl Token {
     pub fn is_ident(&self, text: &str) -> bool {
         match self {
@@ -55,6 +86,11 @@ impl PartialEq<&Token> for Token {
 pub struct NumberLiteral {
     pub raw: String,
     pub parsed: f64,
+}
+impl Display for NumberLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.parsed)
+    }
 }
 impl NumberLiteral {
     pub fn reparse_from_raw(&mut self) {

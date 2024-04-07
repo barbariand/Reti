@@ -30,7 +30,7 @@ impl TokenReader {
             self.eof = true;
             return Token::EndOfContent;
         }
-        return token;
+        token
     }
 
     /// Look at the next token without consuming it.
@@ -52,7 +52,7 @@ impl TokenReader {
     /// If this method is called out of order, for example `peekn(1)`, `peekn(3)`,
     /// this method will panic since that is usually a sign of a bug.
     pub async fn peekn(&mut self, n: usize) -> &Token {
-        if self.next.len() == n {
+        if self.next.is_empty() {
             let token = self.read_internal().await;
             self.next.push_back(token);
         } else if self.next.len() < n {
@@ -65,7 +65,7 @@ impl TokenReader {
         }
 
         // Will never panic since we ensured the queue has enough elements.
-        return &self.next[n];
+        &self.next[n]
     }
 
     /// Peek a range of tokens at once.
@@ -124,13 +124,13 @@ impl TokenReader {
                 range
             );
         }
-        let start = range.start().clone();
+        let start = *range.start();
         for _ in range.clone() {
             // Always remove start index because it shifts elements down.
             self.next.remove(start).expect("length already checked");
         }
         for token in replacement.into_iter().rev() {
-            self.next.insert(range.start().clone(), token);
+            self.next.insert(*range.start(), token);
         }
     }
 }

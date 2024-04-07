@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
@@ -11,11 +13,21 @@ use async_recursion::async_recursion;
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedToken { expected: Token, found: Token },
-    ExpectedButNothingFound(Token),
-    UnexpectedEnd,
-    ExpectedEndOfFile,
-    InvalidToken(Token),
-    TrailingToken(Token),
+    Invalid(Token),
+    Trailing(Token),
+}
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParseError::UnexpectedToken { expected, found } => write!(
+                f,
+                "Got unexpected Token:\"{}\", expected Token:\"{}\"",
+                found, expected
+            ),
+            ParseError::Invalid(t) => write!(f, "Got invalid token:\"{}\"", t),
+            ParseError::Trailing(t) => write!(f, "Trailing invalid token\"{}\"", t),
+        }
+    }
 }
 
 pub struct Parser {
@@ -39,7 +51,7 @@ impl Parser {
         // which means we failed to parse the expression fully.
         let trailing = self.reader.read().await;
         if trailing != Token::EndOfContent {
-            return Err(ParseError::TrailingToken(trailing));
+            return Err(ParseError::Trailing(trailing));
         }
 
         Ok(Ast { root_expr })
@@ -57,12 +69,10 @@ impl Parser {
         let token = self.reader.read().await;
         match token {
             Token::Identifier(val) => Ok(val),
-            found => {
-                return Err(ParseError::UnexpectedToken {
-                    expected: Token::Identifier("".to_string()),
-                    found,
-                })
-            }
+            found => Err(ParseError::UnexpectedToken {
+                expected: Token::Identifier("".to_string()),
+                found,
+            }),
         }
     }
 
@@ -132,17 +142,14 @@ impl Parser {
     #[async_recursion]
     async fn factor(&mut self) -> Result<Factor, ParseError> {
         // Split identifiers into single characters
-        match self.reader.peek().await {
-            Token::Identifier(text) => {
-                if text.len() > 1 {
-                    let mut tokens = Vec::new();
-                    for c in text.chars() {
-                        tokens.push(Token::Identifier(c.to_string()));
-                    }
-                    self.reader.replace(0..=0, tokens).await;
+        if let Token::Identifier(text) = self.reader.peek().await {
+            if text.len() > 1 {
+                let mut tokens = Vec::new();
+                for c in text.chars() {
+                    tokens.push(Token::Identifier(c.to_string()));
                 }
+                self.reader.replace(0..=0, tokens).await;
             }
-            _ => {}
         }
 
         // First read a factor, but then see if we have exponents after it.
@@ -158,7 +165,7 @@ impl Parser {
             }
             Token::Backslash => {
                 let command = self.read_identifier().await?;
-                self.factor_command(&*command).await?
+                self.factor_command(&command).await?
             }
             Token::VerticalPipe => {
                 let expr = self.expr().await?;
@@ -188,7 +195,7 @@ impl Parser {
     ///
     /// The `command` parameter is the LaTeX command.
     async fn factor_command(&mut self, command: &str) -> Result<Factor, ParseError> {
-        Ok(match &*command {
+        Ok(match command {
             "sqrt" => {
                 let next = self.reader.peek().await;
                 let mut degree = None;
@@ -271,13 +278,13 @@ impl Parser {
                 self.reader.skip().await;
                 MathExpr::Term(Term::Factor(Factor::Constant(parsed)))
             }
-            token => return Err(ParseError::InvalidToken(token.clone())),
+            token => return Err(ParseError::Invalid(token.clone())),
         };
 
-        return Ok(Factor::Exponent {
+        Ok(Factor::Exponent {
             base: Box::new(factor),
             exponent: Box::new(exponent),
-        });
+        })
     }
 
     async fn factor_function_call(

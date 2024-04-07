@@ -44,7 +44,7 @@ impl Normalizer {
                 _ => {}
             },
             [Token::Caret, Token::NumberLiteral(n)] => {
-                if n.raw.len() == 0 {
+                if n.raw.is_empty() {
                     panic!("string is wierd");
                 }
                 if n.raw.len() != 1 {
