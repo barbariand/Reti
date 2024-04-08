@@ -16,6 +16,7 @@ pub enum ParseError {
     ExpectedEndOfFile,
     InvalidToken(Token),
     TrailingToken(Token),
+    InvalidFactor(Token),
 }
 
 pub struct Parser {
@@ -174,7 +175,7 @@ impl Parser {
                 })
             }
             Token::Minus => Factor::Constant(-1.0),
-            token => todo!("token = {:?}", token),
+            token => return Err(ParseError::InvalidFactor(token)),
         };
 
         let next = self.reader.peek().await;
