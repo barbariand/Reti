@@ -1,4 +1,3 @@
-
 use super::MathExprKey;
 
 // Represents a square root or nth root

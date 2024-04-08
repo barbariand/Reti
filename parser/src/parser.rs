@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use tokio::sync::mpsc::Receiver;
+use tracing::{trace, trace_span};
 
 use crate::{
     ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
@@ -44,12 +45,17 @@ impl Parser {
     }
 
     pub async fn parse(mut self) -> Result<Ast, ParseError> {
+        let span = trace_span!("parse");
+        let _enter = span.enter();
+
         // Parse expression
         let root_expr = self.expr().await?;
+        trace!("root_expr = {root_expr:?}");
 
         // Check if we have more to read, if so we have trailing tokens
         // which means we failed to parse the expression fully.
         let trailing = self.reader.read().await;
+        trace!("trailing = {trailing}");
         if trailing != Token::EndOfContent {
             return Err(ParseError::Trailing(trailing));
         }
@@ -341,8 +347,8 @@ mod tests {
         );
 
         let lexer = Lexer::new(lexer_in);
-        let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let mut parser = Parser::new(normalizer_out, context);
+        let normalizer = Normalizer::new(lexer_out, normalizer_in);
+        let parser = Parser::new(normalizer_out, context);
 
         let future1 = lexer.tokenize(text);
         let future2 = normalizer.normalize();

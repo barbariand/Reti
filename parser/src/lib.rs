@@ -5,10 +5,7 @@ use std::{fmt::Display, panic::AssertUnwindSafe};
 use ast::Ast;
 use context::MathContext;
 
-use futures::{
-    future::{join, join3},
-    join, FutureExt,
-};
+use futures::{future::join3, FutureExt};
 use lexer::Lexer;
 use normalizer::Normalizer;
 use parser::{ParseError, Parser};
@@ -17,7 +14,7 @@ use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinError,
 };
-use tracing::error;
+use tracing::{debug, error, trace, trace_span};
 
 pub mod ast;
 mod context;
@@ -29,27 +26,50 @@ pub mod token;
 mod token_reader;
 
 pub async fn parse(text: &str) -> Result<Ast, AstErrors> {
-    let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-    let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+    let span = trace_span!("parsing");
+    let _enter = span.enter();
+    debug!(text);
+    let channel = 32;
+    trace!("reading channel {channel:?}");
+    let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(channel);
+    debug!("successfully connected to lexer");
+    let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(channel);
+    debug!("successfully connected to normalizer");
 
     let context = MathContext::new();
+    trace!("created MathContext");
     let lexer = Lexer::new(lexer_in);
+    trace!("created Lexer");
     let normalizer = Normalizer::new(lexer_out, normalizer_in);
+    trace!("created Normalizer");
     let parser = Parser::new(normalizer_out, context);
+    trace!("created Parser");
     let cloned_text = text.to_owned();
+    trace!("cloned text");
+
     let lexer_future = async move { lexer.tokenize(&cloned_text).await };
+
     let normalizer_future = async move { normalizer.normalize().await };
     let parser_future = async move { parser.parse().await };
+    trace!("spawning new tokenize async task");
     let lexer_handle = spawn_logging_task(lexer_future);
+    trace!("spawning new normalizer async task");
     let normalizer_handle = spawn_logging_task(normalizer_future);
+    trace!("spawning new parser async task");
     let parser_handle = spawn_logging_task(parser_future);
 
     let (lexer_result, normalizer_result, parser_result) =
         join3(lexer_handle, normalizer_handle, parser_handle).await;
 
     match lexer_result {
-        Err(e) => Err(AstErrors::Lexer(e)),
-        Ok(Err(err)) => Err(AstErrors::LexerPaniced(err.to_owned())),
+        Err(e) => {
+            error!("lexer task failed");
+            Err(AstErrors::Lexer(e))
+        }
+        Ok(Err(err)) => {
+            error!("lexer task paniced");
+            Err(AstErrors::LexerPaniced(err.to_owned()))
+        }
         _ => Ok(()),
     }?;
     match normalizer_result {
@@ -63,6 +83,7 @@ pub async fn parse(text: &str) -> Result<Ast, AstErrors> {
         Ok(Ok(ast)) => ast.map_err(AstErrors::ParseError),
     }
 }
+
 #[derive(Debug)]
 pub enum AstErrors {
     Lexer(JoinError),
@@ -102,7 +123,7 @@ where
                 };
 
                 // Log the panic as a tracing event
-                error!(target: "panic", "Panic in spawned task: {}", panic_message);
+                //error!(target: "panic", "Panic in spawned task: {}", panic_message);
 
                 // Return the error for further handling if necessary
                 Err(panic_message)

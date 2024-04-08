@@ -23,6 +23,7 @@ pub enum Token {
     Ampersand,         // &
     EndOfContent,      // A special token that represents the end of content.
 }
+
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

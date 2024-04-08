@@ -3,7 +3,7 @@ use colored::Colorize;
 
 use rustyline::{error::ReadlineError, DefaultEditor};
 
-use tracing::level_filters::LevelFilter;
+use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 #[tokio::main]
 pub async fn main() {
@@ -30,20 +30,24 @@ use parser::parse;
 impl Prompt {
     async fn start(&mut self) {
         let mut rl = DefaultEditor::new().expect("Could not make terminal");
-        if rl.load_history("history.txt").is_err() {
-            println!("No previous history.");
+        if rl.load_history("~/history.txt").is_err() {
+            info!("No previous history.");
         }
         println!("{}", "Welcome to the Reti prompt.".green());
-        println!("{}", "Type 1+1 and press Enter to get started.".green());
-        println!();
+        println!("{}", "Type 1+1 and press Enter to get started.\n".green());
 
         loop {
             let readline = rl.readline(&format!("{}", ">> ".white()));
             match readline {
                 Ok(line) => {
+                    let span = trace_span!("preparing statement");
+                    let _enter = span.enter();
+                    debug!(line);
+                    debug!("adding expression to history");
                     rl.add_history_entry(line.as_str())
                         .expect("could not add history");
 
+                    debug!("trimming expression");
                     let trimmed = line.trim();
                     if trimmed.is_empty() {
                         println!();
@@ -54,11 +58,13 @@ impl Prompt {
                     if lowercase == "ast" {
                         self.ast_mode = !self.ast_mode;
                         match self.ast_mode {
-                            true => println!("{}", "Enabled AST mode.".green()),
-                            false => println!("{}", "Disabled AST mode.".green()),
+                            true => info!("AST mode enabled"),
+                            false => info!("AST mode disabled"),
                         }
                         continue;
                     }
+
+                    drop(_enter);
                     match parse(&line).await {
                         Ok(v) => {
                             if self.ast_mode {
@@ -66,7 +72,7 @@ impl Prompt {
                             };
                             println!("> {}", v.eval())
                         }
-                        Err(e) => println!("Got an error during parsing: {}", e.to_string().red()),
+                        Err(e) => error!("{}",format!("{:?}",e).red()),
                     };
                 }
                 Err(ReadlineError::Interrupted) => {
@@ -78,7 +84,7 @@ impl Prompt {
                     break;
                 }
                 Err(err) => {
-                    println!("Error: {:?}", err);
+                    error!("{:?}", err);
                     break;
                 }
             }

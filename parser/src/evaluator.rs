@@ -73,7 +73,7 @@ mod tests {
 
         let context = MathContext::new();
         let lexer = Lexer::new(tx);
-        let mut parser = Parser::new(rx, context);
+        let parser = Parser::new(rx, context);
 
         let future1 = lexer.tokenize(text);
         let future2 = parser.parse();
