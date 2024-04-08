@@ -30,7 +30,7 @@ use parser::parse;
 impl Prompt {
     async fn start(&mut self) {
         let mut rl = DefaultEditor::new().expect("Could not make terminal");
-        if rl.load_history("~/history.txt").is_err() {
+        if rl.load_history("history.txt").is_err() {
             println!("No previous history.");
         }
         println!("{}", "Welcome to the Reti prompt.".green());

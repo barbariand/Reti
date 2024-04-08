@@ -43,7 +43,7 @@ impl Parser {
         }
     }
 
-    pub async fn parse(&mut self) -> Result<Ast, ParseError> {
+    pub async fn parse(mut self) -> Result<Ast, ParseError> {
         // Parse expression
         let root_expr = self.expr().await?;
 

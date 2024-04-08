@@ -13,7 +13,7 @@ impl Lexer {
     async fn send_or_crash(&self, token: Token) {
         self.channel.send(token).await.expect("Broken Pipe")
     }
-    pub async fn tokenize(&self, s: &str) {
+    pub async fn tokenize(self, s: &str) {
         let mut temp_ident = String::new();
         let mut temp_number = String::new();
         for c in s.chars() {

@@ -14,7 +14,7 @@ impl Normalizer {
         }
     }
 
-    pub async fn normalize(&mut self) {
+    pub async fn normalize(mut self) {
         loop {
             self.normalize_tokens().await;
 
