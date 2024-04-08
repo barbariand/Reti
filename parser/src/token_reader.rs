@@ -52,7 +52,7 @@ impl TokenReader {
     /// If this method is called out of order, for example `peekn(1)`, `peekn(3)`,
     /// this method will panic since that is usually a sign of a bug.
     pub async fn peekn(&mut self, n: usize) -> &Token {
-        if self.next.is_empty() {
+        if self.next.len() == n {
             let token = self.read_internal().await;
             self.next.push_back(token);
         }
