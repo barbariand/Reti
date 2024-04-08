@@ -165,11 +165,14 @@ impl Parser {
                 self.expect(Token::VerticalPipe).await?;
                 Factor::Abs(Box::new(expr))
             }
-            // TODO handle multiple variables in one string, for example
-            // "xy". But this should maybe be done by the normalizer
-            Token::Identifier(ident) => Factor::Variable(MathIdentifier {
-                tokens: vec![Token::Identifier(ident)],
-            }),
+            Token::Identifier(ident) => {
+                if ident.chars().count() != 1 {
+                    panic!("Identifier was not splitted correctly.")
+                }
+                Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Identifier(ident)],
+                })
+            }
             Token::Minus => Factor::Constant(-1.0),
             token => todo!("token = {:?}", token),
         };
