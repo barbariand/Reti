@@ -67,19 +67,20 @@ pub async fn parse(text: &str) -> Result<Ast, AstErrors> {
             Err(AstErrors::Lexer(e))
         }
         Ok(Err(err)) => {
-            error!("lexer task paniced");
-            Err(AstErrors::LexerPaniced(err.to_owned()))
+            error!("lexer task panicked");
+            Err(AstErrors::LexerPanic(err.to_owned()))
         }
         _ => Ok(()),
     }?;
+
     match normalizer_result {
         Err(e) => Err(AstErrors::Lexer(e)),
-        Ok(Err(err)) => Err(AstErrors::NormalizerPaniced(err.to_owned())),
+        Ok(Err(err)) => Err(AstErrors::NormalizerPanic(err.to_owned())),
         _ => Ok(()),
     }?;
     match parser_result {
         Err(e) => Err(AstErrors::Lexer(e)),
-        Ok(Err(err)) => Err(AstErrors::ParserPaniced(err.to_owned())),
+        Ok(Err(err)) => Err(AstErrors::ParserPanic(err.to_owned())),
         Ok(Ok(ast)) => ast.map_err(AstErrors::ParseError),
     }
 }
@@ -87,23 +88,23 @@ pub async fn parse(text: &str) -> Result<Ast, AstErrors> {
 #[derive(Debug)]
 pub enum AstErrors {
     Lexer(JoinError),
-    LexerPaniced(String),
+    LexerPanic(String),
     Normalizer(JoinError),
-    NormalizerPaniced(String),
+    NormalizerPanic(String),
     Parser(JoinError),
-    ParserPaniced(String),
+    ParserPanic(String),
     ParseError(ParseError),
 }
 impl Display for AstErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AstErrors::Lexer(e) => write!(f, "lexer thread failed beacuse: {}", e),
-            AstErrors::Normalizer(e) => write!(f, "normalizer thread failed beacuse: {}", e),
-            AstErrors::Parser(e) => write!(f, "parser thread failed beacuse: {}", e),
-            AstErrors::ParseError(e) => write!(f, "Failed to parse string beacuse: {}", e),
-            AstErrors::LexerPaniced(s) => write!(f, "Lexer Paniced: {}", s),
-            AstErrors::NormalizerPaniced(s) => write!(f, "Normalizer Paniced: {}", s),
-            AstErrors::ParserPaniced(s) => write!(f, "Parser Paniced: {}", s),
+            AstErrors::Lexer(e) => write!(f, "lexer thread failed because: {}", e),
+            AstErrors::Normalizer(e) => write!(f, "normalizer thread failed because: {}", e),
+            AstErrors::Parser(e) => write!(f, "parser thread failed because: {}", e),
+            AstErrors::ParseError(e) => write!(f, "Failed to parse string because: {}", e),
+            AstErrors::LexerPanic(s) => write!(f, "Lexer Panicked: {}", s),
+            AstErrors::NormalizerPanic(s) => write!(f, "Normalizer Panicked: {}", s),
+            AstErrors::ParserPanic(s) => write!(f, "Parser Panicked: {}", s),
         }
     }
 }

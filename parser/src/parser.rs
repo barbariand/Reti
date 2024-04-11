@@ -220,9 +220,9 @@ impl Parser {
                 let numerator = Box::new(self.expr().await?);
                 self.expect(Token::RightCurlyBracket).await?;
                 self.expect(Token::LeftCurlyBracket).await?;
-                let denomminator = Box::new(self.expr().await?);
+                let denominator = Box::new(self.expr().await?);
                 self.expect(Token::RightCurlyBracket).await?;
-                Factor::Fraction(numerator, denomminator)
+                Factor::Fraction(numerator, denominator)
             }
             _ => {
                 // assume greek alphabet
@@ -357,7 +357,7 @@ mod tests {
         let (_, _, ast) = join!(future1, future2, future3);
         let found_ast = ast.unwrap();
 
-        // Compare and print with debug and formattig otherwise.
+        // Compare and print with debug and formatting otherwise.
         if expected_ast != found_ast {
             panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
         }

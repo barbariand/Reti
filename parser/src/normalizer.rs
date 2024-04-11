@@ -59,7 +59,7 @@ impl Normalizer {
             [Token::Caret, Token::NumberLiteral(n)] => {
                 trace!("number literal = {n}");
                 if n.raw.is_empty() {
-                    panic!("string is wierd");
+                    panic!("string is weird");
                 }
                 if n.raw.len() != 1 {
                     let mut s = n.raw.clone();
