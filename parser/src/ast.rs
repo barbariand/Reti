@@ -72,10 +72,10 @@ impl From<FunctionCall> for Term {
 #[derive(PartialEq, Debug)]
 pub enum Factor {
     Constant(f64),
-    Expression(Box<MathExpr>),
+    Parenthesis(Box<MathExpr>),
     Variable(MathIdentifier),
     FunctionCall(FunctionCall),
-    Exponent {
+    Power {
         base: Box<Factor>,
         exponent: Box<MathExpr>,
     },
@@ -90,11 +90,6 @@ pub enum Factor {
 impl From<f64> for Factor {
     fn from(value: f64) -> Self {
         Factor::Constant(value)
-    }
-}
-impl From<Box<MathExpr>> for Factor {
-    fn from(value: Box<MathExpr>) -> Self {
-        Factor::Expression(value)
     }
 }
 impl From<MathIdentifier> for Factor {

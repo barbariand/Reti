@@ -34,10 +34,10 @@ impl Factor {
     pub fn eval(&self) -> f64 {
         match self {
             Factor::Constant(c) => *c,
-            Factor::Expression(expr) => expr.eval(),
+            Factor::Parenthesis(expr) => expr.eval(),
             Factor::Variable(x) => todo!("I don't know the value of the variable {:?}", x),
             Factor::FunctionCall(call) => todo!("call = {:?}", call),
-            Factor::Exponent { base, exponent } => base.eval().powf(exponent.eval()),
+            Factor::Power { base, exponent } => base.eval().powf(exponent.eval()),
             Factor::Root { degree, radicand } => match degree.as_ref().map(|expr| expr.eval()) {
                 None => radicand.eval().sqrt(),
                 Some(degree) => radicand.eval().powf(1.0 / degree),

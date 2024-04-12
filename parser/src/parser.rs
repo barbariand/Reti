@@ -155,7 +155,7 @@ impl Parser {
             Token::LeftParenthesis => {
                 let expr = self.expr().await?;
                 self.expect(Token::RightParenthesis).await?;
-                Factor::Expression(Box::new(expr))
+                Factor::Parenthesis(Box::new(expr))
             }
             Token::Backslash => {
                 let command = self.read_identifier().await?;
@@ -278,7 +278,7 @@ impl Parser {
             token => return Err(ParseError::InvalidToken(token.clone())),
         };
 
-        return Ok(Factor::Exponent {
+        return Ok(Factor::Power {
             base: Box::new(factor),
             exponent: Box::new(exponent),
         });
@@ -381,7 +381,7 @@ mod tests {
                     3f64.into(),
                 )),
                 Term::Multiply(
-                    Box::new(Term::Factor(Factor::Expression(Box::new(MathExpr::Add(
+                    Box::new(Term::Factor(Factor::Parenthesis(Box::new(MathExpr::Add(
                         Box::new(4f64.into()),
                         5f64.into(),
                     ))))),
@@ -426,7 +426,7 @@ mod tests {
         parse_test(
             "2^{3}",
             Ast::Expression(
-                Factor::Exponent {
+                Factor::Power {
                     base: Box::new(Factor::Constant(2.0)),
                     exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(3.0)))),
                 }
@@ -441,7 +441,7 @@ mod tests {
         parse_test(
             "2^\\pi",
             Ast::Expression(
-                Factor::Exponent {
+                Factor::Power {
                     base: Box::new(2f64.into()),
                     exponent: Box::new(
                         Factor::Variable(MathIdentifier {
@@ -462,7 +462,7 @@ mod tests {
             "2^025", // this is 2^0 * 25
             Ast::Expression(MathExpr::Term(Term::Multiply(
                 //2^0
-                Box::new(Term::Factor(Factor::Exponent {
+                Box::new(Term::Factor(Factor::Power {
                     base: Box::new(Factor::Constant(2.0)),
                     exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(0.0)))),
                 })),
@@ -481,8 +481,8 @@ mod tests {
                 // 2
                 Box::new(2f64.into()),
                 // (3)^3
-                Factor::Exponent {
-                    base: Box::new(Factor::Expression(Box::new(3f64.into()))),
+                Factor::Power {
+                    base: Box::new(Factor::Parenthesis(Box::new(3f64.into()))),
                     exponent: Box::new(3f64.into()),
                 },
             ))),
@@ -500,7 +500,7 @@ mod tests {
                     // 2
                     Box::new(Term::Factor(Factor::Constant(2.0))),
                     // x^{2}
-                    Factor::Exponent {
+                    Factor::Power {
                         base: Box::new(Factor::Variable(MathIdentifier {
                             tokens: vec![Token::Identifier("x".to_string())],
                         })),
@@ -543,7 +543,7 @@ mod tests {
                     }),
                 )),
                 // y^2
-                Factor::Exponent {
+                Factor::Power {
                     base: Box::new(Factor::Variable(MathIdentifier {
                         tokens: vec![Token::Identifier("y".to_string())],
                     })),
@@ -580,7 +580,7 @@ mod tests {
                         })
                         .into(),
                     ),
-                    Factor::Expression(Box::new(
+                    Factor::Parenthesis(Box::new(
                         Factor::Variable(MathIdentifier {
                             tokens: vec![Token::Identifier("x".to_string())],
                         })
