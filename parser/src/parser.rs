@@ -34,16 +34,26 @@ impl Parser {
 
     pub async fn parse(&mut self) -> Result<Ast, ParseError> {
         // Parse expression
-        let root_expr = self.expr().await?;
+        let expr = self.expr().await?;
 
-        // Check if we have more to read, if so we have trailing tokens
-        // which means we failed to parse the expression fully.
-        let trailing = self.reader.read().await;
-        if trailing != Token::EndOfContent {
-            return Err(ParseError::TrailingToken(trailing));
+        // Check if we have more to read, if not, that means we have a full expression
+        // we can return.
+        let next = self.reader.read().await;
+        if next == Token::EndOfContent {
+            return Ok(Ast::Expression(expr));
         }
-
-        Ok(Ast::Expression(root_expr))
+        if next == Token::Equals {
+            // An equality. Try parse a right hand side.
+            let rhs = self.expr().await?;
+            let next = self.reader.read().await;
+            if next != Token::EndOfContent {
+                return Err(ParseError::TrailingToken(next));
+            }
+            return Ok(Ast::Equality(expr, rhs));
+        }
+        // It seems we have expected trailing tokens.
+        // This means we failed to parse the expression fully.
+        Err(ParseError::TrailingToken(next))
     }
 
     pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
@@ -649,6 +659,21 @@ mod tests {
                     3f64.into(),
                 ))))
                 .into(),
+            ),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn equality() {
+        parse_test(
+            "x=2",
+            Ast::Equality(
+                Factor::Variable(MathIdentifier {
+                    tokens: vec![Token::Identifier("x".to_string())],
+                })
+                .into(),
+                2f64.into(),
             ),
         )
         .await;
