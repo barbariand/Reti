@@ -13,6 +13,9 @@ impl Approximator {
         Self { context }
     }
 
+    pub fn context(&self) -> &MathContext {
+        &self.context
+    }
     pub fn context_mut(&mut self) -> &mut MathContext {
         &mut self.context
     }
@@ -43,7 +46,17 @@ impl Approximator {
                     None => panic!(), // TODO return error here instead of panic
                 }
             }
-            Factor::FunctionCall(call) => todo!("call = {:?}", call),
+            Factor::FunctionCall(call) => match self.context.functions.get(&call.function_name) {
+                Some(func) => {
+                    let args = call
+                        .arguments
+                        .iter()
+                        .map(|expr| self.eval_expr(expr))
+                        .collect();
+                    (func.approximate)(args)
+                }
+                None => panic!("Parser incorrectly identified function {:?}", call),
+            },
             Factor::Power { base, exponent } => self
                 .eval_factor(base.as_ref())
                 .powf(self.eval_expr(exponent.as_ref())),
@@ -95,7 +108,7 @@ mod tests {
 
         let context = MathContext::new();
         let lexer = Lexer::new(tx);
-        let mut parser = Parser::new(rx, context);
+        let mut parser = Parser::new(rx, &context);
 
         let future1 = lexer.tokenize(text);
         let future2 = parser.parse();

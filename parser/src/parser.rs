@@ -19,13 +19,13 @@ pub enum ParseError {
     InvalidFactor(Token),
 }
 
-pub struct Parser {
+pub struct Parser<'a> {
     reader: TokenReader,
-    context: MathContext,
+    context: &'a MathContext,
 }
 
-impl Parser {
-    pub fn new(tokens: Receiver<Token>, context: MathContext) -> Self {
+impl<'a> Parser<'a> {
+    pub fn new(tokens: Receiver<Token>, context: &'a MathContext) -> Self {
         Parser {
             reader: TokenReader::new(tokens),
             context,
@@ -180,9 +180,10 @@ impl Parser {
                 if ident.chars().count() != 1 {
                     panic!("Identifier was not splitted correctly.")
                 }
-                Factor::Variable(MathIdentifier {
+                let math_identifier = MathIdentifier {
                     tokens: vec![Token::Identifier(ident)],
-                })
+                };
+                self.factor_identifier(math_identifier).await?
             }
             Token::Minus => Factor::Constant(-1.0),
             token => return Err(ParseError::InvalidFactor(token)),
@@ -230,18 +231,23 @@ impl Parser {
                 let math_identifier = MathIdentifier {
                     tokens: vec![Token::Backslash, Token::Identifier(command.to_string())],
                 };
-                // This might be a function.
-                if self.context.is_function(&math_identifier)
-                    && self.reader.peek().await == Token::LeftParenthesis
-                {
-                    // TODO indexes, for example \log_2(x)
-
-                    self.factor_function_call(math_identifier).await?
-                } else {
-                    Factor::Variable(math_identifier)
-                }
+                self.factor_identifier(math_identifier).await?
             }
         })
+    }
+
+    async fn factor_identifier(
+        &mut self,
+        identifier: MathIdentifier,
+    ) -> Result<Factor, ParseError> {
+        // TODO indexes, for example \log_2(x)
+
+        // This might be a function.
+        if self.context.is_function(&identifier) {
+            Ok(self.factor_function_call(identifier).await?)
+        } else {
+            Ok(Factor::Variable(identifier))
+        }
     }
 
     /// Parse the exponent part of a factor.
@@ -298,18 +304,27 @@ impl Parser {
         &mut self,
         function_name: MathIdentifier,
     ) -> Result<Factor, ParseError> {
-        // TODO handle function arguments without parenthesis, for example \ln 2
         let mut arguments = Vec::new();
-        self.expect(Token::LeftParenthesis).await?;
-        loop {
-            let next = self.reader.peek().await;
-            if next == Token::RightParenthesis {
-                break;
+        // Read arguments in parenthesis, eg. f(1, 2)
+        if self.reader.peek().await == Token::LeftParenthesis {
+            self.reader.skip().await;
+            loop {
+                let next = self.reader.peek().await;
+                match next {
+                    Token::RightParenthesis => break,
+                    Token::Comma => self.reader.skip().await,
+                    _ => {
+                        let expr = self.expr().await?;
+                        arguments.push(expr);
+                    }
+                }
             }
-            let expr = self.expr().await?;
-            arguments.push(expr);
+            self.expect(Token::RightParenthesis).await?;
+        } else {
+            // Read one explicit argument, for example \ln 2
+            let arg = self.term().await?;
+            arguments.push(MathExpr::Term(arg));
         }
-        self.expect(Token::RightParenthesis).await?;
 
         Ok(Factor::FunctionCall(FunctionCall {
             function_name,
@@ -339,17 +354,11 @@ mod tests {
         let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
         let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
-        let mut context = MathContext::new();
-        context.functions.insert(
-            MathIdentifier {
-                tokens: vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            },
-            |_val| todo!(),
-        );
+        let context = MathContext::standard_math();
 
         let lexer = Lexer::new(lexer_in);
         let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let mut parser = Parser::new(normalizer_out, context);
+        let mut parser = Parser::new(normalizer_out, &context);
 
         let future1 = lexer.tokenize(text);
         let future2 = normalizer.normalize();

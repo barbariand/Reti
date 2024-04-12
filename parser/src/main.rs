@@ -31,7 +31,7 @@ impl Prompt {
         println!("Type 1+1 and press Enter to get started.");
         println!();
 
-        let context = MathContext::new();
+        let context = MathContext::standard_math();
         let mut approximator = Approximator::new(context);
 
         let stdin = std::io::stdin();
@@ -66,7 +66,7 @@ impl Prompt {
         let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
         let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
-        let context = MathContext::new();
+        let context = approximator.context();
         let lexer = Lexer::new(lexer_in);
         let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
         let mut parser = Parser::new(normalizer_out, context);
