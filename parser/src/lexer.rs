@@ -41,6 +41,7 @@ impl Lexer {
                 '/' => Token::Slash,
                 ',' => Token::Comma,
                 '&' => Token::Ampersand,
+                '=' => Token::Equals,
                 '(' => Token::LeftParenthesis,
                 ')' => Token::RightParenthesis,
                 ' ' => {
