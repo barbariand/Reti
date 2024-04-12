@@ -1,6 +1,11 @@
 use parser::{
-    approximator::Approximator, context::MathContext, lexer::Lexer, normalizer::Normalizer,
-    parser::Parser, token::Token,
+    approximator::Approximator,
+    ast::{Factor, MathExpr, Term},
+    context::MathContext,
+    lexer::Lexer,
+    normalizer::Normalizer,
+    parser::Parser,
+    token::Token,
 };
 use tokio::{
     join,
@@ -26,6 +31,9 @@ impl Prompt {
         println!("Type 1+1 and press Enter to get started.");
         println!();
 
+        let context = MathContext::new();
+        let mut approximator = Approximator::new(context);
+
         let stdin = std::io::stdin();
         let mut buf = String::new();
         loop {
@@ -50,11 +58,11 @@ impl Prompt {
                 continue;
             }
 
-            self.run(trimmed).await;
+            self.run(trimmed, &mut approximator).await;
         }
     }
 
-    async fn run(&self, text: &str) {
+    async fn run(&self, text: &str, approximator: &mut Approximator) {
         let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
         let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
 
@@ -82,17 +90,22 @@ impl Prompt {
             println!("{:#?}", ast);
         }
 
-        let context = MathContext::new();
-        let approximator = Approximator::new(context);
-
         match ast {
             parser::ast::Ast::Expression(expr) => {
                 let result = approximator.eval_expr(&expr);
                 println!("> {}", result);
             }
-            parser::ast::Ast::Equality(_, _) => {
-                todo!("assign variables to MathContext.");
-            }
+            parser::ast::Ast::Equality(lhs, rhs) => match lhs {
+                MathExpr::Term(Term::Factor(Factor::Variable(ident))) => {
+                    let value = approximator.eval_expr(&rhs);
+                    let context = approximator.context_mut();
+                    context.variables.insert(ident, value);
+                    println!("Variable changed!");
+                }
+                _ => {
+                    println!("I don't understand. Please type an expression, like 1+1, or x=2 for assignment.");
+                }
+            },
         }
 
         println!();

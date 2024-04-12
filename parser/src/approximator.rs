@@ -13,6 +13,10 @@ impl Approximator {
         Self { context }
     }
 
+    pub fn context_mut(&mut self) -> &mut MathContext {
+        &mut self.context
+    }
+
     pub fn eval_expr(&self, expr: &MathExpr) -> f64 {
         match expr {
             MathExpr::Term(term) => self.eval_term(term),
@@ -33,7 +37,12 @@ impl Approximator {
         match factor {
             Factor::Constant(c) => *c,
             Factor::Parenthesis(expr) => self.eval_expr(expr.as_ref()),
-            Factor::Variable(x) => todo!("I don't know the value of the variable {:?}", x),
+            Factor::Variable(x) => {
+                match self.context.variables.get(x) {
+                    Some(val) => *val,
+                    None => panic!(), // TODO return error here instead of panic
+                }
+            }
             Factor::FunctionCall(call) => todo!("call = {:?}", call),
             Factor::Power { base, exponent } => self
                 .eval_factor(base.as_ref())
