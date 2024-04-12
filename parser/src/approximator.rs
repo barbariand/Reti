@@ -1,49 +1,51 @@
 /// A simple single-threaded evaluator for an AST.
-use crate::ast::{Ast, Factor, MathExpr, Term};
+use crate::{
+    ast::{Factor, MathExpr, Term},
+    context::MathContext,
+};
 
-impl Ast {
-    pub fn eval(&self) -> f64 {
-        match self {
-            Ast::Expression(expr) => expr.eval(),
-            Ast::Equality(_, _) => panic!("Cannot evaluate statement"),
-        }
-    }
+pub struct Approximator {
+    context: MathContext,
 }
 
-impl MathExpr {
-    pub fn eval(&self) -> f64 {
-        match self {
-            MathExpr::Term(term) => term.eval(),
-            MathExpr::Add(a, b) => a.eval() + b.eval(),
-            MathExpr::Subtract(a, b) => a.eval() - b.eval(),
+impl Approximator {
+    pub fn new(context: MathContext) -> Self {
+        Self { context }
+    }
+
+    pub fn eval_expr(&self, expr: &MathExpr) -> f64 {
+        match expr {
+            MathExpr::Term(term) => self.eval_term(term),
+            MathExpr::Add(a, b) => self.eval_expr(a.as_ref()) + self.eval_term(b),
+            MathExpr::Subtract(a, b) => self.eval_expr(a.as_ref()) - self.eval_term(b),
         }
     }
-}
 
-impl Term {
-    pub fn eval(&self) -> f64 {
-        match self {
-            Term::Factor(factor) => factor.eval(),
-            Term::Multiply(a, b) => a.eval() * b.eval(),
-            Term::Divide(a, b) => a.eval() / b.eval(),
+    fn eval_term(&self, term: &Term) -> f64 {
+        match term {
+            Term::Factor(factor) => self.eval_factor(factor),
+            Term::Multiply(a, b) => self.eval_term(a.as_ref()) * self.eval_factor(b),
+            Term::Divide(a, b) => self.eval_term(a.as_ref()) / self.eval_factor(b),
         }
     }
-}
 
-impl Factor {
-    pub fn eval(&self) -> f64 {
-        match self {
+    fn eval_factor(&self, factor: &Factor) -> f64 {
+        match factor {
             Factor::Constant(c) => *c,
-            Factor::Parenthesis(expr) => expr.eval(),
+            Factor::Parenthesis(expr) => self.eval_expr(expr.as_ref()),
             Factor::Variable(x) => todo!("I don't know the value of the variable {:?}", x),
             Factor::FunctionCall(call) => todo!("call = {:?}", call),
-            Factor::Power { base, exponent } => base.eval().powf(exponent.eval()),
-            Factor::Root { degree, radicand } => match degree.as_ref().map(|expr| expr.eval()) {
-                None => radicand.eval().sqrt(),
-                Some(degree) => radicand.eval().powf(1.0 / degree),
-            },
-            Factor::Fraction(a, b) => a.eval() / b.eval(),
-            Factor::Abs(val) => val.eval().abs(),
+            Factor::Power { base, exponent } => self
+                .eval_factor(base.as_ref())
+                .powf(self.eval_expr(exponent.as_ref())),
+            Factor::Root { degree, radicand } => {
+                match degree.as_ref().map(|expr| self.eval_expr(expr.as_ref())) {
+                    None => self.eval_expr(radicand.as_ref()).sqrt(),
+                    Some(degree) => self.eval_expr(radicand.as_ref()).powf(1.0 / degree),
+                }
+            }
+            Factor::Fraction(a, b) => self.eval_expr(a.as_ref()) / self.eval_expr(b.as_ref()),
+            Factor::Abs(val) => self.eval_expr(val.as_ref()).abs(),
         }
     }
 }
@@ -63,8 +65,16 @@ mod tests {
         token::Token,
     };
 
+    use super::Approximator;
+
     fn eval_test_from_ast(expected: f64, ast: Ast) {
-        let found = ast.eval();
+        let context = MathContext::new();
+        let approximator = Approximator::new(context);
+
+        let found = match ast {
+            Ast::Expression(expr) => approximator.eval_expr(&expr),
+            Ast::Equality(_, _) => panic!("Cannot evaluate statement."),
+        };
 
         if (found - expected).abs() > f64::EPSILON {
             panic!("Found {} expected {}", found, expected);
@@ -84,11 +94,7 @@ mod tests {
         let (_, ast) = join!(future1, future2);
         let ast = ast.unwrap();
 
-        let found = ast.eval();
-
-        if (found - expected).abs() > f64::EPSILON {
-            panic!("Found {} expected {}", found, expected);
-        }
+        eval_test_from_ast(expected, ast);
     }
 
     #[test]

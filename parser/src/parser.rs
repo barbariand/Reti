@@ -344,7 +344,7 @@ mod tests {
             MathIdentifier {
                 tokens: vec![Token::Backslash, Token::Identifier("ln".to_string())],
             },
-            |val| val[0].eval().ln(),
+            |_val| todo!(),
         );
 
         let lexer = Lexer::new(lexer_in);

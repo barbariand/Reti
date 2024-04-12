@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
+pub mod approximator;
 pub mod ast;
 pub mod context;
-pub mod evaluator;
 pub mod lexer;
 pub mod normalizer;
 pub mod parser;

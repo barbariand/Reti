@@ -1,5 +1,6 @@
 use parser::{
-    context::MathContext, lexer::Lexer, normalizer::Normalizer, parser::Parser, token::Token,
+    approximator::Approximator, context::MathContext, lexer::Lexer, normalizer::Normalizer,
+    parser::Parser, token::Token,
 };
 use tokio::{
     join,
@@ -81,9 +82,18 @@ impl Prompt {
             println!("{:#?}", ast);
         }
 
-        let result = ast.eval();
+        let context = MathContext::new();
+        let approximator = Approximator::new(context);
 
-        println!("> {}", result);
+        match ast {
+            parser::ast::Ast::Expression(expr) => {
+                let result = approximator.eval_expr(&expr);
+                println!("> {}", result);
+            }
+            parser::ast::Ast::Equality(_, _) => {
+                todo!("assign variables to MathContext.");
+            }
+        }
 
         println!();
     }
