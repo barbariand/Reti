@@ -43,7 +43,7 @@ impl Parser {
             return Err(ParseError::TrailingToken(trailing));
         }
 
-        Ok(Ast { root_expr })
+        Ok(Ast::Expression(root_expr))
     }
 
     pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
@@ -356,25 +356,17 @@ mod tests {
 
     #[tokio::test]
     async fn constant() {
-        parse_test(
-            "1",
-            Ast {
-                root_expr: 1f64.into(),
-            },
-        )
-        .await;
+        parse_test("1", Ast::Expression(1f64.into())).await;
     }
 
     #[tokio::test]
     async fn addition() {
         parse_test(
             "1+2+3",
-            Ast {
-                root_expr: MathExpr::Add(
-                    Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
-                    3f64.into(),
-                ),
-            },
+            Ast::Expression(MathExpr::Add(
+                Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
+                3f64.into(),
+            )),
         )
         .await;
     }
@@ -383,21 +375,19 @@ mod tests {
     async fn addition_multiplication_order_of_operations() {
         parse_test(
             "1+2+3+(4+5)*6",
-            Ast {
-                root_expr: MathExpr::Add(
-                    Box::new(MathExpr::Add(
-                        Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
-                        3f64.into(),
-                    )),
-                    Term::Multiply(
-                        Box::new(Term::Factor(Factor::Expression(Box::new(MathExpr::Add(
-                            Box::new(4f64.into()),
-                            5f64.into(),
-                        ))))),
-                        6f64.into(),
-                    ),
+            Ast::Expression(MathExpr::Add(
+                Box::new(MathExpr::Add(
+                    Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
+                    3f64.into(),
+                )),
+                Term::Multiply(
+                    Box::new(Term::Factor(Factor::Expression(Box::new(MathExpr::Add(
+                        Box::new(4f64.into()),
+                        5f64.into(),
+                    ))))),
+                    6f64.into(),
                 ),
-            },
+            )),
         )
         .await;
     }
@@ -405,12 +395,13 @@ mod tests {
     async fn sqrt() {
         parse_test(
             "\\sqrt{9}",
-            Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Root {
+            Ast::Expression(
+                Factor::Root {
                     degree: None,
                     radicand: 9f64.into(),
-                })),
-            },
+                }
+                .into(),
+            ),
         )
         .await;
     }
@@ -419,12 +410,13 @@ mod tests {
     async fn cube_root() {
         parse_test(
             "\\sqrt[3]{27}",
-            Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Root {
+            Ast::Expression(
+                Factor::Root {
                     degree: Some(3f64.into()),
                     radicand: 27f64.into(),
-                })),
-            },
+                }
+                .into(),
+            ),
         )
         .await;
     }
@@ -433,12 +425,13 @@ mod tests {
     async fn exponent() {
         parse_test(
             "2^{3}",
-            Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
+            Ast::Expression(
+                Factor::Exponent {
                     base: Box::new(Factor::Constant(2.0)),
                     exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(3.0)))),
-                })),
-            },
+                }
+                .into(),
+            ),
         )
         .await;
     }
@@ -447,16 +440,18 @@ mod tests {
     async fn exponent_command() {
         parse_test(
             "2^\\pi",
-            Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Exponent {
-                    base: Box::new(Factor::Constant(2.0)),
-                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Variable(
-                        MathIdentifier {
+            Ast::Expression(
+                Factor::Exponent {
+                    base: Box::new(2f64.into()),
+                    exponent: Box::new(
+                        Factor::Variable(MathIdentifier {
                             tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
-                        },
-                    )))),
-                })),
-            },
+                        })
+                        .into(),
+                    ),
+                }
+                .into(),
+            ),
         )
         .await;
     }
@@ -465,17 +460,15 @@ mod tests {
     async fn exponent_split_token() {
         parse_test(
             "2^025", // this is 2^0 * 25
-            Ast {
-                root_expr: MathExpr::Term(Term::Multiply(
-                    //2^0
-                    Box::new(Term::Factor(Factor::Exponent {
-                        base: Box::new(Factor::Constant(2.0)),
-                        exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(0.0)))),
-                    })),
-                    // 25
-                    Factor::Constant(25.0),
-                )),
-            },
+            Ast::Expression(MathExpr::Term(Term::Multiply(
+                //2^0
+                Box::new(Term::Factor(Factor::Exponent {
+                    base: Box::new(Factor::Constant(2.0)),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(0.0)))),
+                })),
+                // 25
+                Factor::Constant(25.0),
+            ))),
         )
         .await;
     }
@@ -484,17 +477,15 @@ mod tests {
     async fn parenthesis_and_exponent() {
         parse_test(
             "2(3)^3",
-            Ast {
-                root_expr: MathExpr::Term(Term::Multiply(
-                    // 2
-                    Box::new(2f64.into()),
-                    // (3)^3
-                    Factor::Exponent {
-                        base: Box::new(Factor::Expression(Box::new(3f64.into()))),
-                        exponent: Box::new(3f64.into()),
-                    },
-                )),
-            },
+            Ast::Expression(MathExpr::Term(Term::Multiply(
+                // 2
+                Box::new(2f64.into()),
+                // (3)^3
+                Factor::Exponent {
+                    base: Box::new(Factor::Expression(Box::new(3f64.into()))),
+                    exponent: Box::new(3f64.into()),
+                },
+            ))),
         )
         .await;
     }
@@ -503,38 +494,36 @@ mod tests {
     async fn implicit_multiplication_and_exponent_order_of_operations() {
         parse_test(
             "2x^{2} + 5xy",
-            Ast {
-                root_expr: MathExpr::Add(
-                    // 2x^{2}
-                    Box::new(MathExpr::Term(Term::Multiply(
-                        // 2
-                        Box::new(Term::Factor(Factor::Constant(2.0))),
-                        // x^{2}
-                        Factor::Exponent {
-                            base: Box::new(Factor::Variable(MathIdentifier {
-                                tokens: vec![Token::Identifier("x".to_string())],
-                            })),
-                            exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(2.0)))),
-                        },
-                    ))),
-                    // 5xy
-                    Term::Multiply(
-                        // 5x
-                        Box::new(Term::Multiply(
-                            // 5
-                            Box::new(5f64.into()),
-                            // x
-                            Factor::Variable(MathIdentifier {
-                                tokens: vec![Token::Identifier("x".to_string())],
-                            }),
-                        )),
-                        // y
+            Ast::Expression(MathExpr::Add(
+                // 2x^{2}
+                Box::new(MathExpr::Term(Term::Multiply(
+                    // 2
+                    Box::new(Term::Factor(Factor::Constant(2.0))),
+                    // x^{2}
+                    Factor::Exponent {
+                        base: Box::new(Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Identifier("x".to_string())],
+                        })),
+                        exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(2.0)))),
+                    },
+                ))),
+                // 5xy
+                Term::Multiply(
+                    // 5x
+                    Box::new(Term::Multiply(
+                        // 5
+                        Box::new(5f64.into()),
+                        // x
                         Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("y".to_string())],
+                            tokens: vec![Token::Identifier("x".to_string())],
                         }),
-                    ),
+                    )),
+                    // y
+                    Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier("y".to_string())],
+                    }),
                 ),
-            },
+            )),
         )
         .await;
     }
@@ -543,26 +532,24 @@ mod tests {
     async fn implicit_multiplication_single_identifier_token() {
         parse_test(
             "2xy^2",
-            Ast {
-                root_expr: MathExpr::Term(Term::Multiply(
-                    // 2x
-                    Box::new(Term::Multiply(
-                        // 2
-                        Box::new(2f64.into()),
-                        // x
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("x".to_string())],
-                        }),
-                    )),
-                    // y^2
-                    Factor::Exponent {
-                        base: Box::new(Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("y".to_string())],
-                        })),
-                        exponent: 2f64.into(),
-                    },
+            Ast::Expression(MathExpr::Term(Term::Multiply(
+                // 2x
+                Box::new(Term::Multiply(
+                    // 2
+                    Box::new(2f64.into()),
+                    // x
+                    Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier("x".to_string())],
+                    }),
                 )),
-            },
+                // y^2
+                Factor::Exponent {
+                    base: Box::new(Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier("y".to_string())],
+                    })),
+                    exponent: 2f64.into(),
+                },
+            ))),
         )
         .await;
     }
@@ -571,11 +558,11 @@ mod tests {
     async fn pi() {
         parse_test(
             "\\pi",
-            Ast {
-                root_expr: MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
+            Ast::Expression(MathExpr::Term(Term::Factor(Factor::Variable(
+                MathIdentifier {
                     tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
-                }))),
-            },
+                },
+            )))),
         )
         .await;
     }
@@ -584,34 +571,32 @@ mod tests {
     async fn implicit_multiplication_vs_function_call() {
         parse_test(
             "\\pi(x)\\ln(x)", // this is pi * x * ln(x)
-            Ast {
-                root_expr: MathExpr::Term(Term::Multiply(
-                    // \pi(x)
-                    Box::new(Term::Multiply(
-                        Box::new(
-                            Factor::Variable(MathIdentifier {
-                                tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
-                            })
-                            .into(),
-                        ),
-                        Factor::Expression(Box::new(
-                            Factor::Variable(MathIdentifier {
-                                tokens: vec![Token::Identifier("x".to_string())],
-                            })
-                            .into(),
-                        )),
-                    )),
-                    Factor::FunctionCall(FunctionCall {
-                        function_name: MathIdentifier {
-                            tokens: vec![Token::Backslash, Token::Identifier("ln".to_string())],
-                        },
-                        arguments: vec![Factor::Variable(MathIdentifier {
+            Ast::Expression(MathExpr::Term(Term::Multiply(
+                // \pi(x)
+                Box::new(Term::Multiply(
+                    Box::new(
+                        Factor::Variable(MathIdentifier {
+                            tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                        })
+                        .into(),
+                    ),
+                    Factor::Expression(Box::new(
+                        Factor::Variable(MathIdentifier {
                             tokens: vec![Token::Identifier("x".to_string())],
                         })
-                        .into()],
-                    }),
+                        .into(),
+                    )),
                 )),
-            },
+                Factor::FunctionCall(FunctionCall {
+                    function_name: MathIdentifier {
+                        tokens: vec![Token::Backslash, Token::Identifier("ln".to_string())],
+                    },
+                    arguments: vec![Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier("x".to_string())],
+                    })
+                    .into()],
+                }),
+            ))),
         )
         .await;
     }
@@ -623,26 +608,24 @@ mod tests {
             // This is a bit mathematically ambiguous, but it means
             // 5/2 * x + 3 because multiplication and division are
             // on the same level, so it is evaluated left to right.
-            Ast {
-                root_expr: MathExpr::Add(
-                    // 5/2x
-                    Box::new(MathExpr::Term(Term::Multiply(
-                        // 5/2
-                        Box::new(Term::Divide(
-                            // 5
-                            Box::new(Term::Factor(Factor::Constant(5.0))),
-                            // 2
-                            Factor::Constant(2.0),
-                        )),
-                        // x
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("x".to_string())],
-                        }),
-                    ))),
-                    // 3
-                    Term::Factor(Factor::Constant(3.0)),
-                ),
-            },
+            Ast::Expression(MathExpr::Add(
+                // 5/2x
+                Box::new(MathExpr::Term(Term::Multiply(
+                    // 5/2
+                    Box::new(Term::Divide(
+                        // 5
+                        Box::new(Term::Factor(Factor::Constant(5.0))),
+                        // 2
+                        Factor::Constant(2.0),
+                    )),
+                    // x
+                    Factor::Variable(MathIdentifier {
+                        tokens: vec![Token::Identifier("x".to_string())],
+                    }),
+                ))),
+                // 3
+                Term::Factor(Factor::Constant(3.0)),
+            )),
         )
         .await;
     }
@@ -651,9 +634,7 @@ mod tests {
     async fn fraction() {
         parse_test(
             "\\frac{1}{2}",
-            Ast {
-                root_expr: Factor::Fraction(1f64.into(), 2f64.into()).into(),
-            },
+            Ast::Expression(Factor::Fraction(1f64.into(), 2f64.into()).into()),
         )
         .await;
     }
@@ -662,13 +643,13 @@ mod tests {
     async fn abs() {
         parse_test(
             "|-3|",
-            Ast {
-                root_expr: Factor::Abs(Box::new(MathExpr::Term(Term::Multiply(
+            Ast::Expression(
+                Factor::Abs(Box::new(MathExpr::Term(Term::Multiply(
                     Box::new((-1f64).into()),
                     3f64.into(),
                 ))))
                 .into(),
-            },
+            ),
         )
         .await;
     }

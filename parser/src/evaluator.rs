@@ -3,7 +3,10 @@ use crate::ast::{Ast, Factor, MathExpr, Term};
 
 impl Ast {
     pub fn eval(&self) -> f64 {
-        self.root_expr.eval()
+        match self {
+            Ast::Expression(expr) => expr.eval(),
+            Ast::Equality(_, _) => panic!("Cannot evaluate statement"),
+        }
     }
 }
 
@@ -92,9 +95,7 @@ mod tests {
     fn eval_1_plus_1() {
         eval_test_from_ast(
             2.0,
-            Ast {
-                root_expr: MathExpr::Add(Box::new(1.0.into()), 1.0.into()),
-            },
+            Ast::Expression(MathExpr::Add(Box::new(1.0.into()), 1.0.into())),
         );
     }
 
@@ -103,12 +104,10 @@ mod tests {
         eval_test_from_ast(
             17.0,
             // 2+3*5
-            Ast {
-                root_expr: MathExpr::Add(
-                    Box::new(2.0.into()),
-                    Term::Multiply(Box::new(3.0.into()), 5.0.into()),
-                ),
-            },
+            Ast::Expression(MathExpr::Add(
+                Box::new(2.0.into()),
+                Term::Multiply(Box::new(3.0.into()), 5.0.into()),
+            )),
         );
     }
 

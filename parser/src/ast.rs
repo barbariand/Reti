@@ -3,8 +3,9 @@ use crate::token::Token;
 pub mod mathexpr;
 
 #[derive(PartialEq, Debug)]
-pub struct Ast {
-    pub root_expr: MathExpr,
+pub enum Ast {
+    Expression(MathExpr),
+    Equality(MathExpr, MathExpr),
 }
 
 #[derive(PartialEq, Debug)]
