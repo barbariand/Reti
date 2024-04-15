@@ -6,7 +6,7 @@ use crate::{ast::MathIdentifier, token::Token};
 pub struct MathFunction {
     pub approximate: fn(Vec<f64>) -> f64,
 }
-
+#[derive(Clone)]
 pub struct MathContext {
     pub variables: HashMap<MathIdentifier, f64>,
     pub functions: HashMap<MathIdentifier, MathFunction>,
