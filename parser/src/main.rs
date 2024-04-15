@@ -68,7 +68,7 @@ impl Prompt {
                     }
 
                     drop(_enter);
-                    match parse(&line).await {
+                    match parse(&line, approximator.context()).await {
                         Ok(ast) => {
                             if self.ast_mode {
                                 println!("{:#?}", ast); //TODO fix some display for the tree

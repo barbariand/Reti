@@ -13,6 +13,13 @@ impl Approximator {
         Self { context }
     }
 
+    pub fn context(&self) -> &MathContext {
+        &self.context
+    }
+    pub fn context_mut(&mut self) -> &mut MathContext {
+        &mut self.context
+    }
+
     pub fn eval_expr(&self, expr: &MathExpr) -> f64 {
         match expr {
             MathExpr::Term(term) => self.eval_term(term),
@@ -33,8 +40,23 @@ impl Approximator {
         match factor {
             Factor::Constant(c) => *c,
             Factor::Parenthesis(expr) => self.eval_expr(expr.as_ref()),
-            Factor::Variable(x) => todo!("I don't know the value of the variable {:?}", x),
-            Factor::FunctionCall(call) => todo!("call = {:?}", call),
+            Factor::Variable(x) => {
+                match self.context.variables.get(x) {
+                    Some(val) => *val,
+                    None => panic!(), // TODO return error here instead of panic
+                }
+            }
+            Factor::FunctionCall(call) => match self.context.functions.get(&call.function_name) {
+                Some(func) => {
+                    let args = call
+                        .arguments
+                        .iter()
+                        .map(|expr| self.eval_expr(expr))
+                        .collect();
+                    (func.approximate)(args)
+                }
+                None => panic!("Parser incorrectly identified function {:?}", call),
+            },
             Factor::Power { base, exponent } => self
                 .eval_factor(base.as_ref())
                 .powf(self.eval_expr(exponent.as_ref())),
@@ -85,7 +107,7 @@ mod tests {
 
         let context = MathContext::new();
         let lexer = Lexer::new(tx);
-        let mut parser = Parser::new(rx, context);
+        let mut parser = Parser::new(rx, &context);
 
         let future1 = lexer.tokenize(text);
         let future2 = parser.parse();
