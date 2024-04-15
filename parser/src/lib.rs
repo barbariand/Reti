@@ -18,7 +18,6 @@ use tracing::{debug, error, trace, trace_span};
 
 pub mod ast;
 mod context;
-mod evaluator;
 mod lexer;
 mod normalizer;
 mod parser;

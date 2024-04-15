@@ -1,8 +1,6 @@
 use clap::{command, Parser as ClapParser};
 use colored::Colorize;
-
 use rustyline::{error::ReadlineError, DefaultEditor};
-
 use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 #[tokio::main]
@@ -26,6 +24,10 @@ struct Prompt {
     #[arg(default_value_t=LevelFilter::WARN)]
     tracing_level: LevelFilter,
 }
+mod approximator;
+use approximator::Approximator;
+mod context;
+use context::MathContext;
 use parser::parse;
 impl Prompt {
     async fn start(&mut self) {
@@ -35,7 +37,8 @@ impl Prompt {
         }
         println!("{}", "Welcome to the Reti prompt.".green());
         println!("{}", "Type 1+1 and press Enter to get started.\n".green());
-
+        let context = MathContext::new();
+        let approximator = Approximator::new(context);
         loop {
             let readline = rl.readline(&format!("{}", ">> ".white()));
             match readline {
@@ -66,13 +69,14 @@ impl Prompt {
 
                     drop(_enter);
                     match parse(&line).await {
-                        Ok(v) => {
+                        Ok(ast) => {
                             if self.ast_mode {
-                                println!("{:#?}", v); //TODO fix some display for the tree
+                                println!("{:#?}", ast); //TODO fix some display for the tree
                             };
-                            println!("> {}", v.eval())
+
+                            println!("> {}", approximator.eval_expr(expr));
                         }
-                        Err(e) => error!("{}",format!("{:?}",e).red()),
+                        Err(e) => error!("{}", format!("{:?}", e).red()),
                     };
                 }
                 Err(ReadlineError::Interrupted) => {

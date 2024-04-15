@@ -21,6 +21,7 @@ pub enum Token {
     VerticalPipe,      // | and |
     Comma,             // ,
     Ampersand,         // &
+    Equals,            // =
     EndOfContent,      // A special token that represents the end of content.
 }
 
@@ -52,6 +53,7 @@ impl Display for Token {
                 Token::Comma => ",",
                 Token::Ampersand => "&",
                 Token::EndOfContent => "EOF",
+                Token::Equals => "=",
             }
         )
     }
