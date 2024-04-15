@@ -2,7 +2,7 @@ use std::{collections::VecDeque, ops::RangeInclusive};
 
 use tokio::sync::mpsc::Receiver;
 
-use crate::token::Token;
+use crate::prelude::*;
 
 pub struct TokenReader {
     tokens: Receiver<Token>,
@@ -140,7 +140,7 @@ impl TokenReader {
 mod tests {
     use tokio::sync::mpsc::{self, Receiver, Sender};
 
-    use crate::{token::Token, token_reader::TokenReader};
+    use crate::prelude::*;
 
     #[tokio::test]
     async fn read_test() {

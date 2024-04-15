@@ -1,5 +1,18 @@
+mod approximator;
+mod context;
+use approximator::Approximator;
+pub mod ast;
+mod lexer;
+mod normalizer;
+mod parsing;
+mod token;
+mod token_reader;
 use clap::{command, Parser as ClapParser};
 use colored::Colorize;
+pub mod prelude;
+use ast::Ast;
+use context::MathContext;
+use parser::parse;
 use rustyline::{error::ReadlineError, DefaultEditor};
 use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -24,11 +37,7 @@ struct Prompt {
     #[arg(default_value_t=LevelFilter::WARN)]
     tracing_level: LevelFilter,
 }
-mod approximator;
-use approximator::Approximator;
-mod context;
-use context::MathContext;
-use parser::parse;
+
 impl Prompt {
     async fn start(&mut self) {
         let mut rl = DefaultEditor::new().expect("Could not make terminal");
@@ -74,7 +83,15 @@ impl Prompt {
                                 println!("{:#?}", ast); //TODO fix some display for the tree
                             };
 
-                            println!("> {}", approximator.eval_expr(expr));
+                            match ast {
+                                Ast::Expression(expr) => {
+                                    let result = approximator.eval_expr(&expr);
+                                    println!("> {}", result);
+                                }
+                                Ast::Equality(_, _) => {
+                                    todo!("assign variables to MathContext.");
+                                }
+                            }
                         }
                         Err(e) => error!("{}", format!("{:?}", e).red()),
                     };

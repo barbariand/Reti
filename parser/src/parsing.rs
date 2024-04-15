@@ -1,14 +1,9 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 use tokio::sync::mpsc::Receiver;
 use tracing::{trace, trace_span};
 
-use crate::{
-    ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
-    context::MathContext,
-    token::Token,
-    token_reader::TokenReader,
-};
+use crate::prelude::*;
 use async_recursion::async_recursion;
 
 #[derive(Debug)]
@@ -33,13 +28,13 @@ impl Display for ParseError {
     }
 }
 
-pub struct Parser<'a> {
+pub struct Parser {
     reader: TokenReader,
-    context: &'a MathContext,
+    context: MathContext,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(tokens: Receiver<Token>, context: &'a MathContext) -> Self {
+impl Parser {
+    pub fn new(tokens: Receiver<Token>, context: MathContext) -> Self {
         Parser {
             reader: TokenReader::new(tokens),
             context,
@@ -372,7 +367,7 @@ mod tests {
 
         let lexer = Lexer::new(lexer_in);
         let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let mut parser = Parser::new(normalizer_out, &context);
+        let mut parser = Parser::new(normalizer_out, context.clone());
 
         let future1 = lexer.tokenize(text);
         let future2 = normalizer.normalize();

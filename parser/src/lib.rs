@@ -1,30 +1,31 @@
 #![allow(dead_code)]
 
-use std::{fmt::Display, panic::AssertUnwindSafe};
+use std::{fmt::Display, panic::AssertUnwindSafe, sync::Arc};
 
 use ast::Ast;
-use context::MathContext;
-
-use futures::{future::join3, FutureExt};
+use futures::FutureExt;
 use lexer::Lexer;
 use normalizer::Normalizer;
-use parser::{ParseError, Parser};
+use parsing::{ParseError, Parser};
 use token::Token;
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinError,
 };
 use tracing::{debug, error, trace, trace_span};
-
+mod approximator;
 pub mod ast;
+
 mod context;
 mod lexer;
 mod normalizer;
-mod parser;
+mod parsing;
+pub mod prelude;
 pub mod token;
 mod token_reader;
+use context::MathContext;
 
-pub async fn parse(text: &str) -> Result<Ast, AstErrors> {
+pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstErrors> {
     let span = trace_span!("parsing");
     let _enter = span.enter();
     debug!(text);
@@ -35,13 +36,11 @@ pub async fn parse(text: &str) -> Result<Ast, AstErrors> {
     let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(channel);
     debug!("successfully connected to normalizer");
 
-    let context = MathContext::new();
-    trace!("created MathContext");
     let lexer = Lexer::new(lexer_in);
     trace!("created Lexer");
     let normalizer = Normalizer::new(lexer_out, normalizer_in);
     trace!("created Normalizer");
-    let parser = Parser::new(normalizer_out, context);
+    let parser = Parser::new(normalizer_out, context.clone());
     trace!("created Parser");
     let cloned_text = text.to_owned();
     trace!("cloned text");
@@ -58,7 +57,7 @@ pub async fn parse(text: &str) -> Result<Ast, AstErrors> {
     let parser_handle = spawn_logging_task(parser_future);
 
     let (lexer_result, normalizer_result, parser_result) =
-        join3(lexer_handle, normalizer_handle, parser_handle).await;
+        tokio::join!(lexer_handle, normalizer_handle, parser_handle);
 
     match lexer_result {
         Err(e) => {
