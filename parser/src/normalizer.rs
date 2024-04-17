@@ -1,14 +1,13 @@
-use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, trace, trace_span};
 
-use crate::{token::Token, token_reader::TokenReader};
+use crate::prelude::*;
 
 pub struct Normalizer {
     reader: TokenReader,
-    output: Sender<Token>,
+    output: TokenSender,
 }
 impl Normalizer {
-    pub fn new(input: Receiver<Token>, output: Sender<Token>) -> Self {
+    pub fn new(input: TokenResiver, output: TokenSender) -> Self {
         Self {
             reader: TokenReader::new(input),
             output,
@@ -79,13 +78,11 @@ impl Normalizer {
 mod tests {
     use std::hint::black_box;
 
-    use super::Normalizer;
-    use crate::token::Token;
-    use tokio::sync::mpsc::{self, Receiver, Sender};
+    use crate::prelude::*;
 
     async fn normalize(tokens: Vec<Token>) -> Vec<Token> {
-        let (tx1, rx1): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-        let (tx2, mut rx2): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx1, rx1): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let (tx2, mut rx2): (TokenSender, TokenResiver) = mpsc::channel(32);
         let normalizer = Normalizer::new(rx1, tx2);
 
         let mut result = Vec::with_capacity(tokens.len());

@@ -1,6 +1,5 @@
-use std::{fmt::Display, sync::Arc};
+use std::{fmt::Display};
 
-use tokio::sync::mpsc::Receiver;
 use tracing::{trace, trace_span};
 
 use crate::prelude::*;
@@ -34,7 +33,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(tokens: Receiver<Token>, context: MathContext) -> Self {
+    pub fn new(tokens: TokenResiver, context: MathContext) -> Self {
         Parser {
             reader: TokenReader::new(tokens),
             context,
@@ -303,10 +302,10 @@ impl Parser {
             token => return Err(ParseError::Invalid(token.clone())),
         };
 
-        return Ok(Factor::Power {
+        Ok(Factor::Power {
             base: Box::new(factor),
             exponent: Box::new(exponent),
-        });
+        })
     }
 
     async fn factor_function_call(
@@ -346,28 +345,20 @@ impl Parser {
 mod tests {
     use tokio::{
         join,
-        sync::mpsc::{self, Receiver, Sender},
+        sync::mpsc::{self},
     };
 
-    use crate::{
-        ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
-        context::MathContext,
-        lexer::Lexer,
-        normalizer::Normalizer,
-        token::Token,
-    };
-
-    use super::Parser;
+    use crate::prelude::*;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-        let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (lexer_in, lexer_out): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let (normalizer_in, normalizer_out): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let context = MathContext::standard_math();
 
         let lexer = Lexer::new(lexer_in);
-        let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let mut parser = Parser::new(normalizer_out, context.clone());
+        let normalizer = Normalizer::new(lexer_out, normalizer_in);
+        let parser = Parser::new(normalizer_out, context.clone());
 
         let future1 = lexer.tokenize(text);
         let future2 = normalizer.normalize();

@@ -1,8 +1,9 @@
 mod approximator;
+mod ast;
 mod context;
-use approximator::Approximator;
-pub mod ast;
 mod lexer;
+
+use prelude::*;
 mod normalizer;
 mod parsing;
 mod token;
@@ -10,9 +11,7 @@ mod token_reader;
 use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 pub mod prelude;
-use ast::Ast;
-use context::MathContext;
-use parser::parse;
+
 use rustyline::{error::ReadlineError, DefaultEditor};
 use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};

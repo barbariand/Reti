@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{ast::MathIdentifier, token::Token};
+use crate::prelude::{MathIdentifier, Token};
 
 #[derive(Debug, Clone)]
 pub struct MathFunction {
@@ -10,6 +10,12 @@ pub struct MathFunction {
 pub struct MathContext {
     pub variables: HashMap<MathIdentifier, f64>,
     pub functions: HashMap<MathIdentifier, MathFunction>,
+}
+
+impl Default for MathContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MathContext {
@@ -30,9 +36,9 @@ impl MathContext {
     }
 
     pub fn is_function(&self, ident: &MathIdentifier) -> bool {
-        let res = self.functions.contains_key(ident);
+        
         // println!("is_function({:?}) = {}", ident, res); TODO tracing
-        res
+        self.functions.contains_key(ident)
     }
 
     fn add_var(&mut self, identifier: Vec<Token>, value: f64) {

@@ -1,14 +1,13 @@
-use crate::token::Token;
+use crate::prelude::*;
 use std::mem::take;
-use tokio::sync::mpsc::Sender;
 use tracing::{debug, trace, trace_span};
 
 pub struct Lexer {
-    channel: Sender<Token>,
+    channel: TokenSender,
 }
 
 impl Lexer {
-    pub fn new(channel: Sender<Token>) -> Self {
+    pub fn new(channel: TokenSender) -> Self {
         Self { channel }
     }
     async fn send_or_crash(&self, token: Token) {
@@ -106,14 +105,11 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use tokio::sync::mpsc::{self, Receiver, Sender};
 
-    use crate::lexer::Lexer;
-
-    use super::Token;
+    use crate::prelude::*;
 
     async fn tokenize(text: &str) -> Vec<Token> {
-        let (tx, mut rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, mut rx): (TokenSender, TokenResiver) = mpsc::channel(32); // idk what that 32 means tbh
         let lexer = Lexer::new(tx);
 
         lexer.tokenize(text).await;

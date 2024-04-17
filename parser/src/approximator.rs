@@ -1,5 +1,6 @@
+use super::prelude::{Factor, MathContext, MathExpr, Term};
+
 /// A simple single-threaded evaluator for an AST.
-use crate::prelude::*;
 
 pub struct Approximator {
     context: MathContext,
@@ -71,11 +72,10 @@ impl Approximator {
 
 #[cfg(test)]
 mod tests {
-    use std::{string::ParseError, sync::Arc};
 
     use tokio::{
         join,
-        sync::mpsc::{self, Receiver, Sender},
+        sync::mpsc::{self},
     };
 
     use crate::prelude::*;
@@ -95,12 +95,12 @@ mod tests {
     }
 
     async fn eval_test_from_str(expected: f64, text: &str) {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32); // idk what that 32 means tbh
 
         let context = MathContext::new();
         let lexer = Lexer::new(tx);
 
-        let mut parser = Parser::new(rx, context);
+        let parser = Parser::new(rx, context);
 
         let future1 = lexer.tokenize(text);
         let future2 = parser.parse();
