@@ -26,24 +26,26 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstErrors> 
     let span = trace_span!("parsing");
     let _enter = span.enter();
     debug!(text);
-    let channel = 32;
-    trace!("reading channel {channel:?}");
-    let (lexer_in, lexer_out): (TokenSender, TokenResiver) = mpsc::channel(channel);
-    debug!("successfully connected to lexer");
-    let (normalizer_in, normalizer_out): (TokenSender, TokenResiver) = mpsc::channel(channel);
-    debug!("successfully connected to normalizer");
+    let channel_buffer_size = 32;
+    let (lexer_in, lexer_out): (TokenSender, TokenResiver) = mpsc::channel(channel_buffer_size);
+    debug!(
+        "successfully created channel for lexer with {} long buffer",
+        channel_buffer_size
+    );
+    let (normalizer_in, normalizer_out): (TokenSender, TokenResiver) =
+        mpsc::channel(channel_buffer_size);
+    debug!(
+        "successfully created channel for normalizer with {} long buffer",
+        channel_buffer_size
+    );
 
     let lexer = Lexer::new(lexer_in);
-    trace!("created Lexer");
     let normalizer = Normalizer::new(lexer_out, normalizer_in);
-    trace!("created Normalizer");
     let parser = Parser::new(normalizer_out, context.clone());
-    trace!("created Parser");
     let cloned_text = text.to_owned();
     trace!("cloned text");
 
     let lexer_future = async move { lexer.tokenize(&cloned_text).await };
-
     let normalizer_future = async move { normalizer.normalize().await };
     let parser_future = async move { parser.parse().await };
     trace!("spawning new tokenize async task");
@@ -69,13 +71,25 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstErrors> 
     }?;
 
     match normalizer_result {
-        Err(e) => Err(AstErrors::Lexer(e)),
-        Ok(Err(err)) => Err(AstErrors::NormalizerPanic(err.to_owned())),
+        Err(e) => {
+            error!("normalizer task failed");
+            Err(AstErrors::Normalizer(e))
+        }
+        Ok(Err(err)) => {
+            error!("normalizer task failed");
+            Err(AstErrors::NormalizerPanic(err.to_owned()))
+        }
         _ => Ok(()),
     }?;
     match parser_result {
-        Err(e) => Err(AstErrors::Lexer(e)),
-        Ok(Err(err)) => Err(AstErrors::ParserPanic(err.to_owned())),
+        Err(e) => {
+            error!("parser task failed");
+            Err(AstErrors::Parser(e))
+        }
+        Ok(Err(err)) => {
+            error!("parser task failed");
+            Err(AstErrors::ParserPanic(err.to_owned()))
+        }
         Ok(Ok(ast)) => ast.map_err(AstErrors::ParseError),
     }
 }

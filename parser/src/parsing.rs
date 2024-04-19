@@ -1,4 +1,4 @@
-use std::{fmt::Display};
+use std::fmt::Display;
 
 use tracing::{trace, trace_span};
 
@@ -34,6 +34,8 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(tokens: TokenResiver, context: MathContext) -> Self {
+        trace!("created Parser");
+
         Parser {
             reader: TokenReader::new(tokens),
             context,

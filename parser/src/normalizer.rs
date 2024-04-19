@@ -8,6 +8,8 @@ pub struct Normalizer {
 }
 impl Normalizer {
     pub fn new(input: TokenResiver, output: TokenSender) -> Self {
+        trace!("created Normalizer");
+
         Self {
             reader: TokenReader::new(input),
             output,

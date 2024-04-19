@@ -8,6 +8,7 @@ pub struct Lexer {
 
 impl Lexer {
     pub fn new(channel: TokenSender) -> Self {
+        trace!("created Lexer");
         Self { channel }
     }
     async fn send_or_crash(&self, token: Token) {
