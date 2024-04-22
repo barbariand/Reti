@@ -125,6 +125,14 @@ impl Prompt {
                                         } else {
                                             todo!("assign variables to MathContext.");
                                         }
+                                    } else if let MathExpr::Term(Term::Factor(Factor::Variable(
+                                        ident,
+                                    ))) = lhs
+                                    {
+                                        approximator
+                                            .context_mut()
+                                            .variables
+                                            .insert(ident, approximator.eval_expr(rhs));
                                     } else {
                                         todo!("assign variables to MathContext.");
                                     }
