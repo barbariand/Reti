@@ -3,6 +3,8 @@ mod ast;
 mod context;
 mod lexer;
 
+use std::{collections::HashMap, sync::Arc};
+
 use prelude::*;
 mod normalizer;
 mod parsing;
@@ -15,8 +17,14 @@ pub mod prelude;
 use rustyline::{error::ReadlineError, DefaultEditor};
 use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+
+use crate::context::MathFunction;
 #[tokio::main]
 pub async fn main() {
+    let mut map = HashMap::new();
+    map.insert("hello", "hello");
+    map.insert("hello", "world");
+    println!("hello {:?}", map.get("hello"));
     let mut prompt = Prompt::parse();
     tracing_subscriber::registry()
         .with(fmt::layer())
@@ -46,7 +54,7 @@ impl Prompt {
         println!("{}", "Welcome to the Reti prompt.".green());
         println!("{}", "Type 1+1 and press Enter to get started.\n".green());
         let context = MathContext::new();
-        let approximator = Approximator::new(context);
+        let mut approximator = Approximator::new(context);
         loop {
             let readline = rl.readline(&format!("{}", ">> ".white()));
             match readline {
@@ -87,8 +95,39 @@ impl Prompt {
                                     let result = approximator.eval_expr(&expr);
                                     println!("> {}", result);
                                 }
-                                Ast::Equality(_, _) => {
-                                    todo!("assign variables to MathContext.");
+                                Ast::Equality(lhs, rhs) => {
+                                    if let MathExpr::Term(Term::Multiply(
+                                        var,
+                                        Factor::Parenthesis(possible_args),
+                                    )) = lhs
+                                    {
+                                        if let (
+                                            Term::Factor(Factor::Variable(var)),
+                                            MathExpr::Term(Term::Factor(Factor::Variable(args))),
+                                        ) = (&*var, &*possible_args)
+                                        {
+                                            let coppied = args.clone();
+                                            // TODO: this is not perfect but i think we might need to live with it otherwise we just dont know what it is
+                                            approximator.context_mut().functions.insert(
+                                                var.clone(),
+                                                MathFunction::new(Arc::new(
+                                                    move |func: Vec<f64>, outer_context| {
+                                                        let mut context = outer_context.clone();
+                                                        context
+                                                            .variables
+                                                            .insert(coppied.clone(), func[0]);
+                                                        let aprox = Approximator::new(context);
+
+                                                        aprox.eval_expr(&rhs)
+                                                    },
+                                                )),
+                                            );
+                                        } else {
+                                            todo!("assign variables to MathContext.");
+                                        }
+                                    } else {
+                                        todo!("assign variables to MathContext.");
+                                    }
                                 }
                             }
                         }

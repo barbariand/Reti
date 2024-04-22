@@ -51,7 +51,7 @@ impl Approximator {
                         .iter()
                         .map(|expr| self.eval_expr(expr))
                         .collect();
-                    (func.approximate)(args)
+                    (func.approximate)(args, self.context.clone())
                 }
                 None => panic!("Parser incorrectly identified function {:?}", call),
             },
