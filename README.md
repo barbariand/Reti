@@ -7,7 +7,7 @@ Reti is a in development calculator that can evaluate LaTeX expressions.
 
 <h2 align="center" id="development-status">Development Status</h2>
 
-**Note:** Reti is currently under active development. For the latest and potentially unstable features, please check out the `dev` branch.
+**Note:** Reti is currently under active development. For the latest and potentially unstable features, please check out the [`dev`](https://github.com/barbariand/Reti/tree/dev) branch.
 
 - Current Phase: The project is actively under development with newer, experimental features being added in the dev branch.
 - Stability: Users interested in the most up-to-date but possibly unstable builds should refer to the dev branch.
