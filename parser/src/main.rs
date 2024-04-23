@@ -93,14 +93,22 @@ impl Prompt {
         match ast {
             parser::ast::Ast::Expression(expr) => {
                 let result = approximator.eval_expr(&expr);
-                println!("> {}", result);
+                match result {
+                    Ok(val) => println!("> {}", val),
+                    Err(err) => println!("{:?}", err), // TODO impl display
+                }
             }
             parser::ast::Ast::Equality(lhs, rhs) => match lhs {
                 MathExpr::Term(Term::Factor(Factor::Variable(ident))) => {
-                    let value = approximator.eval_expr(&rhs);
-                    let context = approximator.context_mut();
-                    context.variables.insert(ident, value);
-                    println!("Variable changed!");
+                    let result = approximator.eval_expr(&rhs);
+                    match result {
+                        Ok(value) => {
+                            let context = approximator.context_mut();
+                            context.variables.insert(ident, value);
+                            println!("Variable changed!");
+                        }
+                        Err(err) => println!("{:?}", err), // TODO impl display
+                    };
                 }
                 _ => {
                     println!("I don't understand. Please type an expression, like 1+1, or x=2 for assignment.");

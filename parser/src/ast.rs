@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::{matrix::Matrix, token::Token};
 
 pub mod mathexpr;
 
@@ -85,6 +85,7 @@ pub enum Factor {
     },
     Fraction(Box<MathExpr>, Box<MathExpr>),
     Abs(Box<MathExpr>),
+    Matrix(Matrix<MathExpr>),
 }
 
 impl From<f64> for Factor {

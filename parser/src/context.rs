@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use crate::{ast::MathIdentifier, token::Token};
+use crate::{approximator::EvalError, ast::MathIdentifier, token::Token, value::Value};
 
 #[derive(Debug, Clone)]
 pub struct MathFunction {
-    pub approximate: fn(Vec<f64>) -> f64,
+    pub approximate: fn(Vec<Value>) -> Result<Value, EvalError>,
 }
 
 pub struct MathContext {
-    pub variables: HashMap<MathIdentifier, f64>,
+    pub variables: HashMap<MathIdentifier, Value>,
     pub functions: HashMap<MathIdentifier, MathFunction>,
 }
 
@@ -22,7 +22,7 @@ impl MathContext {
 
     pub fn merge(&mut self, other: &MathContext) {
         for (variable, value) in other.variables.iter() {
-            self.variables.insert((*variable).clone(), *value);
+            self.variables.insert(variable.clone(), value.clone());
         }
         for (name, value) in other.functions.iter() {
             self.functions.insert(name.clone(), value.clone());
@@ -35,7 +35,7 @@ impl MathContext {
         res
     }
 
-    fn add_var(&mut self, identifier: Vec<Token>, value: f64) {
+    fn add_var(&mut self, identifier: Vec<Token>, value: Value) {
         self.variables
             .insert(MathIdentifier { tokens: identifier }, value);
     }
@@ -51,30 +51,34 @@ impl MathContext {
         // Constants
         context.add_var(
             vec![Token::Backslash, Token::Identifier("pi".to_string())],
-            std::f64::consts::PI,
+            Value::Scalar(std::f64::consts::PI),
         );
         context.add_var(
             vec![Token::Identifier("e".to_string())],
-            std::f64::consts::E,
+            Value::Scalar(std::f64::consts::E),
         );
+
+        // TODO add proper functions system so we can define the definition
+        //  and value sets to validate the amount of arguments, the types of arguments
+        //  (scalar or matrix).
 
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
             MathFunction {
-                approximate: |args| args[0].sin(),
+                approximate: |args| Ok(Value::Scalar(args[0].scalar()?.sin())),
             },
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
             MathFunction {
-                approximate: |args| args[0].cos(),
+                approximate: |args| Ok(Value::Scalar(args[0].scalar()?.cos())),
             },
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("tan".to_string())],
             MathFunction {
-                approximate: |args| args[0].tan(),
+                approximate: |args| Ok(Value::Scalar(args[0].scalar()?.tan())),
             },
         );
 
@@ -82,7 +86,7 @@ impl MathContext {
         context.add_function(
             vec![Token::Backslash, Token::Identifier("ln".to_string())],
             MathFunction {
-                approximate: |args| args[0].ln(),
+                approximate: |args| Ok(Value::Scalar(args[0].scalar()?.ln())),
             },
         );
 

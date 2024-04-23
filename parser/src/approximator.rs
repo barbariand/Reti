@@ -2,7 +2,15 @@
 use crate::{
     ast::{Factor, MathExpr, Term},
     context::MathContext,
+    value::Value,
 };
+
+#[derive(Debug)]
+pub enum EvalError {
+    ExpectedScalar,
+    IncompatibleTypes(&'static str),
+    IncompatibleMatrixSizes,
+}
 
 pub struct Approximator {
     context: MathContext,
@@ -20,55 +28,66 @@ impl Approximator {
         &mut self.context
     }
 
-    pub fn eval_expr(&self, expr: &MathExpr) -> f64 {
+    pub fn eval_expr(&self, expr: &MathExpr) -> Result<Value, EvalError> {
         match expr {
             MathExpr::Term(term) => self.eval_term(term),
-            MathExpr::Add(a, b) => self.eval_expr(a.as_ref()) + self.eval_term(b),
-            MathExpr::Subtract(a, b) => self.eval_expr(a.as_ref()) - self.eval_term(b),
+            MathExpr::Add(a, b) => self.eval_expr(a.as_ref())? + self.eval_term(b)?,
+            MathExpr::Subtract(a, b) => self.eval_expr(a.as_ref())? - self.eval_term(b)?,
         }
     }
 
-    fn eval_term(&self, term: &Term) -> f64 {
+    fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
         match term {
             Term::Factor(factor) => self.eval_factor(factor),
-            Term::Multiply(a, b) => self.eval_term(a.as_ref()) * self.eval_factor(b),
-            Term::Divide(a, b) => self.eval_term(a.as_ref()) / self.eval_factor(b),
+            Term::Multiply(a, b) => self.eval_term(a.as_ref())? * self.eval_factor(b)?,
+            Term::Divide(a, b) => self.eval_term(a.as_ref())? / self.eval_factor(b)?,
         }
     }
 
-    fn eval_factor(&self, factor: &Factor) -> f64 {
-        match factor {
-            Factor::Constant(c) => *c,
-            Factor::Parenthesis(expr) => self.eval_expr(expr.as_ref()),
+    fn eval_factor(&self, factor: &Factor) -> Result<Value, EvalError> {
+        Ok(match factor {
+            Factor::Constant(c) => Value::Scalar(*c),
+            Factor::Parenthesis(expr) => self.eval_expr(expr.as_ref())?,
             Factor::Variable(x) => {
                 match self.context.variables.get(x) {
-                    Some(val) => *val,
+                    Some(val) => val.clone(),
                     None => panic!(), // TODO return error here instead of panic
                 }
             }
             Factor::FunctionCall(call) => match self.context.functions.get(&call.function_name) {
                 Some(func) => {
-                    let args = call
+                    let args: Result<Vec<Value>, EvalError> = call
                         .arguments
                         .iter()
                         .map(|expr| self.eval_expr(expr))
                         .collect();
-                    (func.approximate)(args)
+                    (func.approximate)(args?)?
                 }
                 None => panic!("Parser incorrectly identified function {:?}", call),
             },
-            Factor::Power { base, exponent } => self
-                .eval_factor(base.as_ref())
-                .powf(self.eval_expr(exponent.as_ref())),
-            Factor::Root { degree, radicand } => {
-                match degree.as_ref().map(|expr| self.eval_expr(expr.as_ref())) {
-                    None => self.eval_expr(radicand.as_ref()).sqrt(),
-                    Some(degree) => self.eval_expr(radicand.as_ref()).powf(1.0 / degree),
-                }
+            Factor::Power { base, exponent } => {
+                let base_val = self.eval_factor(base.as_ref())?.scalar()?;
+                let exp_val = self.eval_expr(exponent.as_ref())?.scalar()?;
+                Value::Scalar(base_val.powf(exp_val))
             }
-            Factor::Fraction(a, b) => self.eval_expr(a.as_ref()) / self.eval_expr(b.as_ref()),
-            Factor::Abs(val) => self.eval_expr(val.as_ref()).abs(),
-        }
+            Factor::Root { degree, radicand } => Value::Scalar(
+                match degree.as_ref().map(|expr| self.eval_expr(expr.as_ref())) {
+                    None => self.eval_expr(radicand.as_ref())?.scalar()?.sqrt(),
+                    Some(degree) => {
+                        let radicand_val = self.eval_expr(radicand.as_ref())?.scalar()?;
+                        let degree_val = degree?.scalar()?;
+                        radicand_val.powf(1.0 / degree_val)
+                    }
+                },
+            ),
+            Factor::Fraction(a, b) => {
+                let a_val = self.eval_expr(a.as_ref())?;
+                let b_val = self.eval_expr(b.as_ref())?;
+                (a_val / b_val)?
+            }
+            Factor::Abs(val) => Value::Scalar(self.eval_expr(val.as_ref())?.scalar()?.abs()),
+            Factor::Matrix(matrix) => todo!("matrix ? {matrix:?}"),
+        })
     }
 }
 
@@ -85,6 +104,7 @@ mod tests {
         lexer::Lexer,
         parser::Parser,
         token::Token,
+        value::Value,
     };
 
     use super::Approximator;
@@ -93,9 +113,19 @@ mod tests {
         let context = MathContext::new();
         let approximator = Approximator::new(context);
 
-        let found = match ast {
-            Ast::Expression(expr) => approximator.eval_expr(&expr),
+        let expr = match ast {
+            Ast::Expression(expr) => expr,
             Ast::Equality(_, _) => panic!("Cannot evaluate statement."),
+        };
+
+        let value = match approximator.eval_expr(&expr) {
+            Ok(val) => val,
+            Err(err) => panic!("{err:?}"),
+        };
+
+        let found = match value {
+            Value::Scalar(val) => val,
+            Value::Matrix(m) => panic!("Unexpected matric {m:?}"),
         };
 
         if (found - expected).abs() > f64::EPSILON {
