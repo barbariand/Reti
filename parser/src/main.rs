@@ -129,10 +129,8 @@ impl Prompt {
                                         ident,
                                     ))) = lhs
                                     {
-                                        approximator
-                                            .context_mut()
-                                            .variables
-                                            .insert(ident, approximator.eval_expr(rhs));
+                                        let res = approximator.eval_expr(&rhs);
+                                        approximator.context_mut().variables.insert(ident, res);
                                     } else {
                                         todo!("assign variables to MathContext.");
                                     }
