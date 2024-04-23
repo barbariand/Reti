@@ -1,4 +1,4 @@
-use crate::prelude::Token;
+use crate::prelude::*;
 
 #[derive(PartialEq, Debug)]
 pub enum Ast {
@@ -83,6 +83,7 @@ pub enum Factor {
     },
     Fraction(Box<MathExpr>, Box<MathExpr>),
     Abs(Box<MathExpr>),
+    Matrix(Matrix<MathExpr>),
 }
 
 impl From<f64> for Factor {

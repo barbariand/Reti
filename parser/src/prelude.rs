@@ -1,4 +1,4 @@
-pub use crate::{ast::Ast, context::MathContext};
+pub use crate::{ast::Ast, context::MathContext, value::Value};
 
 pub(crate) type TokenResiver = Receiver<Token>;
 pub(crate) use tokio::sync::mpsc;
@@ -6,8 +6,10 @@ pub(crate) type TokenSender = Sender<Token>;
 #[allow(unused_imports)]
 pub(crate) use crate::{
     approximator::Approximator,
+    approximator::EvalError,
     ast::{Factor, FunctionCall, MathExpr, MathIdentifier, Term},
     lexer::Lexer,
+    matrix::Matrix,
     normalizer::Normalizer,
     parsing::{ParseError, Parser},
     token::Token,

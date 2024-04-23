@@ -1,17 +1,19 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::prelude::{MathIdentifier, Token};
+use crate::prelude::*;
 
 #[derive(Clone)]
 pub struct MathFunction {
-    pub approximate: Arc<dyn Fn(Vec<f64>, MathContext) -> f64 + Send + Sync>,
+    pub approximate: Arc<dyn Fn(Vec<Value>, MathContext) -> Result<Value, EvalError> + Send + Sync>,
 }
 
 impl MathFunction {
-    pub fn new(func: Arc<dyn Fn(Vec<f64>, MathContext) -> f64 + Send + Sync>) -> Self {
+    pub fn new(
+        func: Arc<dyn Fn(Vec<Value>, MathContext) -> Result<Value, EvalError> + Send + Sync>,
+    ) -> Self {
         Self { approximate: func }
     }
-    pub fn from_fn_pointer(func: fn(Vec<f64>, MathContext) -> f64) -> Self {
+    pub fn from_fn_pointer(func: fn(Vec<Value>, MathContext) -> Result<Value, EvalError>) -> Self {
         Self {
             approximate: Arc::new(func),
         }
@@ -19,7 +21,7 @@ impl MathFunction {
 }
 #[derive(Clone)]
 pub struct MathContext {
-    pub variables: HashMap<MathIdentifier, f64>,
+    pub variables: HashMap<MathIdentifier, Value>,
     pub functions: HashMap<MathIdentifier, MathFunction>,
 }
 
@@ -39,7 +41,7 @@ impl MathContext {
 
     pub fn merge(&mut self, other: &MathContext) {
         for (variable, value) in other.variables.iter() {
-            self.variables.insert((*variable).clone(), *value);
+            self.variables.insert(variable.clone(), value.clone());
         }
         for (name, value) in other.functions.iter() {
             self.functions.insert(name.clone(), value.clone());
@@ -51,7 +53,7 @@ impl MathContext {
         self.functions.contains_key(ident)
     }
 
-    fn add_var(&mut self, identifier: Vec<Token>, value: f64) {
+    fn add_var(&mut self, identifier: Vec<Token>, value: Value) {
         self.variables
             .insert(MathIdentifier { tokens: identifier }, value);
     }
@@ -67,31 +69,35 @@ impl MathContext {
         // Constants
         context.add_var(
             vec![Token::Backslash, Token::Identifier("pi".to_string())],
-            std::f64::consts::PI,
+            Value::Scalar(std::f64::consts::PI),
         );
         context.add_var(
             vec![Token::Identifier("e".to_string())],
-            std::f64::consts::E,
+            Value::Scalar(std::f64::consts::E),
         );
+
+        // TODO add proper functions system so we can define the definition
+        //  and value sets to validate the amount of arguments, the types of arguments
+        //  (scalar or matrix).
 
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            MathFunction::from_fn_pointer(|args, _| args[0].sin()),
+            MathFunction::from_fn_pointer(|args, _| args[0].map_scalar(|v| v.sin())),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
-            MathFunction::from_fn_pointer(|args, _| args[0].cos()),
+            MathFunction::from_fn_pointer(|args, _| args[0].map_scalar(|v| v.cos())),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("tan".to_string())],
-            MathFunction::from_fn_pointer(|args, _| args[0].tan()),
+            MathFunction::from_fn_pointer(|args, _| args[0].map_scalar(|v| v.tan())),
         );
 
         // Logarithm
         context.add_function(
             vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            MathFunction::from_fn_pointer(|args, _| args[0].ln()),
+            MathFunction::from_fn_pointer(|args, _| args[0].map_scalar(|v| v.ln())),
         );
 
         context

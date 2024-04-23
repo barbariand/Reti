@@ -8,12 +8,14 @@ use std::{collections::HashMap, sync::Arc};
 use prelude::*;
 mod normalizer;
 mod parsing;
+mod value;
+
 mod token;
 mod token_reader;
 use clap::{command, Parser as ClapParser};
 use colored::Colorize;
+mod matrix;
 pub mod prelude;
-
 use rustyline::{error::ReadlineError, DefaultEditor};
 use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -93,7 +95,13 @@ impl Prompt {
                             match ast {
                                 Ast::Expression(expr) => {
                                     let result = approximator.eval_expr(&expr);
-                                    println!("> {}", result);
+                                    match result {
+                                        Ok(v) => println!("> {}", v),
+                                        Err(e) => {
+                                            println!("Could not evaluate {:?}", e);
+                                            error!("Could not evaluate {:?}", e)
+                                        }
+                                    }
                                 }
                                 Ast::Equality(lhs, rhs) => {
                                     if let MathExpr::Term(Term::Multiply(
@@ -111,28 +119,38 @@ impl Prompt {
                                             approximator.context_mut().functions.insert(
                                                 var.clone(),
                                                 MathFunction::new(Arc::new(
-                                                    move |func: Vec<f64>, outer_context| {
+                                                    move |func: Vec<Value>, outer_context:MathContext| {
                                                         let mut context = outer_context.clone();
                                                         context
                                                             .variables
-                                                            .insert(coppied.clone(), func[0]);
+                                                            .insert(coppied.clone(), func[0].clone());
                                                         let aprox = Approximator::new(context);
-
                                                         aprox.eval_expr(&rhs)
                                                     },
                                                 )),
                                             );
                                         } else {
-                                            todo!("assign variables to MathContext.");
+                                            todo!("Could not understand equals.");
                                         }
                                     } else if let MathExpr::Term(Term::Factor(Factor::Variable(
                                         ident,
                                     ))) = lhs
                                     {
                                         let res = approximator.eval_expr(&rhs);
-                                        approximator.context_mut().variables.insert(ident, res);
+                                        match res {
+                                            Ok(res) => {
+                                                approximator
+                                                    .context_mut()
+                                                    .variables
+                                                    .insert(ident, res);
+                                            }
+                                            Err(e) => {
+                                                println!("Could not evaluate {:?}", e);
+                                                error!("Could not evaluate {:?}", e);
+                                            }
+                                        }
                                     } else {
-                                        todo!("assign variables to MathContext.");
+                                        todo!("Could not understand equals.");
                                     }
                                 }
                             }
