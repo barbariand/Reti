@@ -1,6 +1,6 @@
 <h1 align="center">Reti</h1>
 <div align="center">
-Reti is a in development calculator that can evaluate LaTeX expressions.
+Reti is an in-development calculator that can evaluate LaTeX expressions.
 <br>
 <img src="./dark_icon.svg" width="300" />
 </div>
@@ -30,7 +30,7 @@ To get started with Reti, clone the repository and build the project using Rust'
 # Clone the repository
 git clone https://github.com/barbariand/Reti.git
 
-# Change directory for the repl
+# Change directory to the repl
 cd Reti/parser
 
 # Build the project
@@ -40,7 +40,7 @@ cargo build --release
 <h2 align="center" id="repl-usage">REPL Usage</h2>
 
 
-Just input a string from any valid latex and get back the correct result
+Just input a string from any LaTeX mathematics and get back the calculated result
 ```
 >> \displaystyle \frac{2\sqrt{9}+5}{3(3+4)+1}
 > 0.5
@@ -48,14 +48,14 @@ Just input a string from any valid latex and get back the correct result
 
 The same LaTeX expression that was used as input can be rendered as $\displaystyle \frac{2\sqrt{9}+5}{3(3+4)+1}$. There is no need to translate between formats!
 
-<h2 align="center" id="features"> Features</h2>
+<h2 align="center" id="features">Features</h2>
 
-- [ ] **Parsing Latex**: Parsing relevant mathematical latex
-- [x] **REPL**: Evaluates given Mathematical expression in Latex and returns a result or as close as it could get.
-- [ ] **Web API**: Server for running evaluations
-- [ ] **Web User Interface**: A website for easier manipulation of the LaTeX
+- [ ] **Parsing Latex**: Parsing relevant mathematical LaTeX.
+- [x] **REPL**: Evaluates a given mathematical expression in LaTeX and returns a result or as close as it could get.
+- [ ] **Web API**: Server for running evaluations.
+- [ ] **Web User Interface**: A website for easier use.
 
-<h2 align="center" id="contribute"> Contribute</h2>
+<h2 align="center" id="contribute">Contribute</h2>
 Contributions are welcome! If you're interested in improving Reti, fork the repository, make your changes, and submit a pull request. We appreciate your input in making Reti better for everyone.
 
 
