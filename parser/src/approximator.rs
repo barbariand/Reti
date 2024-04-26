@@ -1,5 +1,11 @@
 /// A simple single-threaded evaluator for an AST.
-use super::prelude::{Factor, MathContext, MathExpr, Term, Value};
+use super::prelude::*;
+
+use crate::{
+    ast::{Factor, MathExpr, Term},
+    context::MathContext,
+    value::Value,
+};
 
 #[derive(Debug)]
 pub enum EvalError {
