@@ -13,4 +13,3 @@ mod token;
 mod token_reader;
 pub mod value;
 pub use prelude::parse;
-pub mod value;
