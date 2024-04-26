@@ -1,6 +1,4 @@
-use crate::token::Token;
-
-pub mod mathexpr;
+use crate::prelude::Token;
 
 #[derive(PartialEq, Debug)]
 pub enum Ast {

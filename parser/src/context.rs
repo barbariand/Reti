@@ -1,15 +1,32 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-use crate::{ast::MathIdentifier, token::Token};
+use crate::prelude::{MathIdentifier, Token};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct MathFunction {
-    pub approximate: fn(Vec<f64>) -> f64,
+    pub approximate: Arc<dyn Fn(Vec<f64>, MathContext) -> f64 + Send + Sync>,
 }
 
+impl MathFunction {
+    pub fn new(func: Arc<dyn Fn(Vec<f64>, MathContext) -> f64 + Send + Sync>) -> Self {
+        Self { approximate: func }
+    }
+    pub fn from_fn_pointer(func: fn(Vec<f64>, MathContext) -> f64) -> Self {
+        Self {
+            approximate: Arc::new(func),
+        }
+    }
+}
+#[derive(Clone)]
 pub struct MathContext {
     pub variables: HashMap<MathIdentifier, f64>,
     pub functions: HashMap<MathIdentifier, MathFunction>,
+}
+
+impl Default for MathContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MathContext {
@@ -30,9 +47,8 @@ impl MathContext {
     }
 
     pub fn is_function(&self, ident: &MathIdentifier) -> bool {
-        let res = self.functions.contains_key(ident);
         // println!("is_function({:?}) = {}", ident, res); TODO tracing
-        res
+        self.functions.contains_key(ident)
     }
 
     fn add_var(&mut self, identifier: Vec<Token>, value: f64) {
@@ -61,29 +77,21 @@ impl MathContext {
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            MathFunction {
-                approximate: |args| args[0].sin(),
-            },
+            MathFunction::from_fn_pointer(|args, _| args[0].sin()),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
-            MathFunction {
-                approximate: |args| args[0].cos(),
-            },
+            MathFunction::from_fn_pointer(|args, _| args[0].cos()),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("tan".to_string())],
-            MathFunction {
-                approximate: |args| args[0].tan(),
-            },
+            MathFunction::from_fn_pointer(|args, _| args[0].tan()),
         );
 
         // Logarithm
         context.add_function(
             vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            MathFunction {
-                approximate: |args| args[0].ln(),
-            },
+            MathFunction::from_fn_pointer(|args, _| args[0].ln()),
         );
 
         context

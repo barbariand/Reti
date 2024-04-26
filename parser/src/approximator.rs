@@ -1,8 +1,6 @@
+use super::prelude::{Factor, MathContext, MathExpr, Term};
+
 /// A simple single-threaded evaluator for an AST.
-use crate::{
-    ast::{Factor, MathExpr, Term},
-    context::MathContext,
-};
 
 pub struct Approximator {
     context: MathContext,
@@ -53,7 +51,7 @@ impl Approximator {
                         .iter()
                         .map(|expr| self.eval_expr(expr))
                         .collect();
-                    (func.approximate)(args)
+                    (func.approximate)(args, self.context.clone())
                 }
                 None => panic!("Parser incorrectly identified function {:?}", call),
             },
@@ -74,20 +72,13 @@ impl Approximator {
 
 #[cfg(test)]
 mod tests {
+
     use tokio::{
         join,
-        sync::mpsc::{self, Receiver, Sender},
+        sync::mpsc::{self},
     };
 
-    use crate::{
-        ast::{Ast, MathExpr, Term},
-        context::MathContext,
-        lexer::Lexer,
-        parser::Parser,
-        token::Token,
-    };
-
-    use super::Approximator;
+    use crate::prelude::*;
 
     fn eval_test_from_ast(expected: f64, ast: Ast) {
         let context = MathContext::new();
@@ -104,16 +95,17 @@ mod tests {
     }
 
     async fn eval_test_from_str(expected: f64, text: &str) {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32); // idk what that 32 means tbh
 
         let context = MathContext::new();
         let lexer = Lexer::new(tx);
-        let mut parser = Parser::new(rx, &context);
+
+        let parser = Parser::new(rx, context);
 
         let future1 = lexer.tokenize(text);
         let future2 = parser.parse();
 
-        let (_, ast) = join!(future1, future2);
+        let ((), ast) = join!(future1, future2);
         let ast = ast.unwrap();
 
         eval_test_from_ast(expected, ast);

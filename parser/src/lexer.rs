@@ -1,28 +1,35 @@
-use crate::token::Token;
+use crate::prelude::*;
 use std::mem::take;
-use tokio::sync::mpsc::Sender;
+use tracing::{debug, trace, trace_span};
 
 pub struct Lexer {
-    channel: Sender<Token>,
+    channel: TokenSender,
 }
 
 impl Lexer {
-    pub fn new(channel: Sender<Token>) -> Self {
+    pub fn new(channel: TokenSender) -> Self {
+        trace!("created Lexer");
         Self { channel }
     }
     async fn send_or_crash(&self, token: Token) {
+        trace!("send_or_crash token={token}");
         self.channel.send(token).await.expect("Broken Pipe")
     }
-    pub async fn tokenize(&self, s: &str) {
+    pub async fn tokenize(self, s: &str) {
+        let span = trace_span!("lexer::tokenize");
+        let _enter = span.enter();
+        debug!("tokenizing: {s:?}");
         let mut temp_ident = String::new();
         let mut temp_number = String::new();
         for c in s.chars() {
+            trace!("char = {c:?}");
             let t = match c {
                 '0'..='9' | '.' => {
                     if !temp_ident.is_empty() {
                         self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
                             .await;
                     }
+                    trace!("temp_number::push char={c:?}");
                     temp_number.push(c);
                     continue;
                 }
@@ -62,6 +69,8 @@ impl Lexer {
                         temp_number = String::new();
                         self.send_or_crash(num).await;
                     }
+
+                    trace!("temp_ident::push char={c:?}");
                     temp_ident.push(c);
                     continue;
                 }
@@ -97,14 +106,11 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use tokio::sync::mpsc::{self, Receiver, Sender};
 
-    use crate::lexer::Lexer;
-
-    use super::Token;
+    use crate::prelude::*;
 
     async fn tokenize(text: &str) -> Vec<Token> {
-        let (tx, mut rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, mut rx): (TokenSender, TokenResiver) = mpsc::channel(32); // idk what that 32 means tbh
         let lexer = Lexer::new(tx);
 
         lexer.tokenize(text).await;

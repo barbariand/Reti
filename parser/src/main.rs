@@ -1,113 +1,158 @@
-use parser::{
-    approximator::Approximator,
-    ast::{Factor, MathExpr, Term},
-    context::MathContext,
-    lexer::Lexer,
-    normalizer::Normalizer,
-    parser::Parser,
-    token::Token,
-};
-use tokio::{
-    join,
-    sync::mpsc::{self, Receiver, Sender},
-};
+mod approximator;
+mod ast;
+mod context;
+mod lexer;
 
+use std::{collections::HashMap, sync::Arc};
+
+use prelude::*;
+mod normalizer;
+mod parsing;
+mod token;
+mod token_reader;
+use clap::{command, Parser as ClapParser};
+use colored::Colorize;
+pub mod prelude;
+
+use rustyline::{error::ReadlineError, DefaultEditor};
+use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+
+use crate::context::MathFunction;
 #[tokio::main]
 pub async fn main() {
-    Prompt::new().start().await;
+    let mut map = HashMap::new();
+    map.insert("hello", "hello");
+    map.insert("hello", "world");
+    println!("hello {:?}", map.get("hello"));
+    let mut prompt = Prompt::parse();
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(prompt.tracing_level.into())
+                .from_env_lossy(),
+        )
+        .init();
+    prompt.start().await;
 }
-
+#[derive(ClapParser, Debug)]
+#[command(version, about, long_about = None)]
 struct Prompt {
+    #[arg(short, long, default_value_t = false)]
     ast_mode: bool,
+    #[arg(default_value_t=LevelFilter::WARN)]
+    tracing_level: LevelFilter,
 }
 
 impl Prompt {
-    pub fn new() -> Self {
-        Prompt { ast_mode: false }
-    }
-
     async fn start(&mut self) {
-        println!("Welcome to the Reti prompt.");
-        println!("Type 1+1 and press Enter to get started.");
-        println!();
-
-        let context = MathContext::standard_math();
+        let mut rl = DefaultEditor::new().expect("Could not make terminal");
+        if rl.load_history("~/history.txt").is_err() {
+            info!("No previous history.");
+        }
+        println!("{}", "Welcome to the Reti prompt.".green());
+        println!("{}", "Type 1+1 and press Enter to get started.\n".green());
+        let context = MathContext::new();
         let mut approximator = Approximator::new(context);
-
-        let stdin = std::io::stdin();
-        let mut buf = String::new();
         loop {
-            buf.clear();
-            stdin
-                .read_line(&mut buf)
-                .expect("Failed to read from stdin.");
+            let readline = rl.readline(&format!("{}", ">> ".white()));
+            match readline {
+                Ok(line) => {
+                    let span = trace_span!("preparing statement");
+                    let _enter = span.enter();
+                    debug!(line);
+                    debug!("adding expression to history");
+                    rl.add_history_entry(line.as_str())
+                        .expect("could not add history");
 
-            let trimmed = buf.trim();
-            if trimmed.len() == 0 {
-                println!();
-                continue;
-            }
+                    debug!("trimming expression");
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() {
+                        println!();
+                        continue;
+                    }
 
-            let lowercase = trimmed.to_ascii_lowercase();
-            if lowercase == "ast" {
-                self.ast_mode = !self.ast_mode;
-                match self.ast_mode {
-                    true => println!("Enabled AST mode."),
-                    false => println!("Disabled AST mode."),
+                    let lowercase = trimmed.to_ascii_lowercase();
+                    if lowercase == "ast" {
+                        self.ast_mode = !self.ast_mode;
+                        match self.ast_mode {
+                            true => info!("AST mode enabled"),
+                            false => info!("AST mode disabled"),
+                        }
+                        continue;
+                    }
+
+                    drop(_enter);
+                    match parse(&line, approximator.context()).await {
+                        Ok(ast) => {
+                            if self.ast_mode {
+                                println!("{:#?}", ast); //TODO fix some display for the tree
+                            };
+
+                            match ast {
+                                Ast::Expression(expr) => {
+                                    let result = approximator.eval_expr(&expr);
+                                    println!("> {}", result);
+                                }
+                                Ast::Equality(lhs, rhs) => {
+                                    if let MathExpr::Term(Term::Multiply(
+                                        var,
+                                        Factor::Parenthesis(possible_args),
+                                    )) = lhs
+                                    {
+                                        if let (
+                                            Term::Factor(Factor::Variable(var)),
+                                            MathExpr::Term(Term::Factor(Factor::Variable(args))),
+                                        ) = (&*var, &*possible_args)
+                                        {
+                                            let coppied = args.clone();
+                                            // TODO: this is not perfect but i think we might need to live with it otherwise we just dont know what it is
+                                            approximator.context_mut().functions.insert(
+                                                var.clone(),
+                                                MathFunction::new(Arc::new(
+                                                    move |func: Vec<f64>, outer_context| {
+                                                        let mut context = outer_context.clone();
+                                                        context
+                                                            .variables
+                                                            .insert(coppied.clone(), func[0]);
+                                                        let aprox = Approximator::new(context);
+
+                                                        aprox.eval_expr(&rhs)
+                                                    },
+                                                )),
+                                            );
+                                        } else {
+                                            todo!("assign variables to MathContext.");
+                                        }
+                                    } else if let MathExpr::Term(Term::Factor(Factor::Variable(
+                                        ident,
+                                    ))) = lhs
+                                    {
+                                        let res = approximator.eval_expr(&rhs);
+                                        approximator.context_mut().variables.insert(ident, res);
+                                    } else {
+                                        todo!("assign variables to MathContext.");
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => error!("{}", format!("{:?}", e).red()),
+                    };
                 }
-                continue;
-            }
-
-            self.run(trimmed, &mut approximator).await;
-        }
-    }
-
-    async fn run(&self, text: &str, approximator: &mut Approximator) {
-        let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-        let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-
-        let context = approximator.context();
-        let lexer = Lexer::new(lexer_in);
-        let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let mut parser = Parser::new(normalizer_out, context);
-
-        let future1 = lexer.tokenize(text);
-        let future2 = normalizer.normalize();
-        let future3 = parser.parse();
-
-        let (_, _, ast) = join!(future1, future2, future3);
-        let ast = match ast {
-            Ok(ast) => ast,
-            Err(err) => {
-                println!("Failed to parse:");
-                println!("{:?}", err); // TODO impl Display
-                println!();
-                return;
-            }
-        };
-
-        if self.ast_mode {
-            println!("{:#?}", ast);
-        }
-
-        match ast {
-            parser::ast::Ast::Expression(expr) => {
-                let result = approximator.eval_expr(&expr);
-                println!("> {}", result);
-            }
-            parser::ast::Ast::Equality(lhs, rhs) => match lhs {
-                MathExpr::Term(Term::Factor(Factor::Variable(ident))) => {
-                    let value = approximator.eval_expr(&rhs);
-                    let context = approximator.context_mut();
-                    context.variables.insert(ident, value);
-                    println!("Variable changed!");
+                Err(ReadlineError::Interrupted) => {
+                    println!("CTRL-C");
+                    break;
                 }
-                _ => {
-                    println!("I don't understand. Please type an expression, like 1+1, or x=2 for assignment.");
+                Err(ReadlineError::Eof) => {
+                    println!("CTRL-D");
+                    break;
                 }
-            },
+                Err(err) => {
+                    error!("{:?}", err);
+                    break;
+                }
+            }
         }
-
-        println!();
     }
 }

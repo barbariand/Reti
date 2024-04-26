@@ -1,58 +1,73 @@
-use tokio::sync::mpsc::{Receiver, Sender};
+use tracing::{debug, trace, trace_span};
 
-use crate::{token::Token, token_reader::TokenReader};
+use crate::prelude::*;
 
 pub struct Normalizer {
     reader: TokenReader,
-    output: Sender<Token>,
+    output: TokenSender,
 }
 impl Normalizer {
-    pub fn new(input: Receiver<Token>, output: Sender<Token>) -> Self {
+    pub fn new(input: TokenResiver, output: TokenSender) -> Self {
+        trace!("created Normalizer");
+
         Self {
             reader: TokenReader::new(input),
             output,
         }
     }
 
-    pub async fn normalize(&mut self) {
+    pub async fn normalize(mut self) {
+        let span = trace_span!("normalizer::normalize");
+        let _enter = span.enter();
         loop {
             self.normalize_tokens().await;
+            debug!("successfully normalized tokens");
 
             let token = self.reader.read().await;
+            trace!("reader::read {token}");
             let eof = token == Token::EndOfContent;
+            trace!("output::send {token}");
             self.output.send(token).await.expect("Broken pipe");
             if eof {
+                trace!("'end of content' has been hit");
                 break;
             }
         }
     }
 
     async fn normalize_tokens(&mut self) {
+        let span = trace_span!("normalize_tokens");
+        let _enter = span.enter();
+        trace!("normalize_tokens");
         match self.reader.peek_range(0..=1).await[..] {
-            [Token::Backslash, Token::Identifier(v)] => match v.as_str() {
-                "cdot" | "cdotp" | "times" => {
-                    self.reader.replace(0..=1, vec![Token::Asterisk]).await;
+            [Token::Backslash, Token::Identifier(v)] => {
+                trace!("ident = {v}");
+                match v.as_str() {
+                    "cdot" | "cdotp" | "times" => {
+                        self.reader.replace(0..=1, vec![Token::Asterisk]).await;
+                    }
+                    "left" | "middle" | "right" => {
+                        self.reader.replace(0..=1, vec![]).await;
+                        // TODO Remove dot after, for example "\left."
+                        // we have no token for lone dots though
+                    }
+                    "displaystyle" | "textstyle" => {
+                        self.reader.replace(0..=1, vec![]).await;
+                    }
+                    _ => {}
                 }
-                "left" | "middle" | "right" => {
-                    self.reader.replace(0..=1, vec![]).await;
-                    // TODO Remove dot after, for example "\left."
-                    // we have no token for lone dots though
-                }
-                "displaystyle" | "textstyle" => {
-                    self.reader.replace(0..=1, vec![]).await;
-                }
-                _ => {}
-            },
+            }
             [Token::Caret, Token::NumberLiteral(n)] => {
-                if n.raw.len() == 0 {
-                    panic!("string is wierd");
+                trace!("number literal = {n}");
+                if n.raw.is_empty() {
+                    panic!("string is weird");
                 }
                 if n.raw.len() != 1 {
                     let mut s = n.raw.clone();
                     let rest = Token::NumberLiteral(s.split_off(1).into());
-                    println!("rest = {:?}", rest);
+                    trace!("rest = {:?}", rest);
                     let single = Token::NumberLiteral(s.into());
-                    println!("single = {:?}", single);
+                    trace!("single = {:?}", single);
                     self.reader.replace(1..=1, vec![single, rest]).await;
                 }
             }
@@ -65,14 +80,12 @@ impl Normalizer {
 mod tests {
     use std::hint::black_box;
 
-    use super::Normalizer;
-    use crate::token::Token;
-    use tokio::sync::mpsc::{self, Receiver, Sender};
+    use crate::prelude::*;
 
     async fn normalize(tokens: Vec<Token>) -> Vec<Token> {
-        let (tx1, rx1): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-        let (tx2, mut rx2): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-        let mut normalizer = Normalizer::new(rx1, tx2);
+        let (tx1, rx1): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let (tx2, mut rx2): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let normalizer = Normalizer::new(rx1, tx2);
 
         let mut result = Vec::with_capacity(tokens.len());
 

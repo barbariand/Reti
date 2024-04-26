@@ -1,17 +1,13 @@
+use crate::prelude::*;
 use std::{collections::VecDeque, ops::RangeInclusive};
-
-use tokio::sync::mpsc::Receiver;
-
-use crate::token::Token;
-
 pub struct TokenReader {
-    tokens: Receiver<Token>,
+    tokens: TokenResiver,
     next: VecDeque<Token>,
     eof: bool,
 }
 
 impl TokenReader {
-    pub fn new(tokens: Receiver<Token>) -> Self {
+    pub fn new(tokens: TokenResiver) -> Self {
         TokenReader {
             tokens,
             next: VecDeque::new(),
@@ -30,7 +26,7 @@ impl TokenReader {
             self.eof = true;
             return Token::EndOfContent;
         }
-        return token;
+        token
     }
 
     /// Look at the next token without consuming it.
@@ -55,7 +51,8 @@ impl TokenReader {
         if self.next.len() == n {
             let token = self.read_internal().await;
             self.next.push_back(token);
-        } else if self.next.len() < n {
+        }
+        if self.next.len() < n {
             panic!(
                 "Jump peek detected. This is usually a bug. \
                 Previous peek: {:?}, this peek: {}",
@@ -65,7 +62,7 @@ impl TokenReader {
         }
 
         // Will never panic since we ensured the queue has enough elements.
-        return &self.next[n];
+        &self.next[n]
     }
 
     /// Peek a range of tokens at once.
@@ -124,26 +121,24 @@ impl TokenReader {
                 range
             );
         }
-        let start = range.start().clone();
+        let start = *range.start();
         for _ in range.clone() {
             // Always remove start index because it shifts elements down.
             self.next.remove(start).expect("length already checked");
         }
         for token in replacement.into_iter().rev() {
-            self.next.insert(range.start().clone(), token);
+            self.next.insert(*range.start(), token);
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use tokio::sync::mpsc::{self, Receiver, Sender};
-
-    use crate::{token::Token, token_reader::TokenReader};
+    use crate::prelude::*;
 
     #[tokio::test]
     async fn read_test() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let tokens = vec![
             Token::LeftCurlyBracket,
@@ -164,7 +159,7 @@ mod tests {
 
     #[tokio::test]
     async fn peek_test() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let tokens = vec![
             Token::Backslash,
@@ -191,7 +186,7 @@ mod tests {
 
     #[tokio::test]
     async fn peekn_test() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let tokens = vec![
             Token::Backslash,
@@ -221,7 +216,7 @@ mod tests {
 
     #[tokio::test]
     async fn peek_read_end_of_content() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let mut reader = TokenReader::new(rx);
         tx.send(Token::Plus).await.unwrap();
@@ -243,7 +238,7 @@ mod tests {
     #[should_panic]
     #[tokio::test]
     async fn jump_peek_panic() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let tokens = vec![
             Token::Backslash,
@@ -265,7 +260,7 @@ mod tests {
 
     #[tokio::test]
     async fn replace_test() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let tokens = vec![
             Token::LeftBracket,
@@ -298,7 +293,7 @@ mod tests {
 
     #[tokio::test]
     async fn replace_one() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let tokens = vec![Token::LeftBracket, Token::Plus, Token::RightBracket];
 
@@ -318,7 +313,7 @@ mod tests {
     #[should_panic]
     #[tokio::test]
     async fn replace_without_peeking_panics() {
-        let (tx, rx): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let tokens = vec![
             Token::LeftBracket,

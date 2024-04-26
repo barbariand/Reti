@@ -1,10 +1,13 @@
 #![allow(dead_code)]
 
-pub mod approximator;
-pub mod ast;
-pub mod context;
-pub mod lexer;
-pub mod normalizer;
-pub mod parser;
-pub mod token;
-pub mod token_reader;
+mod approximator;
+mod ast;
+
+mod context;
+mod lexer;
+mod normalizer;
+mod parsing;
+pub mod prelude;
+mod token;
+mod token_reader;
+pub use prelude::parse;

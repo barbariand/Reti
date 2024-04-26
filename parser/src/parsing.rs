@@ -1,59 +1,74 @@
-use tokio::sync::mpsc::Receiver;
+use std::fmt::Display;
 
-use crate::{
-    ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
-    context::MathContext,
-    token::Token,
-    token_reader::TokenReader,
-};
+use tracing::{trace, trace_span};
+
+use crate::prelude::*;
 use async_recursion::async_recursion;
 
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedToken { expected: Token, found: Token },
-    ExpectedButNothingFound(Token),
-    UnexpectedEnd,
-    ExpectedEndOfFile,
-    InvalidToken(Token),
-    TrailingToken(Token),
+    Invalid(Token),
+    Trailing(Token),
     InvalidFactor(Token),
 }
-
-pub struct Parser<'a> {
-    reader: TokenReader,
-    context: &'a MathContext,
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParseError::UnexpectedToken { expected, found } => write!(
+                f,
+                "Got unexpected Token:\"{}\", expected Token:\"{}\"",
+                found, expected
+            ),
+            ParseError::Invalid(t) => write!(f, "Got invalid token:\"{}\"", t),
+            ParseError::Trailing(t) => write!(f, "Trailing invalid token\"{}\"", t),
+            ParseError::InvalidFactor(t) => write!(f, "Trailing invalid Factor token\"{}\"", t),
+        }
+    }
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(tokens: Receiver<Token>, context: &'a MathContext) -> Self {
+pub struct Parser {
+    reader: TokenReader,
+    context: MathContext,
+}
+
+impl Parser {
+    pub fn new(tokens: TokenResiver, context: MathContext) -> Self {
+        trace!("created Parser");
+
         Parser {
             reader: TokenReader::new(tokens),
             context,
         }
     }
 
-    pub async fn parse(&mut self) -> Result<Ast, ParseError> {
+    pub async fn parse(mut self) -> Result<Ast, ParseError> {
+        let span = trace_span!("parse");
+        let _enter = span.enter();
+
         // Parse expression
-        let expr = self.expr().await?;
+        let root_expr = self.expr().await?;
+        trace!("root_expr = {root_expr:?}");
 
         // Check if we have more to read, if not, that means we have a full expression
         // we can return.
         let next = self.reader.read().await;
         if next == Token::EndOfContent {
-            return Ok(Ast::Expression(expr));
+            return Ok(Ast::Expression(root_expr));
         }
         if next == Token::Equals {
             // An equality. Try parse a right hand side.
             let rhs = self.expr().await?;
             let next = self.reader.read().await;
+            trace!("trailing = {next}");
             if next != Token::EndOfContent {
-                return Err(ParseError::TrailingToken(next));
+                return Err(ParseError::Trailing(next));
             }
-            return Ok(Ast::Equality(expr, rhs));
+            return Ok(Ast::Equality(root_expr, rhs));
         }
         // It seems we have expected trailing tokens.
         // This means we failed to parse the expression fully.
-        Err(ParseError::TrailingToken(next))
+        Err(ParseError::Trailing(next))
     }
 
     pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
@@ -68,12 +83,10 @@ impl<'a> Parser<'a> {
         let token = self.reader.read().await;
         match token {
             Token::Identifier(val) => Ok(val),
-            found => {
-                return Err(ParseError::UnexpectedToken {
-                    expected: Token::Identifier("".to_string()),
-                    found,
-                })
-            }
+            found => Err(ParseError::UnexpectedToken {
+                expected: Token::Identifier("".to_string()),
+                found,
+            }),
         }
     }
 
@@ -143,17 +156,14 @@ impl<'a> Parser<'a> {
     #[async_recursion]
     async fn factor(&mut self) -> Result<Factor, ParseError> {
         // Split identifiers into single characters
-        match self.reader.peek().await {
-            Token::Identifier(text) => {
-                if text.len() > 1 {
-                    let mut tokens = Vec::new();
-                    for c in text.chars() {
-                        tokens.push(Token::Identifier(c.to_string()));
-                    }
-                    self.reader.replace(0..=0, tokens).await;
+        if let Token::Identifier(text) = self.reader.peek().await {
+            if text.len() > 1 {
+                let mut tokens = Vec::new();
+                for c in text.chars() {
+                    tokens.push(Token::Identifier(c.to_string()));
                 }
+                self.reader.replace(0..=0, tokens).await;
             }
-            _ => {}
         }
 
         // First read a factor, but then see if we have exponents after it.
@@ -169,7 +179,7 @@ impl<'a> Parser<'a> {
             }
             Token::Backslash => {
                 let command = self.read_identifier().await?;
-                self.factor_command(&*command).await?
+                self.factor_command(&command).await?
             }
             Token::VerticalPipe => {
                 let expr = self.expr().await?;
@@ -203,7 +213,7 @@ impl<'a> Parser<'a> {
     ///
     /// The `command` parameter is the LaTeX command.
     async fn factor_command(&mut self, command: &str) -> Result<Factor, ParseError> {
-        Ok(match &*command {
+        Ok(match command {
             "sqrt" => {
                 let next = self.reader.peek().await;
                 let mut degree = None;
@@ -222,9 +232,9 @@ impl<'a> Parser<'a> {
                 let numerator = Box::new(self.expr().await?);
                 self.expect(Token::RightCurlyBracket).await?;
                 self.expect(Token::LeftCurlyBracket).await?;
-                let denomminator = Box::new(self.expr().await?);
+                let denominator = Box::new(self.expr().await?);
                 self.expect(Token::RightCurlyBracket).await?;
-                Factor::Fraction(numerator, denomminator)
+                Factor::Fraction(numerator, denominator)
             }
             _ => {
                 // assume greek alphabet
@@ -291,13 +301,13 @@ impl<'a> Parser<'a> {
                 self.reader.skip().await;
                 MathExpr::Term(Term::Factor(Factor::Constant(parsed)))
             }
-            token => return Err(ParseError::InvalidToken(token.clone())),
+            token => return Err(ParseError::Invalid(token.clone())),
         };
 
-        return Ok(Factor::Power {
+        Ok(Factor::Power {
             base: Box::new(factor),
             exponent: Box::new(exponent),
-        });
+        })
     }
 
     async fn factor_function_call(
@@ -337,28 +347,20 @@ impl<'a> Parser<'a> {
 mod tests {
     use tokio::{
         join,
-        sync::mpsc::{self, Receiver, Sender},
+        sync::mpsc::{self},
     };
 
-    use crate::{
-        ast::{Ast, Factor, FunctionCall, MathExpr, MathIdentifier, Term},
-        context::MathContext,
-        lexer::Lexer,
-        normalizer::Normalizer,
-        token::Token,
-    };
-
-    use super::Parser;
+    use crate::prelude::*;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let (lexer_in, lexer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
-        let (normalizer_in, normalizer_out): (Sender<Token>, Receiver<Token>) = mpsc::channel(32);
+        let (lexer_in, lexer_out): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let (normalizer_in, normalizer_out): (TokenSender, TokenResiver) = mpsc::channel(32);
 
         let context = MathContext::standard_math();
 
         let lexer = Lexer::new(lexer_in);
-        let mut normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let mut parser = Parser::new(normalizer_out, &context);
+        let normalizer = Normalizer::new(lexer_out, normalizer_in);
+        let parser = Parser::new(normalizer_out, context.clone());
 
         let future1 = lexer.tokenize(text);
         let future2 = normalizer.normalize();
@@ -367,7 +369,7 @@ mod tests {
         let (_, _, ast) = join!(future1, future2, future3);
         let found_ast = ast.unwrap();
 
-        // Compare and print with debug and formattig otherwise.
+        // Compare and print with debug and formatting otherwise.
         if expected_ast != found_ast {
             panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
         }
