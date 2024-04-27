@@ -110,6 +110,17 @@ pub struct MathIdentifier {
     pub tokens: Vec<Token>,
 }
 
+impl MathIdentifier {
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self { tokens }
+    }
+    pub fn new_from_one(token: Token) -> Self {
+        Self {
+            tokens: vec![token],
+        }
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub struct FunctionCall {
     pub function_name: MathIdentifier,

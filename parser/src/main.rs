@@ -23,10 +23,6 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Env
 use crate::context::MathFunction;
 #[tokio::main]
 pub async fn main() {
-    let mut map = HashMap::new();
-    map.insert("hello", "hello");
-    map.insert("hello", "world");
-    println!("hello {:?}", map.get("hello"));
     let mut prompt = Prompt::parse();
     tracing_subscriber::registry()
         .with(fmt::layer())

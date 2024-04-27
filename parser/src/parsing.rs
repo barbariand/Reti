@@ -253,7 +253,7 @@ impl Parser {
         // TODO indexes, for example \log_2(x)
 
         // This might be a function.
-        if self.context.is_function(&identifier) {
+        if self.context.is_defined_function(&identifier) {
             Ok(self.factor_function_call(identifier).await?)
         } else {
             Ok(Factor::Variable(identifier))

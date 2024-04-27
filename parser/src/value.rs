@@ -18,7 +18,7 @@ impl Value {
             Value::Matrix(_) => Err(EvalError::ExpectedScalar),
         }
     }
-    pub fn map_scalar(&self, func: impl Fn(&f64) -> f64) -> Result<Value, EvalError> {
+    pub fn map_expecting_scalar(&self, func: impl Fn(&f64) -> f64) -> Result<Value, EvalError> {
         match self {
             Value::Scalar(v) => Ok(Value::Scalar(func(v))),
             Value::Matrix(_) => Err(EvalError::ExpectedScalar),

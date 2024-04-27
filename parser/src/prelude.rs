@@ -1,4 +1,8 @@
-pub use crate::{ast::Ast, context::MathContext, value::Value};
+pub use crate::{
+    ast::Ast,
+    context::{MathContext, MathFunction},
+    value::Value,
+};
 
 pub(crate) type TokenResiver = Receiver<Token>;
 pub(crate) use tokio::sync::mpsc;
