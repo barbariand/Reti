@@ -1,5 +1,8 @@
+use tracing::{debug, instrument, span, trace, trace_span};
+
 use crate::prelude::*;
 use std::{collections::VecDeque, ops::RangeInclusive};
+#[derive(Debug)]
 pub struct TokenReader {
     tokens: TokenResiver,
     next: VecDeque<Token>,
@@ -16,16 +19,22 @@ impl TokenReader {
     }
 
     /// Read the next token from the stream, and disregard the "next" queue.
+
     async fn read_internal(&mut self) -> Token {
+        let span = trace_span!("reading_tokens");
+        let _enter = span.enter();
         if self.eof {
+            debug!("sending: {}", Token::EndOfContent);
             return Token::EndOfContent;
         }
         let token = self.tokens.recv().await.expect("Broken pipe");
         // Handle end of file
         if token == Token::EndOfContent {
             self.eof = true;
+            debug!("sending: {}", Token::EndOfContent);
             return Token::EndOfContent;
         }
+        debug!("sending: {}", token);
         token
     }
 

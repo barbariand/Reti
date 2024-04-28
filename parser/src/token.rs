@@ -85,6 +85,7 @@ impl PartialEq<&Token> for Token {
         *self == **other
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct NumberLiteral {
     pub raw: String,

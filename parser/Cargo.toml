@@ -14,6 +14,7 @@ tracing = { version = "0.1.40", features = ["async-await"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 rustyline = "14.0.0"
 futures = "0.3.30"
+slicedisplay = "0.2.2"
 
 [lib]
 

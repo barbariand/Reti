@@ -1,28 +1,34 @@
 use std::fmt::Display;
 
-use tracing::{trace, trace_span};
+use clap::builder::Str;
+use slicedisplay::SliceDisplay;
+use tracing::{debug, error, trace, trace_span};
 
 use crate::prelude::*;
 use async_recursion::async_recursion;
 
 #[derive(Debug)]
 pub enum ParseError {
-    UnexpectedToken { expected: Token, found: Token },
+    UnexpectedToken { expected: Vec<Token>, found: Token },
     Invalid(Token),
     Trailing(Token),
     InvalidFactor(Token),
+    InvalidBegin(String),
+    MismatchedMatrixColumnSize { prev: usize, current: usize },
 }
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ParseError::UnexpectedToken { expected, found } => write!(
                 f,
-                "Got unexpected Token:\"{}\", expected Token:\"{}\"",
-                found, expected
+                "Got unexpected Token:\"{}\", expected one of Tokens:\"{}\"",
+                found, expected.display()
             ),
             ParseError::Invalid(t) => write!(f, "Got invalid token:\"{}\"", t),
             ParseError::Trailing(t) => write!(f, "Trailing invalid token\"{}\"", t),
             ParseError::InvalidFactor(t) => write!(f, "Trailing invalid Factor token\"{}\"", t),
+            ParseError::InvalidBegin(s) => write!(f, "Got invalid \\begin{{{}}}",s),
+            ParseError::MismatchedMatrixColumnSize { prev, current } => write!(f,"Expected it to have the same amount of columns, but previous had:{} instead got:{}",prev,current),
         }
     }
 }
@@ -76,7 +82,10 @@ impl Parser {
         if found == expected {
             return Ok(());
         }
-        Err(ParseError::UnexpectedToken { expected, found })
+        Err(ParseError::UnexpectedToken {
+            expected: vec![expected],
+            found,
+        })
     }
 
     async fn read_identifier(&mut self) -> Result<String, ParseError> {
@@ -84,7 +93,7 @@ impl Parser {
         match token {
             Token::Identifier(val) => Ok(val),
             found => Err(ParseError::UnexpectedToken {
-                expected: Token::Identifier("".to_string()),
+                expected: vec![Token::Identifier("".to_string())],
                 found,
             }),
         }
@@ -141,6 +150,19 @@ impl Parser {
                 | Token::NumberLiteral(_)
                 | Token::Backslash
                 | Token::LeftParenthesis => {
+                    if self.reader.peekn(1).await == Token::Backslash {
+                        break;
+                    }
+
+                    let toks = self.reader.peekn(1).await;
+                    debug!("toks:{:?}", toks);
+                    let expect = Token::Identifier("end".to_owned());
+
+                    if toks == expect {
+                        debug!("leaving end for matrix invocation");
+                        break;
+                    }
+
                     let rhs = self.factor().await?;
                     term = Term::Multiply(Box::new(term), rhs);
                 }
@@ -165,8 +187,6 @@ impl Parser {
                 self.reader.replace(0..=0, tokens).await;
             }
         }
-
-
         // First read a factor, but then see if we have exponents after it.
         // Exponents need to be baked into the factor since exponents should
         // be evaluated before multiplications.
@@ -241,14 +261,21 @@ impl Parser {
                 self.expect(Token::LeftCurlyBracket).await?;
                 let s = self.read_identifier().await?;
                 match s.as_str() {
-                    "bmatrix" | "pmatrix" | "Bmatrix" => {}
-                    "vmatrix" | "Vmatrix" => {
-                        Factor::Abs(self)
-                        todo!()
+                    "bmatrix" | "pmatrix" | "Bmatrix" => {
+                        self.expect(Token::RightCurlyBracket).await?;
+                        Factor::Matrix(self.matrix(s).await?)
                     }
-                    _ => {}
+                    "vmatrix" | "Vmatrix" => {
+                        self.expect(Token::RightCurlyBracket).await?;
+                        let matrix = self.matrix(s).await?;
+                        Factor::Abs(Box::new(MathExpr::Term(Term::Factor(Factor::Matrix(
+                            matrix,
+                        )))))
+                    }
+                    _ => {
+                        return Err(ParseError::InvalidBegin(s.to_owned()));
+                    }
                 }
-                todo!();
             }
             _ => {
                 // assume greek alphabet
@@ -355,7 +382,64 @@ impl Parser {
             arguments,
         }))
     }
-    fn matrix()->Result<Matrix<MathExpr>,ParseError>{}
+    async fn matrix(&mut self, matrix_type: String) -> Result<Matrix<MathExpr>, ParseError> {
+        let mut rows = Vec::new();
+        let mut current_row = Vec::new();
+        let mut column_count = Option::None;
+
+        loop {
+            let cell = self.expr().await?;
+            current_row.push(cell);
+
+            let next = self.reader.peek().await;
+            match next {
+                Token::Ampersand => {
+                    self.reader.skip().await;
+                    continue;
+                }
+                Token::Backslash => {
+                    if self.reader.peekn(1).await == Token::Backslash {
+                        // Two backslashes means end of row.
+                        self.reader.skip().await;
+                        self.reader.skip().await;
+                        match column_count {
+                            Some(column_count) => {
+                                if column_count != current_row.len() {
+                                    return Err(ParseError::MismatchedMatrixColumnSize {
+                                        prev: column_count,
+                                        current: current_row.len(),
+                                    });
+                                }
+                            }
+                            None => column_count = Some(current_row.len()),
+                        }
+                        rows.push(current_row);
+                        current_row = Vec::new();
+                    } else {
+                        // \end{matrix_type}
+                        self.reader.skip().await;
+                        self.expect(Token::Identifier("end".to_owned())).await?;
+                        self.expect(Token::LeftCurlyBracket).await?;
+                        self.expect(Token::Identifier(matrix_type)).await?;
+                        self.expect(Token::RightCurlyBracket).await?;
+                        break;
+                    }
+                }
+                e => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: vec![Token::Ampersand, Token::Backslash],
+                        found: e.clone(),
+                    });
+                }
+            }
+        }
+
+        let row_count = rows.len();
+        let values = Vec::with_capacity(row_count * column_count.unwrap_or_default());
+        let matrix = Matrix::new(values, row_count, column_count.unwrap_or_default());
+
+        Ok(matrix)
+    }
 }
 
 #[cfg(test)]
