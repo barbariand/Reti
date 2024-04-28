@@ -29,8 +29,7 @@ pub async fn main() {
         .with(
             EnvFilter::builder()
                 .with_default_directive(prompt.tracing_level.into())
-                .from_env_lossy()
-                .add_directive("RetiREPL=debug".parse().unwrap()),
+                .from_env_lossy(),
         )
         .init();
     prompt.start().await;
