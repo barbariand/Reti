@@ -54,7 +54,7 @@ impl Prompt {
         let context = MathContext::new();
         let mut approximator = Approximator::new(context);
         loop {
-            let readline = rl.readline(&format!("{}", ">> ".white()));
+            let readline = rl.readline(&format!("{}", ">> "));
             match readline {
                 Ok(line) => {
                     let span = trace_span!("preparing statement");

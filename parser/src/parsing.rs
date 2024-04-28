@@ -166,6 +166,7 @@ impl Parser {
             }
         }
 
+
         // First read a factor, but then see if we have exponents after it.
         // Exponents need to be baked into the factor since exponents should
         // be evaluated before multiplications.
@@ -235,6 +236,19 @@ impl Parser {
                 let denominator = Box::new(self.expr().await?);
                 self.expect(Token::RightCurlyBracket).await?;
                 Factor::Fraction(numerator, denominator)
+            }
+            "begin" => {
+                self.expect(Token::LeftCurlyBracket).await?;
+                let s = self.read_identifier().await?;
+                match s.as_str() {
+                    "bmatrix" | "pmatrix" | "Bmatrix" => {}
+                    "vmatrix" | "Vmatrix" => {
+                        Factor::Abs(self)
+                        todo!()
+                    }
+                    _ => {}
+                }
+                todo!();
             }
             _ => {
                 // assume greek alphabet
@@ -341,6 +355,7 @@ impl Parser {
             arguments,
         }))
     }
+    fn matrix()->Result<Matrix<MathExpr>,ParseError>{}
 }
 
 #[cfg(test)]
