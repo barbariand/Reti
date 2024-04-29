@@ -29,7 +29,8 @@ pub async fn main() {
         .with(
             EnvFilter::builder()
                 .with_default_directive(prompt.tracing_level.into())
-                .from_env_lossy(),
+                .from_env_lossy()
+                .add_directive(""),
         )
         .init();
     prompt.start().await;
@@ -39,7 +40,7 @@ pub async fn main() {
 struct Prompt {
     #[arg(short, long, default_value_t = false)]
     ast_mode: bool,
-    #[arg(default_value_t=LevelFilter::DEBUG)]
+    #[arg(default_value_t=LevelFilter::WARN)]
     tracing_level: LevelFilter,
 }
 
