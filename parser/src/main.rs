@@ -1,4 +1,3 @@
-#![feature(iterator_try_collect)]
 mod approximator;
 mod ast;
 mod context;

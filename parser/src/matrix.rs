@@ -70,8 +70,8 @@ impl<In> Matrix<In> {
     where
         F: Fn(&In) -> Result<Res, EvalError>,
     {
-        let val = self.values.iter().map(func).try_collect()?;
-        Ok(Matrix::new(val, self.row_count, self.column_count))
+        let val: Result<_, _> = self.values.iter().map(func).collect();
+        Ok(Matrix::new(val?, self.row_count, self.column_count))
     }
 
     fn pair_map<F, Res, Out>(&self, rhs: Matrix<Out>, func: F) -> Result<Matrix<Res>, EvalError>
@@ -83,14 +83,14 @@ impl<In> Matrix<In> {
         if self.row_count() != rhs.row_count() || self.column_count() != rhs.column_count() {
             return Err(EvalError::IncompatibleMatrixSizes);
         }
-        let res = self
+        let res: Result<_, _> = self
             .values
             .iter()
             .cloned()
             .zip(rhs.values.iter().cloned())
             .map(|a| func(a.0, a.1))
-            .try_collect()?;
-        Ok(Matrix::new(res, self.row_count, self.column_count))
+            .collect();
+        Ok(Matrix::new(res?, self.row_count, self.column_count))
     }
 }
 
