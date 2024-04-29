@@ -82,7 +82,7 @@ impl Approximator {
                 (a_val / b_val)?
             }
             Factor::Abs(val) => Value::Scalar(self.eval_expr(val.as_ref())?.scalar()?.abs()),
-            Factor::Matrix(matrix) => todo!("matrix ? {matrix:?}"),
+            Factor::Matrix(matrix) => Value::Matrix(matrix.map(|expr| self.eval_expr(expr))?),
         })
     }
 }

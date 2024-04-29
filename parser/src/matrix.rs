@@ -13,7 +13,13 @@ pub struct Matrix<T> {
 impl<T> Matrix<T> {
     pub(crate) fn new(values: Vec<T>, row_count: usize, column_count: usize) -> Self {
         if values.len() != row_count * column_count {
-            panic!("values has incorrect size.")
+            panic!(
+                "values has incorrect size. Expected {} ({}*{}), found {}",
+                row_count * column_count,
+                row_count,
+                column_count,
+                values.len()
+            )
         }
         Self {
             values,
@@ -22,16 +28,27 @@ impl<T> Matrix<T> {
         }
     }
 
+    pub fn index(&self, row: usize, column: usize) -> usize {
+        if row >= self.row_count {
+            panic!("Row out out bounds. {}/{}", row, self.row_count);
+        }
+        if column >= self.column_count {
+            panic!("Column out out bounds. {}/{}", column, self.column_count);
+        }
+        return row * self.column_count + column;
+    }
+
     pub fn get(&self, row: usize, column: usize) -> &T {
-        &self.values[row * self.column_count + column]
+        &self.values[self.index(row, column)]
     }
 
     pub fn option_get(&self, row: usize, column: usize) -> Option<&T> {
-        self.values.get(row * self.column_count + column)
+        self.values.get(self.index(row, column))
     }
 
     pub fn set(&mut self, row: usize, column: usize, value: T) {
-        self.values[row * self.column_count + column] = value;
+        let index = self.index(row, column);
+        self.values[index] = value;
     }
 
     pub fn row_count(&self) -> usize {
@@ -52,6 +69,20 @@ impl<T: Clone> Matrix<T> {
     }
 }
 
+impl Matrix<MathExpr> {
+    pub fn zero(row_count: usize, column_count: usize) -> Self {
+        let mut values = Vec::with_capacity(row_count * column_count);
+        for _ in 0..(row_count * column_count) {
+            values.push(0f64.into());
+        }
+        Self {
+            values,
+            row_count,
+            column_count,
+        }
+    }
+}
+
 impl<T: Clone> Clone for Matrix<T> {
     fn clone(&self) -> Self {
         Self {
@@ -62,39 +93,36 @@ impl<T: Clone> Clone for Matrix<T> {
     }
 }
 
-impl<T: Clone> Matrix<T> {
-    fn map<F>(&self, mut func: F) -> Result<Matrix<T>, EvalError>
+impl<T> Matrix<T> {
+    pub fn map<F, R>(&self, func: F) -> Result<Matrix<R>, EvalError>
     where
-        F: FnMut(&T) -> Result<T, EvalError>,
+        F: FnMut(&T) -> Result<R, EvalError>,
     {
-        let mut result = self.clone();
-        for row in 0..self.row_count {
-            for col in 0..self.column_count {
-                let current = self.get(row, col);
-                let new = func(current)?;
-                result.set(row, col, new);
-            }
-        }
-        Ok(result)
+        let mapped_values: Result<Vec<_>, _> = self.values.iter().map(func).collect();
+        Ok(Matrix::new(
+            mapped_values?,
+            self.row_count,
+            self.column_count,
+        ))
     }
 
     fn pair_map<F>(&self, rhs: Matrix<T>, mut func: F) -> Result<Matrix<T>, EvalError>
     where
-        F: FnMut(T, T) -> Result<T, EvalError>,
+        F: FnMut(&T, &T) -> Result<T, EvalError>,
     {
         if self.row_count() != rhs.row_count() || self.column_count() != rhs.column_count() {
             return Err(EvalError::IncompatibleMatrixSizes);
         }
-        let mut result = self.clone();
-        for row in 0..self.row_count {
-            for col in 0..self.column_count {
-                let a = self.get(row, col).clone();
-                let b = rhs.get(row, col).clone();
-                let value = func(a, b)?;
-                result.set(row, col, value);
-            }
+        let mut result_values = Vec::with_capacity(self.values.len());
+        for (a, b) in self.values.iter().zip(rhs.values.iter()) {
+            let value = func(a, b)?;
+            result_values.push(value);
         }
-        Ok(result)
+        Ok(Matrix::new(
+            result_values,
+            self.row_count,
+            self.column_count,
+        ))
     }
 }
 
@@ -102,7 +130,7 @@ impl Add for Matrix<Value> {
     type Output = Result<Matrix<Value>, EvalError>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        self.pair_map(rhs, |a, b| a + b)
+        self.pair_map(rhs, |a, b| a.clone() + b.clone())
     }
 }
 
@@ -110,7 +138,7 @@ impl Sub for Matrix<Value> {
     type Output = Result<Matrix<Value>, EvalError>;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        self.pair_map(rhs, |a, b| a - b)
+        self.pair_map(rhs, |a, b| a.clone() - b.clone())
     }
 }
 
