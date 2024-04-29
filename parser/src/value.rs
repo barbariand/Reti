@@ -80,8 +80,8 @@ impl Mul for Value {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a * b),
             (Value::Matrix(_a), Value::Matrix(_b)) => todo!("Matrix multiplication"),
-            (Value::Scalar(scalar), Value::Matrix(matrix)) => Value::Matrix((scalar * matrix)?),
-            (Value::Matrix(matrix), Value::Scalar(scalar)) => Value::Matrix((scalar * matrix)?),
+            (Value::Scalar(scalar), Value::Matrix(matrix)) => Value::Matrix((matrix * scalar)?),
+            (Value::Matrix(matrix), Value::Scalar(scalar)) => Value::Matrix((matrix * scalar)?),
         })
     }
 }
@@ -94,5 +94,13 @@ impl Div for Value {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a / b),
             (_, _) => return type_err("Cannot perform division with matricies."),
         })
+    }
+}
+
+impl Mul<f64> for Value {
+    type Output = Result<Value, EvalError>;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Value::Scalar(rhs) * self
     }
 }

@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-
+#![feature(iterator_try_collect)]
 mod approximator;
 mod ast;
 

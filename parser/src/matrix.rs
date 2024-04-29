@@ -1,4 +1,7 @@
-use std::ops::{Add, Mul, Sub};
+use std::{
+    ops::{Add, Mul, Sub},
+    process::Output,
+};
 
 use crate::prelude::*;
 
@@ -62,64 +65,65 @@ impl<T: Clone> Clone for Matrix<T> {
     }
 }
 
-impl<T: Clone> Matrix<T> {
-    fn map<F>(&self, mut func: F) -> Result<Matrix<T>, EvalError>
+impl<In> Matrix<In> {
+    fn map<F, Res>(&self, func: F) -> Result<Matrix<Res>, EvalError>
     where
-        F: FnMut(&T) -> Result<T, EvalError>,
+        F: Fn(&In) -> Result<Res, EvalError>,
     {
-        let mut result = self.clone();
-        for row in 0..self.row_count {
-            for col in 0..self.column_count {
-                let current = self.get(row, col);
-                let new = func(current)?;
-                result.set(row, col, new);
-            }
-        }
-        Ok(result)
+        let val = self.values.iter().map(func).try_collect()?;
+        Ok(Matrix::new(val, self.row_count, self.column_count))
     }
 
-    fn pair_map<F>(&self, rhs: Matrix<T>, mut func: F) -> Result<Matrix<T>, EvalError>
+    fn pair_map<F, Res, Out>(&self, rhs: Matrix<Out>, func: F) -> Result<Matrix<Res>, EvalError>
     where
-        F: FnMut(T, T) -> Result<T, EvalError>,
+        F: Fn(In, Out) -> Result<Res, EvalError>,
+        Out: Clone,
+        In: Clone,
     {
         if self.row_count() != rhs.row_count() || self.column_count() != rhs.column_count() {
             return Err(EvalError::IncompatibleMatrixSizes);
         }
-        let mut result = self.clone();
-        for row in 0..self.row_count {
-            for col in 0..self.column_count {
-                let a = self.get(row, col).clone();
-                let b = rhs.get(row, col).clone();
-                let value = func(a, b)?;
-                result.set(row, col, value);
-            }
-        }
-        Ok(result)
+        let res = self
+            .values
+            .iter()
+            .cloned()
+            .zip(rhs.values.iter().cloned())
+            .map(|a| func(a.0, a.1))
+            .try_collect()?;
+        Ok(Matrix::new(res, self.row_count, self.column_count))
     }
 }
 
-impl Add for Matrix<Value> {
-    type Output = Result<Matrix<Value>, EvalError>;
+impl<Lhs, Res, Rhs> Add<Matrix<Rhs>> for Matrix<Lhs>
+where
+    Lhs: Clone + Add<Rhs, Output = Result<Res, EvalError>>,
+    Rhs: Clone,
+{
+    type Output = Result<Matrix<Res>, EvalError>;
 
-    fn add(self, rhs: Self) -> Self::Output {
+    fn add(self, rhs: Matrix<Rhs>) -> Self::Output {
         self.pair_map(rhs, |a, b| a + b)
     }
 }
 
-impl Sub for Matrix<Value> {
-    type Output = Result<Matrix<Value>, EvalError>;
+impl<Lhs: Clone + Sub<Rhs, Output = Result<Res, EvalError>>, Res, Rhs: Clone> Sub<Matrix<Rhs>>
+    for Matrix<Lhs>
+{
+    type Output = Result<Matrix<Res>, EvalError>;
 
-    fn sub(self, rhs: Self) -> Self::Output {
+    fn sub(self, rhs: Matrix<Rhs>) -> Self::Output {
         self.pair_map(rhs, |a, b| a - b)
     }
 }
 
-impl Mul<Matrix<Value>> for f64 {
-    type Output = Result<Matrix<Value>, EvalError>;
+impl<Rhs: Clone, Res, Lhs: Clone + Mul<Rhs, Output = Result<Res, EvalError>>> Mul<Rhs>
+    for Matrix<Lhs>
+{
+    type Output = Result<Matrix<Res>, EvalError>;
 
-    fn mul(self, rhs: Matrix<Value>) -> Self::Output {
+    fn mul(self, rhs: Rhs) -> Self::Output {
         // Multiply matrix components by self
-        rhs.map(|val| Value::Scalar(self) * val.clone())
+        self.map(|val| val.clone() * rhs.clone())
     }
 }
 
