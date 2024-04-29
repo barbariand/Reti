@@ -193,9 +193,26 @@ impl Parser {
         let factor = match self.reader.read().await {
             Token::NumberLiteral(val) => Factor::Constant(val.parsed),
             Token::LeftParenthesis => {
-                let expr = self.expr().await?;
+                // In most cases, this is one value, for example (1+1).
+                // But parse many values since it could be a vector (1,2,3)
+                // if commas are encountered.
+                let mut values = Vec::with_capacity(1);
+                loop {
+                    let expr = self.expr().await?;
+                    values.push(expr);
+                    let next = self.reader.peek().await;
+                    if next != Token::Comma {
+                        break;
+                    }
+                    self.reader.skip().await;
+                }
                 self.expect(Token::RightParenthesis).await?;
-                Factor::Parenthesis(Box::new(expr))
+                let len = values.len();
+                if len == 1 {
+                    Factor::Parenthesis(Box::new(values.remove(0)))
+                } else {
+                    Factor::Matrix(Matrix::new(values, 1, len))
+                }
             }
             Token::Backslash => {
                 let command = self.read_identifier().await?;
@@ -832,6 +849,15 @@ mod tests {
             Ast::Expression(Factor::Matrix(matrix).into()),
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn parenthesis_row_vector() {
+        let mut matrix = Matrix::zero(1, 3);
+        matrix.set(0, 0, 1f64.into());
+        matrix.set(0, 1, 2f64.into());
+        matrix.set(0, 2, 3f64.into());
+        parse_test(r#"(1,2,3)"#, Ast::Expression(Factor::Matrix(matrix).into())).await;
     }
 
     #[tokio::test]
