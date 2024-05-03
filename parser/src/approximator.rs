@@ -5,7 +5,18 @@ use super::prelude::*;
 pub enum EvalError {
     ExpectedScalar,
     IncompatibleTypes(&'static str),
-    IncompatibleMatrixSizes,
+    IncompatibleMatrixSizes(IncompatibleMatrixSizes),
+}
+#[derive(Debug)]
+pub enum IncompatibleMatrixSizes {
+    Row { expected: usize, found: usize },
+    Column { expected: usize, found: usize },
+}
+
+impl Into<EvalError> for IncompatibleMatrixSizes {
+    fn into(self) -> EvalError {
+        EvalError::IncompatibleMatrixSizes(self)
+    }
 }
 
 pub struct Approximator {
