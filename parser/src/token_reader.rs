@@ -2,6 +2,7 @@ use tracing::{debug, trace_span};
 
 use crate::prelude::*;
 use std::{collections::VecDeque, ops::RangeInclusive};
+/// A struct for easeier management of tokens
 #[derive(Debug)]
 pub struct TokenReader {
     tokens: TokenResiver,

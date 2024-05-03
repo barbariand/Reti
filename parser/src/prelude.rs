@@ -1,3 +1,10 @@
+//! # Reti parser common exports
+//! Reti parser common exports for interacting with the latex parser
+//! * [parse] function
+//! * outputed [Ast]
+//!
+//! [parse]: self::parse
+
 pub use crate::{
     ast::Ast,
     context::{MathContext, MathFunction},
