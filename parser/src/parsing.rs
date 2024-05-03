@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
-use clap::builder::Str;
 use slicedisplay::SliceDisplay;
-use tracing::{debug, error, trace, trace_span};
+use tracing::{debug, trace, trace_span};
 
 use crate::prelude::*;
 use async_recursion::async_recursion;

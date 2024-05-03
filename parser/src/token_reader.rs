@@ -1,4 +1,4 @@
-use tracing::{debug, instrument, span, trace, trace_span};
+use tracing::{debug, trace_span};
 
 use crate::prelude::*;
 use std::{collections::VecDeque, ops::RangeInclusive};

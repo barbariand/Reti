@@ -11,6 +11,7 @@ pub(crate) type TokenSender = Sender<Token>;
 pub(crate) use crate::{
     approximator::Approximator,
     approximator::EvalError,
+    approximator::IncompatibleMatrixSizes,
     ast::{Factor, FunctionCall, MathExpr, MathIdentifier, Term},
     lexer::Lexer,
     matrix::Matrix,
