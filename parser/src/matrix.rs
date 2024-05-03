@@ -365,7 +365,7 @@ impl<Lhs: Clone + Mul<f64, Output = Result<Value, EvalError>>> Mul<f64> for Matr
 
     fn mul(self, rhs: f64) -> Self::Output {
         // Multiply matrix components by self
-        self.map(|val| val.clone() * rhs.clone())
+        self.map(|val| val.clone() * rhs)
     }
 }
 

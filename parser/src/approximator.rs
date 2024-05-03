@@ -13,9 +13,9 @@ pub enum IncompatibleMatrixSizes {
     Column { expected: usize, found: usize },
 }
 
-impl Into<EvalError> for IncompatibleMatrixSizes {
-    fn into(self) -> EvalError {
-        EvalError::IncompatibleMatrixSizes(self)
+impl From<IncompatibleMatrixSizes> for EvalError {
+    fn from(value: IncompatibleMatrixSizes) -> Self {
+        Self::IncompatibleMatrixSizes(value)
     }
 }
 
