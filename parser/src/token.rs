@@ -1,10 +1,13 @@
 use std::{fmt::Display, hash::Hash, num::ParseFloatError, str::FromStr};
-
+/// All the axepted tokens
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum Token {
+    /// Any non other 
     Identifier(String),
     NumberLiteral(NumberLiteral),
-    Backslash,         // \
+    /// String representation:`\`
+    /// for command starts and seperating matrixes
+    Backslash,
     LeftCurlyBracket,  // {
     RightCurlyBracket, // }
     LeftBracket,       // [
