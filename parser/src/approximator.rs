@@ -1,4 +1,4 @@
-/// A simple single-threaded evaluator for an AST.
+//! Simple single-threaded aproximator for AST
 use super::prelude::*;
 
 #[derive(Debug)]
@@ -18,23 +18,25 @@ impl From<IncompatibleMatrixSizes> for EvalError {
         Self::IncompatibleMatrixSizes(value)
     }
 }
-
+/// A simple single-threaded evaluator for an AST.
 pub struct Approximator {
     context: MathContext,
 }
 
 impl Approximator {
+    /// Makes a new Approximator
     pub fn new(context: MathContext) -> Self {
         Self { context }
     }
-
+    ///returns a refrance to the [MathContext] used for evaluationg functions
     pub fn context(&self) -> &MathContext {
         &self.context
     }
+    ///returns a mutable refrance to the [MathContext] used for evaluationg functions
     pub fn context_mut(&mut self) -> &mut MathContext {
         &mut self.context
     }
-
+    ///returns a refrance to the [MathContext] used for evaluationg functions
     pub fn eval_expr(&self, expr: &MathExpr) -> Result<Value, EvalError> {
         match expr {
             MathExpr::Term(term) => self.eval_term(term),
@@ -42,7 +44,7 @@ impl Approximator {
             MathExpr::Subtract(a, b) => self.eval_expr(a.as_ref())? - self.eval_term(b)?,
         }
     }
-
+    ///returns a refrance to the [MathContext] used for evaluationg functions
     fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
         match term {
             Term::Factor(factor) => self.eval_factor(factor),
