@@ -1,8 +1,10 @@
+//!
 use std::ops::{Add, AddAssign, Mul, Sub};
 
 use crate::prelude::*;
 
 #[derive(PartialEq, Debug)]
+
 pub struct Matrix<T> {
     // values[row][column]
     values: Vec<T>,
@@ -365,7 +367,7 @@ impl<Lhs: Clone + Mul<f64, Output = Result<Value, EvalError>>> Mul<f64> for Matr
 
     fn mul(self, rhs: f64) -> Self::Output {
         // Multiply matrix components by self
-        self.map(|val| val.clone() * rhs)
+        self.map(|val| val.clone() * rhs.clone())
     }
 }
 

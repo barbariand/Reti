@@ -1,10 +1,13 @@
+//! Reti is an in-development calculator that can evaluate LaTeX expressions.
 #![allow(dead_code)]
+#![warn(missing_docs)]
 
 mod approximator;
 mod ast;
 
 mod context;
 mod lexer;
+
 pub mod matrix;
 mod normalizer;
 mod parsing;

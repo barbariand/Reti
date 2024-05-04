@@ -38,7 +38,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(tokens: TokenResiver, context: MathContext) -> Self {
+    pub fn new(tokens: TokenReceiver, context: MathContext) -> Self {
         trace!("created Parser");
 
         Parser {
@@ -451,8 +451,8 @@ mod tests {
     use crate::prelude::*;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let (lexer_in, lexer_out): (TokenSender, TokenResiver) = mpsc::channel(32);
-        let (normalizer_in, normalizer_out): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let (lexer_in, lexer_out): (TokenSender, TokenReceiver) = mpsc::channel(32);
+        let (normalizer_in, normalizer_out): (TokenSender, TokenReceiver) = mpsc::channel(32);
 
         let context = MathContext::standard_math();
 

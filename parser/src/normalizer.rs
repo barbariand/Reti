@@ -7,7 +7,8 @@ pub struct Normalizer {
     output: TokenSender,
 }
 impl Normalizer {
-    pub fn new(input: TokenResiver, output: TokenSender) -> Self {
+    ///Creates a normalizer
+    pub fn new(input: TokenReceiver, output: TokenSender) -> Self {
         trace!("created Normalizer");
 
         Self {
@@ -83,8 +84,8 @@ mod tests {
     use crate::prelude::*;
 
     async fn normalize(tokens: Vec<Token>) -> Vec<Token> {
-        let (tx1, rx1): (TokenSender, TokenResiver) = mpsc::channel(32);
-        let (tx2, mut rx2): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let (tx1, rx1): (TokenSender, TokenReceiver) = mpsc::channel(32);
+        let (tx2, mut rx2): (TokenSender, TokenReceiver) = mpsc::channel(32);
         let normalizer = Normalizer::new(rx1, tx2);
 
         let mut result = Vec::with_capacity(tokens.len());

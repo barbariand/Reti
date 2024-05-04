@@ -6,17 +6,19 @@
 //! [parse]: self::parse
 
 pub use crate::{
+    approximator::Approximator,
     ast::Ast,
     context::{MathContext, MathFunction},
     value::Value,
 };
-
-pub(crate) type TokenResiver = Receiver<Token>;
+/// An alias for Reciver<Token> to receive tokens
+pub(crate) type TokenReceiver = Receiver<Token>;
 pub(crate) use tokio::sync::mpsc;
+/// An alias for Sender<Token> to send tokens
 pub(crate) type TokenSender = Sender<Token>;
+
 #[allow(unused_imports)]
 pub(crate) use crate::{
-    approximator::Approximator,
     approximator::EvalError,
     approximator::IncompatibleMatrixSizes,
     ast::{Factor, FunctionCall, MathExpr, MathIdentifier, Term},
@@ -35,18 +37,18 @@ use tokio::{
     task::JoinError,
 };
 use tracing::{debug, error, trace, trace_span};
-
+///The parse function centeral to the parsing funcionality, and outputs an AST that can be evaluated using
 pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstErrors> {
     let span = trace_span!("parsing");
     let _enter = span.enter();
     debug!(text);
     let channel_buffer_size = 32;
-    let (lexer_in, lexer_out): (TokenSender, TokenResiver) = mpsc::channel(channel_buffer_size);
+    let (lexer_in, lexer_out): (TokenSender, TokenReceiver) = mpsc::channel(channel_buffer_size);
     debug!(
         "successfully created channel for lexer with {} long buffer",
         channel_buffer_size
     );
-    let (normalizer_in, normalizer_out): (TokenSender, TokenResiver) =
+    let (normalizer_in, normalizer_out): (TokenSender, TokenReceiver) =
         mpsc::channel(channel_buffer_size);
     debug!(
         "successfully created channel for normalizer with {} long buffer",
@@ -107,7 +109,7 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstErrors> 
         Ok(Ok(ast)) => ast.map_err(AstErrors::ParseError),
     }
 }
-
+///
 #[derive(Debug)]
 pub enum AstErrors {
     Lexer(JoinError),

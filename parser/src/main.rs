@@ -1,3 +1,6 @@
+//! RETI REPL
+#![warn(missing_docs)]
+
 mod approximator;
 mod ast;
 mod context;

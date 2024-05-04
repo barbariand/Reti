@@ -133,7 +133,7 @@ mod tests {
     }
 
     async fn eval_test_from_str(expected: f64, text: &str) {
-        let (tx, rx): (TokenSender, TokenResiver) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
 
         let context = MathContext::new();
         let lexer = Lexer::new(tx);

@@ -110,7 +110,7 @@ mod tests {
     use crate::prelude::*;
 
     async fn tokenize(text: &str) -> Vec<Token> {
-        let (tx, mut rx): (TokenSender, TokenResiver) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, mut rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
         let lexer = Lexer::new(tx);
 
         lexer.tokenize(text).await;
