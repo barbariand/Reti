@@ -55,8 +55,9 @@ impl TokenReader {
     /// subsequent reads.
     ///
     /// ## Panics
-    /// If this method is called out of order, for example `peekn(1)`, `peekn(3)`,
-    /// this method will panic since that is usually a sign of a bug.
+    /// If this method is called out of order, for example `peekn(1)`,
+    /// `peekn(3)`, this method will panic since that is usually a sign of a
+    /// bug.
     pub async fn peekn(&mut self, n: usize) -> &Token {
         if self.next.len() == n {
             let token = self.read_internal().await;
@@ -108,7 +109,8 @@ impl TokenReader {
         _ = self.read().await;
     }
 
-    /// Replace a range of tokens that have been peeked with a vector of replacements.
+    /// Replace a range of tokens that have been peeked with a vector of
+    /// replacements.
     ///
     /// ## Pseudocode Example
     /// ```ignore

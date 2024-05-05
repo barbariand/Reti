@@ -1,7 +1,7 @@
 //! # Reti parser common exports
 //! Reti parser common exports for interacting with the latex parser
 //! * [parse] function
-//! * outputed [Ast]
+//! * outputted [Ast]
 //!
 //! [parse]: self::parse
 
@@ -11,10 +11,10 @@ pub use crate::{
     context::{MathContext, MathFunction},
     value::Value,
 };
-/// An alias for Reciver<Token> to receive tokens
+/// An alias for `Receiver<Token>` to receive tokens
 pub(crate) type TokenReceiver = Receiver<Token>;
 pub(crate) use tokio::sync::mpsc;
-/// An alias for Sender<Token> to send tokens
+/// An alias for `Sender<Token>` to send tokens
 pub(crate) type TokenSender = Sender<Token>;
 
 #[allow(unused_imports)]
@@ -37,7 +37,8 @@ use tokio::{
     task::JoinError,
 };
 use tracing::{debug, error, trace, trace_span};
-///The parse function centeral to the parsing funcionality, and outputs an AST that can be evaluated using
+///The parse function central to the parsing functionality, and outputs an AST
+/// that can be evaluated using
 pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstErrors> {
     let span = trace_span!("parsing");
     let _enter = span.enter();
@@ -109,7 +110,20 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstErrors> 
         Ok(Ok(ast)) => ast.map_err(AstErrors::ParseError),
     }
 }
-///
+/// functions for doc testing and other things that need to be public only for
+/// tests
+pub mod _private {
+    use super::*;
+
+    ///function for parsing in sync doc tests
+    pub fn parse_sync_doc_test(text: &str, context: &MathContext) -> Ast {
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(parse(text, context))
+            .unwrap()
+    }
+}
+/// The errors the AST can produce
 #[derive(Debug)]
 pub enum AstErrors {
     Lexer(JoinError),

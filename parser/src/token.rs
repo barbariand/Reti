@@ -2,7 +2,7 @@ use std::{fmt::Display, hash::Hash, num::ParseFloatError, str::FromStr};
 /// All the axepted tokens
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum Token {
-    /// Any non other 
+    /// Any non other
     Identifier(String),
     NumberLiteral(NumberLiteral),
     /// String representation:`\`

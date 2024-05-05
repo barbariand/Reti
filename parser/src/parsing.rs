@@ -98,8 +98,8 @@ impl Parser {
         }
     }
 
-    /// Parse a mathematical expression that consists of multiple terms added and
-    /// subtracted.
+    /// Parse a mathematical expression that consists of multiple terms added
+    /// and subtracted.
     #[async_recursion]
     async fn expr(&mut self) -> Result<MathExpr, ParseError> {
         let mut expr = MathExpr::Term(self.term().await?);
@@ -124,9 +124,9 @@ impl Parser {
         Ok(expr)
     }
 
-    /// Parse a term that consists of multiple factors multiplied and divided. Will
-    /// handle implicit multiplication and continues to read until the end of the
-    /// term.
+    /// Parse a term that consists of multiple factors multiplied and divided.
+    /// Will handle implicit multiplication and continues to read until the
+    /// end of the term.
     #[async_recursion]
     async fn term(&mut self) -> Result<Term, ParseError> {
         let mut term = Term::Factor(self.factor().await?);
@@ -172,8 +172,8 @@ impl Parser {
         Ok(term)
     }
 
-    /// Parse a factor, and if the factor has an exponent attached to it, parse the
-    /// exponent too.
+    /// Parse a factor, and if the factor has an exponent attached to it, parse
+    /// the exponent too.
     #[async_recursion]
     async fn factor(&mut self) -> Result<Factor, ParseError> {
         // Split identifiers into single characters
