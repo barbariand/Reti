@@ -18,11 +18,15 @@ impl<T> Matrix<T> {
     /// # Panics
     ///
     /// This constructor panics if the length of `values` is not equal to
-    /// `row_count * column_count`. This ensures data consistency within the matrix
-    /// and prevents potential errors later due to an incorrect underlying representation.
-    pub(crate) fn new(values: Vec<T>, row_count: usize, column_count: usize) -> Self {
+    /// `row_count * column_count`. This ensures data consistency within the
+    /// matrix and prevents potential errors later due to an incorrect
+    /// underlying representation.
+    pub fn new(values: Vec<T>, row_count: usize, column_count: usize) -> Self {
         if values.len() != row_count * column_count {
-            panic!("values has incorrect size.") //should it be a panic or an err? i mean its probably a parse error here but i think we want that as a result
+            panic!("values has incorrect size.") //should it be a panic or an
+                                                 // err? i mean its probably a
+                                                 // parse error here but i think
+                                                 // we want that as a result
         }
         Self {
             values,
@@ -40,7 +44,8 @@ impl<T> Matrix<T> {
         &self.values[row * self.column_count + column]
     }
 
-    /// Accesses the element at the specified `row` and `column` with an optional return type.
+    /// Accesses the element at the specified `row` and `column` with an
+    /// optional return type.
     ///
     /// # Returns
     ///
@@ -103,7 +108,8 @@ impl<Lhs> Matrix<Lhs> {
     ///
     /// Returns an `Err` if:
     ///    - Both matrices are not vectors (i.e., more than one row or column).
-    ///    - The dimensions of the matrices do not match for dot product calculation.
+    ///    - The dimensions of the matrices do not match for dot product
+    ///      calculation.
     pub fn dot_product<Rhs, Res>(&self, other: &Matrix<Rhs>) -> Result<Res, &'static str>
     where
         Lhs: Mul<Rhs, Output = Res> + Clone,
@@ -207,7 +213,8 @@ impl<Lhs> Matrix<Lhs> {
         Ok(det)
     }
 
-    /// Helper function to create a submatrix by excluding a specified row and column.
+    /// Helper function to create a submatrix by excluding a specified row and
+    /// column.
     fn submatrix(&self, skip_row: usize, skip_col: usize) -> Matrix<Lhs>
     where
         Lhs: Clone,
@@ -247,8 +254,8 @@ impl<T> Matrix<T> {
     ///
     /// # Errors
     ///
-    /// Returns an `Err` of type `EvalError` if the provided function `func` returns an error
-    /// for any of the matrix elements.
+    /// Returns an `Err` of type `EvalError` if the provided function `func`
+    /// returns an error for any of the matrix elements.
     fn map<F, Res>(&self, func: F) -> Result<Matrix<Res>, EvalError>
     where
         F: Fn(&T) -> Result<Res, EvalError>,
@@ -256,13 +263,15 @@ impl<T> Matrix<T> {
         let val: Result<_, _> = self.values.iter().map(func).collect();
         Ok(Matrix::new(val?, self.row_count, self.column_count))
     }
-    /// Performs element-wise operations with another matrix using a provided function.
+    /// Performs element-wise operations with another matrix using a provided
+    /// function.
     ///
     /// # Errors
     ///
-    /// Returns an `Err` of type `IncompatibleMatrixSizes` if the dimensions of the two matrices
-    /// do not match. Returns an `Err` of type `EvalError` if the provided function `func` returns
-    /// an error for any of the element pairs.
+    /// Returns an `Err` of type `IncompatibleMatrixSizes` if the dimensions of
+    /// the two matrices do not match. Returns an `Err` of type `EvalError`
+    /// if the provided function `func` returns an error for any of the
+    /// element pairs.
     fn pair_map<F, Res, Out>(&self, rhs: Matrix<Out>, func: F) -> Result<Matrix<Res>, EvalError>
     where
         F: Fn(T, Out) -> Result<Res, EvalError>,
