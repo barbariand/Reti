@@ -318,9 +318,9 @@ impl<T> Matrix<T> {
     }
 }
 #[cfg(test)]
-impl Matrix<i32>{
-    fn zero(rows:usize,cols:usize)->Matrix<i32>{
-        let values=vec![0;rows*cols];
+impl Matrix<MathExpr>{
+    pub fn zero(rows:usize,cols:usize)->Matrix<MathExpr>{
+        let values=vec![MathExpr::Term(Term::Factor(Factor::Constant(0.0)));rows*cols];
         Self { values, row_count:rows, column_count:cols }
     }
 }
@@ -399,7 +399,7 @@ impl<Lhs: Clone + Mul<f64, Output = Result<Value, EvalError>>> Mul<f64> for Matr
 
     fn mul(self, rhs: f64) -> Self::Output {
         // Multiply matrix components by self
-        self.map(|val| val.clone() * rhs.clone())
+        self.map(|val| val.clone() * rhs)
     }
 }
 
