@@ -193,9 +193,26 @@ impl Parser {
         let factor = match self.reader.read().await {
             Token::NumberLiteral(val) => Factor::Constant(val.parsed),
             Token::LeftParenthesis => {
-                let expr = self.expr().await?;
+                // In most cases, this is one value, for example (1+1).
+                // But parse many values since it could be a vector (1,2,3)
+                // if commas are encountered.
+                let mut values = Vec::with_capacity(1);
+                loop {
+                    let expr = self.expr().await?;
+                    values.push(expr);
+                    let next = self.reader.peek().await;
+                    if next != Token::Comma {
+                        break;
+                    }
+                    self.reader.skip().await;
+                }
                 self.expect(Token::RightParenthesis).await?;
-                Factor::Parenthesis(Box::new(expr))
+                let len = values.len();
+                if len == 1 {
+                    Factor::Parenthesis(Box::new(values.remove(0)))
+                } else {
+                    Factor::Matrix(Matrix::new(values, 1, len))
+                }
             }
             Token::Backslash => {
                 let command = self.read_identifier().await?;
@@ -381,6 +398,7 @@ impl Parser {
             arguments,
         }))
     }
+
     async fn matrix(&mut self, matrix_type: String) -> Result<Matrix<MathExpr>, ParseError> {
         let mut rows = Vec::new();
         let mut current_row = Vec::new();
@@ -421,6 +439,19 @@ impl Parser {
                         self.expect(Token::LeftCurlyBracket).await?;
                         self.expect(Token::Identifier(matrix_type)).await?;
                         self.expect(Token::RightCurlyBracket).await?;
+                        // TODO de-duplicate code
+                        match column_count {
+                            Some(column_count) => {
+                                if column_count != current_row.len() {
+                                    return Err(ParseError::MismatchedMatrixColumnSize {
+                                        prev: column_count,
+                                        current: current_row.len(),
+                                    });
+                                }
+                            }
+                            None => column_count = Some(current_row.len()),
+                        }
+                        rows.push(current_row);
                         break;
                     }
                 }
@@ -434,10 +465,16 @@ impl Parser {
         }
 
         let row_count = rows.len();
-        let values = Vec::with_capacity(row_count * column_count.unwrap_or_default());
-        let matrix = Matrix::new(values, row_count, column_count.unwrap_or_default());
+        let column_count = column_count.unwrap_or(0);
+        let mut values = Vec::with_capacity(row_count * column_count);
+        // Ensure this is always the same ordering as Matrix::index expects
+        for row in rows.into_iter() {
+            for value in row.into_iter() {
+                values.push(value);
+            }
+        }
 
-        Ok(matrix)
+        Ok(Matrix::new(values, row_count, column_count))
     }
 }
 
@@ -784,6 +821,57 @@ mod tests {
                 .into(),
                 2f64.into(),
             ),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn pmatrix_column_vector() {
+        let mut matrix = Matrix::zero(3, 1);
+        matrix.set(0, 0, 1f64.into());
+        matrix.set(1, 0, 2f64.into());
+        matrix.set(2, 0, 3f64.into());
+        parse_test(
+            r#"\begin{pmatrix} 1 \\ 2 \\ 3 \end{pmatrix}"#,
+            Ast::Expression(Factor::Matrix(matrix).into()),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn pmatrix_row_vector() {
+        let mut matrix = Matrix::zero(1, 3);
+        matrix.set(0, 0, 1f64.into());
+        matrix.set(0, 1, 2f64.into());
+        matrix.set(0, 2, 3f64.into());
+        parse_test(
+            r#"\begin{pmatrix} 1 & 2 & 3 \end{pmatrix}"#,
+            Ast::Expression(Factor::Matrix(matrix).into()),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn parenthesis_row_vector() {
+        let mut matrix = Matrix::zero(1, 3);
+        matrix.set(0, 0, 1f64.into());
+        matrix.set(0, 1, 2f64.into());
+        matrix.set(0, 2, 3f64.into());
+        parse_test(r#"(1,2,3)"#, Ast::Expression(Factor::Matrix(matrix).into())).await;
+    }
+
+    #[tokio::test]
+    async fn bmatrix_2x3() {
+        let mut matrix = Matrix::zero(2, 3);
+        matrix.set(0, 0, 1f64.into());
+        matrix.set(0, 1, 2f64.into());
+        matrix.set(0, 2, 3f64.into());
+        matrix.set(1, 0, 4f64.into());
+        matrix.set(1, 1, 5f64.into());
+        matrix.set(1, 2, 6f64.into());
+        parse_test(
+            r#"\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6  \end{bmatrix}"#,
+            Ast::Expression(Factor::Matrix(matrix).into()),
         )
         .await;
     }

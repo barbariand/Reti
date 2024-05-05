@@ -23,10 +23,14 @@ impl<T> Matrix<T> {
     /// underlying representation.
     pub fn new(values: Vec<T>, row_count: usize, column_count: usize) -> Self {
         if values.len() != row_count * column_count {
-            panic!("values has incorrect size.") //should it be a panic or an
-                                                 // err? i mean its probably a
-                                                 // parse error here but i think
-                                                 // we want that as a result
+            panic!(
+                "values has incorrect size. Expected {} ({}*{}), found {}",
+                row_count * column_count,
+                row_count,
+                column_count,
+                values.len()
+            );
+             //should it be a panic or an err? i mean its probably a parse error here but i think we want that as a result
         }
         Self {
             values,
@@ -35,13 +39,23 @@ impl<T> Matrix<T> {
         }
     }
 
+    pub fn index(&self, row: usize, column: usize) -> usize {
+        if row >= self.row_count {
+            panic!("Row out out bounds. {}/{}", row, self.row_count);
+        }
+        if column >= self.column_count {
+            panic!("Column out out bounds. {}/{}", column, self.column_count);
+        }
+        return row * self.column_count + column;
+    }
+
     /// Accesses the element at the specified `row` and `column`.
     ///
     /// # Returns
     ///
     /// A reference to the element at the given index.
     pub fn get(&self, row: usize, column: usize) -> &T {
-        &self.values[row * self.column_count + column]
+        &self.values[self.index(row, column)]
     }
 
     /// Accesses the element at the specified `row` and `column` with an
@@ -52,12 +66,13 @@ impl<T> Matrix<T> {
     /// - `Some(&T)` if the element exists.
     /// - `None` if the index is out of bounds.
     pub fn option_get(&self, row: usize, column: usize) -> Option<&T> {
-        self.values.get(row * self.column_count + column)
+        self.values.get(self.index(row, column))
     }
 
     /// Sets the element at the specified `row` and `column`.
     pub fn set(&mut self, row: usize, column: usize, value: T) {
-        self.values[row * self.column_count + column] = value;
+        let index = self.index(row, column);
+        self.values[index] = value;
     }
 
     /// Returns the total number of rows in the matrix.
@@ -254,9 +269,9 @@ impl<T> Matrix<T> {
     ///
     /// # Errors
     ///
-    /// Returns an `Err` of type `EvalError` if the provided function `func`
-    /// returns an error for any of the matrix elements.
-    fn map<F, Res>(&self, func: F) -> Result<Matrix<Res>, EvalError>
+    /// Returns an `Err` of type `EvalError` if the provided function `func` returns an error
+    /// for any of the matrix elements.
+    pub fn map<F, Res>(&self, func: F) -> Result<Matrix<Res>, EvalError>
     where
         F: Fn(&T) -> Result<Res, EvalError>,
     {
@@ -272,7 +287,7 @@ impl<T> Matrix<T> {
     /// the two matrices do not match. Returns an `Err` of type `EvalError`
     /// if the provided function `func` returns an error for any of the
     /// element pairs.
-    fn pair_map<F, Res, Out>(&self, rhs: Matrix<Out>, func: F) -> Result<Matrix<Res>, EvalError>
+    pub fn pair_map<F, Res, Out>(&self, rhs: Matrix<Out>, func: F) -> Result<Matrix<Res>, EvalError>
     where
         F: Fn(T, Out) -> Result<Res, EvalError>,
         Out: Clone,
@@ -302,6 +317,14 @@ impl<T> Matrix<T> {
         Ok(Matrix::new(res?, self.row_count, self.column_count))
     }
 }
+#[cfg(test)]
+impl Matrix<i32>{
+    fn zero(rows:usize,cols:usize)->Matrix<i32>{
+        let values=vec![0;rows*cols];
+        Self { values, row_count:rows, column_count:cols }
+    }
+}
+
 impl<Lhs, Rhs, Res> Mul<Matrix<Rhs>> for Matrix<Lhs>
 where
     Lhs: Mul<Rhs, Output = Res> + Clone,
