@@ -1,16 +1,35 @@
-//! Simple single-threaded aproximator for AST
+//! Simple single-threaded Approximator for AST
 use super::prelude::*;
 
+/// The errors that can happen when evaluating a AST
 #[derive(Debug)]
 pub enum EvalError {
+    /// A matrix was found when it was expected to be a scalar
     ExpectedScalar,
+    /// General error for when it can not be used
     IncompatibleTypes(&'static str),
+    ///When the Matrix required another size for doing the operation
     IncompatibleMatrixSizes(IncompatibleMatrixSizes),
+    /// Could nto fund the value expected
+    NotDefined,
 }
+/// The error for when it required another size of the matrix
 #[derive(Debug)]
 pub enum IncompatibleMatrixSizes {
-    Row { expected: usize, found: usize },
-    Column { expected: usize, found: usize },
+    /// Wrong row value for the matrix operation
+    Row {
+        /// The expected value for the matrix
+        expected: usize,
+        /// The value found
+        found: usize,
+    },
+    /// Wrong column value for the matrix operation
+    Column {
+        /// The expected value for the matrix
+        expected: usize,
+        /// The value found
+        found: usize,
+    },
 }
 
 impl From<IncompatibleMatrixSizes> for EvalError {
@@ -20,6 +39,7 @@ impl From<IncompatibleMatrixSizes> for EvalError {
 }
 /// A simple single-threaded evaluator for an AST.
 pub struct Approximator {
+    /// the MathContext holding all the defined functions
     context: MathContext,
 }
 
@@ -28,15 +48,20 @@ impl Approximator {
     pub fn new(context: MathContext) -> Self {
         Self { context }
     }
-    ///returns a refrance to the [MathContext] used for evaluationg functions
+    ///returns a reference to the [MathContext] used for evaluating functions
     pub fn context(&self) -> &MathContext {
         &self.context
     }
-    ///returns a mutable refrance to the [MathContext] used for evaluationg functions
+    ///returns a mutable reference to the [MathContext] used for evaluating
+    /// functions
     pub fn context_mut(&mut self) -> &mut MathContext {
         &mut self.context
     }
-    ///returns a refrance to the [MathContext] used for evaluationg functions
+    ///Evaluates a MathExpr
+    ///
+    /// # Errors
+    /// [EvalError]
+    /// This can error if it can not be completed or it is wrong
     pub fn eval_expr(&self, expr: &MathExpr) -> Result<Value, EvalError> {
         match expr {
             MathExpr::Term(term) => self.eval_term(term),
@@ -44,7 +69,11 @@ impl Approximator {
             MathExpr::Subtract(a, b) => self.eval_expr(a.as_ref())? - self.eval_term(b)?,
         }
     }
-    ///returns a refrance to the [MathContext] used for evaluationg functions
+    ///Evaluates a Term
+    ///
+    /// # Errors
+    /// [EvalError]
+    /// This can error if it can not complete
     fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
         match term {
             Term::Factor(factor) => self.eval_factor(factor),
@@ -52,17 +81,24 @@ impl Approximator {
             Term::Divide(a, b) => self.eval_term(a.as_ref())? / self.eval_factor(b)?,
         }
     }
-
+    ///Evaluates a Factor
+    ///
+    /// # Errors
+    /// [EvalError]
+    /// This can error if it can not complete
+    ///
+    /// # Panics
+    ///  this implementation currently panics when it can not under
     fn eval_factor(&self, factor: &Factor) -> Result<Value, EvalError> {
         Ok(match factor {
             Factor::Constant(c) => Value::Scalar(*c),
             Factor::Parenthesis(expr) => self.eval_expr(expr.as_ref())?,
-            Factor::Variable(x) => {
-                match self.context.variables.get(x) {
-                    Some(val) => val.clone(),
-                    None => panic!(), // TODO return error here instead of panic
-                }
-            }
+            Factor::Variable(x) => self
+                .context
+                .variables
+                .get(x)
+                .ok_or(EvalError::NotDefined)?
+                .clone(),
             Factor::FunctionCall(call) => match self.context.functions.get(&call.function_name) {
                 Some(func) => {
                     let args: Result<Vec<Value>, EvalError> = call
@@ -126,7 +162,7 @@ mod tests {
 
         let found = match value {
             Value::Scalar(val) => val,
-            Value::Matrix(m) => panic!("Unexpected matric {m:?}"),
+            Value::Matrix(m) => panic!("Unexpected matrix {m:?}"),
         };
 
         if (found - expected).abs() > f64::EPSILON {
