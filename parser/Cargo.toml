@@ -15,6 +15,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 rustyline = "14.0.0"
 futures = "0.3.30"
 slicedisplay = "0.2.2"
+snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
 
 [lib]
 

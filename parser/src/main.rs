@@ -8,6 +8,7 @@ mod lexer;
 
 use std::{ops::ControlFlow, sync::Arc};
 
+pub mod error;
 use prelude::*;
 mod normalizer;
 mod parsing;
@@ -19,9 +20,13 @@ use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 mod matrix;
 pub mod prelude;
-use rustyline::{error::ReadlineError, history::FileHistory, DefaultEditor, Editor};
+use rustyline::{
+    error::ReadlineError, history::FileHistory, DefaultEditor, Editor,
+};
 use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{
+    fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
+};
 
 use crate::context::MathFunction;
 #[tokio::main]
@@ -137,7 +142,7 @@ impl Repl {
         }
         Ok(())
     }
-    async fn parse(&mut self, line: &str) -> Result<Ast, AstErrors> {
+    async fn parse(&mut self, line: &str) -> Result<Ast, AstError> {
         parse(line, self.approximator.context()).await
     }
     fn eval(&mut self, ast: Ast) -> Result<String, EvalError> {
@@ -154,28 +159,38 @@ impl Repl {
         }
     }
     fn ast_equality(&mut self, lhs: MathExpr, rhs: MathExpr) -> String {
-        if let MathExpr::Term(Term::Multiply(var, Factor::Parenthesis(possible_args))) = lhs {
+        if let MathExpr::Term(Term::Multiply(
+            var,
+            Factor::Parenthesis(possible_args),
+        )) = lhs
+        {
             if let (
                 Term::Factor(Factor::Variable(var)),
                 MathExpr::Term(Term::Factor(Factor::Variable(args))),
             ) = (&*var, &*possible_args)
             {
                 let variable_name = args.clone();
-                // FIXME: this is not perfect but i think we might need to live with it
-                // otherwise we just dont know what it is
-                self.approximator
-                    .context_mut()
-                    .functions
-                    .insert(var.clone(), math_function(vec![variable_name], rhs));
+                // FIXME: this is not perfect but i think we might need to live
+                // with it otherwise we just dont know what it
+                // is
+                self.approximator.context_mut().functions.insert(
+                    var.clone(),
+                    math_function(vec![variable_name], rhs),
+                );
                 "added function:".to_owned()
             } else {
                 todo!("Could not understand equals.");
             }
-        } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) = lhs {
+        } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) =
+            lhs
+        {
             let res = self.approximator.eval_expr(&rhs);
             match res {
                 Ok(res) => {
-                    self.approximator.context_mut().variables.insert(ident, res);
+                    self.approximator
+                        .context_mut()
+                        .variables
+                        .insert(ident, res);
                     "added variable".to_owned()
                 }
                 Err(e) => {
@@ -199,7 +214,10 @@ fn value_res_to_string(result: Result<Value, EvalError>) -> String {
     }
 }
 /// Make a MathFunction assigning the identifiers to the Values
-fn math_function(variables: Vec<MathIdentifier>, rhs: MathExpr) -> MathFunction {
+fn math_function(
+    variables: Vec<MathIdentifier>,
+    rhs: MathExpr,
+) -> MathFunction {
     MathFunction::new(Arc::new(
         move |values: Vec<Value>, outer_context: MathContext| {
             let mut context = outer_context.clone();

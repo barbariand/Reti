@@ -8,6 +8,7 @@ pub mod ast;
 pub mod context;
 mod lexer;
 
+pub mod error;
 pub mod matrix;
 mod normalizer;
 mod parsing;
