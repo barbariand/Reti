@@ -9,6 +9,7 @@ pub mod context;
 mod lexer;
 
 pub mod error;
+mod logging;
 pub mod matrix;
 mod normalizer;
 mod parsing;
