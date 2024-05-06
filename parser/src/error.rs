@@ -3,7 +3,7 @@ use snafu::Snafu;
 use tokio::task::JoinError;
 
 use crate::prelude::Token;
-
+///The errors that can happen while parsing latex
 #[derive(Debug, Snafu)]
 pub enum ParseError {
     #[snafu(display(
@@ -21,6 +21,7 @@ pub enum ParseError {
     #[snafu(display("Expected it to have the same amount of columns, but previous had:{prev} instead got:{current}"))]
     MismatchedMatrixColumnSize { prev: usize, current: usize },
 }
+///The errors that can hapen when generating the AST
 #[derive(Debug, Snafu)]
 pub enum AstError {
     #[snafu(transparent)]
