@@ -9,6 +9,7 @@ pub use crate::{
     approximator::Approximator,
     ast::Ast,
     context::{MathContext, MathFunction},
+    error::{AstError, ParseError},
     value::Value,
 };
 /// An alias for `Receiver<Token>` to receive tokens
@@ -23,7 +24,6 @@ pub(crate) use crate::{
     approximator::EvalError,
     approximator::IncompatibleMatrixSizes,
     ast::{Factor, FunctionCall, MathExpr, MathIdentifier, Term},
-    error::{AstError, ParseError},
     lexer::Lexer,
     matrix::Matrix,
     normalizer::Normalizer,
