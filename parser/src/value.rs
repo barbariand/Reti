@@ -79,7 +79,14 @@ impl Mul for Value {
     fn mul(self, rhs: Self) -> Self::Output {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a * b),
-            (Value::Matrix(_a), Value::Matrix(_b)) => todo!("Matrix multiplication"),
+            (Value::Matrix(a), Value::Matrix(b)) => {
+                // TODO: Maintain difference between \cdot, \times and implicit multiplication.
+                let res = a * b;
+                if let Err(EvalError::IncompatibleMatrixSizes(_)) = res {
+                    // TODO try dot product instead?
+                }
+                Value::Matrix(res?)
+            }
             (Value::Scalar(scalar), Value::Matrix(matrix)) => Value::Matrix((matrix * scalar)?),
             (Value::Matrix(matrix), Value::Scalar(scalar)) => Value::Matrix((matrix * scalar)?),
         })
