@@ -1,4 +1,7 @@
 //! Simple single-threaded Approximator for AST
+
+use crate::ast::MulType;
+
 use super::prelude::*;
 
 /// The errors that can happen when evaluating a AST
@@ -12,6 +15,8 @@ pub enum EvalError {
     IncompatibleMatrixSizes(IncompatibleMatrixSizes),
     /// Could nto fund the value expected
     NotDefined,
+    /// Unclear multiplication type when multiplying matricies.
+    AmbiguousMulType(MulType),
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug)]
@@ -81,9 +86,9 @@ impl Approximator {
     fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
         match term {
             Term::Factor(factor) => self.eval_factor(factor),
-            Term::Multiply(_, a, b) => {
-                self.eval_term(a.as_ref())? * self.eval_factor(b)?
-            }
+            Term::Multiply(mul_type, a, b) => self
+                .eval_term(a.as_ref())?
+                .mul(mul_type, self.eval_factor(b)?),
             Term::Divide(a, b) => {
                 self.eval_term(a.as_ref())? / self.eval_factor(b)?
             }

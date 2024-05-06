@@ -1,7 +1,7 @@
 //!
 use std::ops::{Add, AddAssign, Mul, Sub};
 
-use crate::prelude::*;
+use crate::{ast::MulType, prelude::*};
 
 #[derive(PartialEq, Debug)]
 
@@ -356,10 +356,11 @@ impl Matrix<MathExpr> {
     }
 }
 
-impl Mul<Matrix<Value>> for Matrix<Value> {
-    type Output = Result<Matrix<Value>, EvalError>;
-
-    fn mul(self, rhs: Matrix<Value>) -> Self::Output {
+impl Matrix<Value> {
+    pub fn matrix_mul(
+        self,
+        rhs: Matrix<Value>,
+    ) -> Result<Matrix<Value>, EvalError> {
         if self.column_count != rhs.row_count {
             return Err(IncompatibleMatrixSizes::Row {
                 expected: self.column_count,
@@ -379,7 +380,7 @@ impl Mul<Matrix<Value>> for Matrix<Value> {
                 for k in 0..self.column_count {
                     let a = self.get(i, k).clone();
                     let b = rhs.get(k, j).clone();
-                    let term = (a * b)?;
+                    let term = (a.mul(&MulType::Implicit, b))?;
                     sum = Some(match sum {
                         Some(prev) => (prev + term)?,
                         None => term,
@@ -518,7 +519,7 @@ mod tests {
         c.set(1, 0, Value::Scalar(43.0));
         c.set(1, 1, Value::Scalar(50.0));
 
-        assert_eq!((a * b).unwrap(), c);
+        assert_eq!((a.matrix_mul(b)).unwrap(), c);
     }
 
     #[test]
@@ -538,6 +539,6 @@ mod tests {
         c.set(1, 0, Value::Scalar(53.0));
         c.set(2, 0, Value::Scalar(83.0));
 
-        assert_eq!((a * b).unwrap(), c);
+        assert_eq!((a.matrix_mul(b)).unwrap(), c);
     }
 }
