@@ -12,7 +12,10 @@ pub enum EvalError {
     IncompatibleMatrixSizes(IncompatibleMatrixSizes),
     /// Could nto fund the value expected
     NotDefined,
+    ///Invalid amount of arguments
+    ArgumentLenghtMissmatch { expected: Vec<usize>, found: usize },
 }
+
 /// The error for when it required another size of the matrix
 #[derive(Debug)]
 pub enum IncompatibleMatrixSizes {
@@ -115,7 +118,7 @@ impl Approximator {
                             .iter()
                             .map(|expr| self.eval_expr(expr))
                             .collect();
-                        (func.approximate)(args?, self.context.clone())?
+                        func.ex(args?, self.context.clone())?
                     }
                     None => panic!(
                         "Parser incorrectly identified function {:?}",

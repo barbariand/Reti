@@ -4,11 +4,12 @@ use crate::prelude::*;
 
 #[derive(Clone)]
 pub struct MathFunction {
-    pub approximate: Arc<
+    approximate: Arc<
         dyn Fn(Vec<Value>, MathContext) -> Result<Value, EvalError>
             + Send
             + Sync,
     >,
+    arguments: usize,
 }
 
 impl MathFunction {
@@ -18,15 +19,47 @@ impl MathFunction {
                 + Send
                 + Sync,
         >,
+        arguments: usize,
     ) -> Self {
-        Self { approximate: func }
+        Self {
+            approximate: func,
+            arguments,
+        }
     }
     pub fn from_fn_pointer(
         func: fn(Vec<Value>, MathContext) -> Result<Value, EvalError>,
+        arguments: usize,
     ) -> Self {
         Self {
             approximate: Arc::new(func),
+            arguments,
         }
+    }
+    pub fn from_fn_pointer_expecting_scalars(
+        func: fn(Vec<f64>) -> f64,
+        arguments: usize,
+    ) -> Self {
+        Self::from_fn_pointer(
+            |v, c| {
+                let v_new: Result<Vec<f64>, EvalError> =
+                    v.into_iter().map(|val| val.scalar()).collect();
+                Ok(Value::Scalar(func(v_new?)))
+            },
+            arguments,
+        )
+    }
+    pub fn eval(
+        &self,
+        vec: Vec<Value>,
+        context: MathContext,
+    ) -> Result<Value, EvalError> {
+        if vec.len() != self.arguments {
+            Err(EvalError::ArgumentLenghtMissmatch {
+                expected: self.arguments,
+                found: vec.len(),
+            })
+        }
+        (self.approximate)(vec, context)
     }
 }
 #[derive(Clone)]
@@ -92,57 +125,30 @@ impl MathContext {
         );
 
         // TODO add proper functions system so we can define the definition
-        //  and value sets to validate the amount of arguments, the types of arguments
-        //  (scalar or matrix).
+        //  and value sets to validate the amount of arguments, the types of
+        // arguments  (scalar or matrix).
 
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            MathFunction::from_fn_pointer(|args, _| {
-                args[0].map_expecting_scalar(|v| v.sin())
-            }),
+            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].sin(), 1),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
-            MathFunction::from_fn_pointer(|args, _| {
-                args[0].map_expecting_scalar(|v| v.cos())
-            }),
+            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].cos(), 1),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("tan".to_string())],
-            MathFunction::from_fn_pointer(|args, _| {
-                args[0].map_expecting_scalar(|v| v.tan())
-            }),
+            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].tan(), 1),
         );
 
         // Logarithm
         context.add_function(
             vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            MathFunction::from_fn_pointer(|args, _| {
-                args[0].map_expecting_scalar(|v| v.ln())
-            }),
+            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].ln(), 1),
         );
 
         context
-    }
-}
-trait IntoMathFunction {
-    fn into(self) -> MathFunction;
-}
-impl IntoMathFunction for MathFunction {
-    fn into(self) -> MathFunction {
-        self
-    }
-}
-impl<F> IntoMathFunction for F
-where
-    F: Fn(Vec<Value>, MathContext) -> Result<Value, EvalError>
-        + Send
-        + Sync
-        + 'static,
-{
-    fn into(self) -> MathFunction {
-        MathFunction::new(Arc::new(self))
     }
 }
 
