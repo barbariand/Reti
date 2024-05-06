@@ -20,7 +20,3 @@ snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
 directories = "5.0.1"
 
 [lib]
-
-[[bin]]
-name = "RetiREPL"
-path = "./src/main.rs"
