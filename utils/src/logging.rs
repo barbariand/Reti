@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use directories::{BaseDirs, ProjectDirs};
 use tracing::level_filters::LevelFilter;
-use tracing_appender::non_blocking::WorkerGuard;
+use tracing_appender::{non_blocking::WorkerGuard, rolling::Rotation};
 use tracing_subscriber::{
     layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
 };
@@ -41,19 +41,22 @@ pub fn init_logger(
     let mut log_file_writer = None;
     let mut guard = None;
     if let Some(project_dirs) = project_dirs {
-        println!("{project_dirs:?}");
         if let Some(log_dir) = project_dirs.log_dir() {
-            println!("{log_dir:?}");
-            let file_appender = tracing_appender::rolling::daily(
-                log_dir,
-                file_name_prefix.into(),
-            );
-            let (non_blocking, inner_guard) =
-                tracing_appender::non_blocking(file_appender);
-            log_file_writer = Some(
-                tracing_subscriber::fmt::layer().with_writer(non_blocking),
-            );
-            guard = Some(inner_guard);
+            if let Ok(file_appender) = tracing_appender::rolling::Builder::new()
+                .rotation(Rotation::DAILY)
+                .filename_prefix(file_name_prefix.into())
+                .filename_suffix("log")
+                .build(log_dir)
+            {
+                let (non_blocking, inner_guard) =
+                    tracing_appender::non_blocking(file_appender);
+                log_file_writer = Some(
+                    tracing_subscriber::fmt::layer()
+                        .with_ansi(false)
+                        .with_writer(non_blocking),
+                );
+                guard = Some(inner_guard);
+            }
         }
     }
 

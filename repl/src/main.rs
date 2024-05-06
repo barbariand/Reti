@@ -17,12 +17,12 @@ use tracing_subscriber::filter::LevelFilter;
 use parser::context::MathFunction;
 #[tokio::main]
 pub async fn main() {
-    let project_dirs = ProjectDirs::from("com", "iter", "iter");
+    let project_dirs = ProjectDirs::from("", "", "Reti");
     let prompt = Prompt::parse();
     let _guard = utils::logging::init_logger(
         project_dirs,
         prompt.tracing_level,
-        "iter-repl",
+        "reti-repl",
     );
     prompt.into_repl().start().await;
 }
