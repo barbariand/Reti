@@ -12,7 +12,7 @@ pub enum Ast {
 
 /// The recursive part of the AST containing subtraction and addition to make
 /// the math rules enforced by the type system
-#[derive(PartialEq, Debug,Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum MathExpr {
     /// A [Term] containing the rest of the syntax that go before in evaluation
     Term(Term),
@@ -90,7 +90,7 @@ impl From<MathIdentifier> for MathExpr {
     }
 }
 ///For multiplication and division
-#[derive(PartialEq, Debug,Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Term {
     /// A [Factor] containing the rest of the syntax that go before in
     /// evaluation
@@ -160,7 +160,7 @@ impl From<FunctionCall> for Term {
     }
 }
 ///The factor containing
-#[derive(PartialEq, Debug,Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Factor {
     /// Normal numbers
     /// ## Examples
@@ -332,9 +332,10 @@ pub enum Factor {
     ///     parse("\\frac{1}{2}", &context),
     ///     Ast::Expression(
     ///         Factor::Fraction(
-    ///            Box::new(Factor::Constant(1.0).into()),
+    ///             Box::new(Factor::Constant(1.0).into()),
     ///             Box::new(Factor::Constant(2.0).into()),
-    ///         ).into()
+    ///         )
+    ///         .into()
     ///     )
     /// );
     /// ```
@@ -347,41 +348,75 @@ pub enum Factor {
     /// # use parser::prelude::MathContext;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let mut context=MathContext::standard_math();
-    /// // parsing \frac{1}{2}
+    /// // parsing |1|
     /// assert_eq!(
-    ///     parse("\\frac{1}{2}", &context),
-    ///     Ast::Expression(
-    ///         Factor::Fraction(
-    ///             Box::new(Factor::Constant(1.0).into()),
-    ///             Box::new(Factor::Constant(2.0).into()),
-    ///         ).into()
-    ///     )
+    ///     parse("|1|", &context),
+    ///     Ast::Expression(Factor::Abs(Box::new(Factor::Constant(1.0).into())).into())
     /// );
     /// ```
     Abs(Box<MathExpr>),
     /// A Function that is hopefully defined
     /// ## Examples
-    /// ```ignore
+    /// ```
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
     /// # use parser::prelude::MathContext;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let mut context=MathContext::standard_math();
-    /// // parsing \frac{1}{2}
+    /// // parsing (1,1)
     /// assert_eq!(
     ///     parse("(1,1)", &context),
     ///     Ast::Expression(
-    ///         Factor::Matrix(
-    ///             Matrix::new(
-    ///                 vec![
-    ///                     Factor::Constant(1.0).into(),
-    ///                     Factor::Constant(1.0).into()
-    ///                 ],
+    ///         Factor::Matrix(Matrix::new(
+    ///             vec![Factor::Constant(1.0).into(), Factor::Constant(1.0).into()],
+    ///             1,
+    ///             2
+    ///         ))
+    ///         .into()
+    ///     )
+    /// );
+    /// ```
+    /// ```
+    /// # use parser::ast::*;
+    /// # use parser::matrix::Matrix;
+    /// # use parser::token::Token;
+    /// # use parser::prelude::MathContext;
+    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # let mut context=MathContext::standard_math();
+    /// // parsing \begin{bmatrix}1\\1\end{bmatrix}
+    /// assert_eq!(
+    ///     parse("\\begin{bmatrix}1&1\\end{bmatrix}", &context),
+    ///     Ast::Expression(
+    ///         Factor::Matrix(Matrix::new(
+    ///             vec![Factor::Constant(1.0).into(), Factor::Constant(1.0).into()],
+    ///             1,
+    ///             2
+    ///         ))
+    ///         .into()
+    ///     )
+    /// );
+    /// ```
+    /// ```
+    /// # use parser::ast::*;
+    /// # use parser::matrix::Matrix;
+    /// # use parser::token::Token;
+    /// # use parser::prelude::MathContext;
+    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # let mut context=MathContext::standard_math();
+    /// // parsing \begin{bmatrix}1\\1\end{bmatrix}
+    /// assert_eq!(
+    ///     parse("\\begin{Vmatrix}1&1\\end{Vmatrix}", &context),
+    ///     Ast::Expression(
+    ///         Factor::Abs(Box::new(
+    ///             Factor::Matrix(Matrix::new(
+    ///                 vec![Factor::Constant(1.0).into(), Factor::Constant(1.0).into()],
     ///                 1,
     ///                 2
-    ///             )
-    ///         ).into()
+    ///             ))
+    ///             .into()
+    ///         ))
+    ///         .into()
     ///     )
     /// );
     /// ```
@@ -414,23 +449,30 @@ pub struct MathIdentifier {
 }
 
 impl MathIdentifier {
+    ///Creates a new MathIdentifier fom a vec to identify a variable and
+    /// function
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens }
     }
+    ///Creates a new MathIdentifier from a single Token to idetify a variable
+    /// and a function
     pub fn new_from_one(token: Token) -> Self {
         Self {
             tokens: vec![token],
         }
     }
 }
-
-#[derive(PartialEq, Debug,Clone)]
+///A parsed function call where it has found a function with that name
+#[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
+    ///The name for the function called
     pub function_name: MathIdentifier,
+    ///The input to the function
     pub arguments: Vec<MathExpr>,
 }
 
 impl FunctionCall {
+    ///Creating a new Functioncall
     pub fn new(function_name: MathIdentifier, arguments: Vec<MathExpr>) -> Self {
         Self {
             function_name,

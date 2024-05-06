@@ -1,9 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use crate::prelude::*;
-
+/// A Mathfunction that can be run
 #[derive(Clone)]
 pub struct MathFunction {
+    ///A Function that takes in a vector of values
     pub approximate: Arc<dyn Fn(Vec<Value>, MathContext) -> Result<Value, EvalError> + Send + Sync>,
 }
 

@@ -11,6 +11,7 @@ pub struct TokenReader {
 }
 
 impl TokenReader {
+    /// Creates a new TokenReader
     pub fn new(tokens: TokenReceiver) -> Self {
         TokenReader {
             tokens,
@@ -112,7 +113,7 @@ impl TokenReader {
     /// Replace a range of tokens that have been peeked with a vector of
     /// replacements.
     ///
-    /// ## Pseudocode Example
+    /// ## Examples
     /// ```ignore
     /// peeked tokens before:
     /// [1, Backslash, "cdot", Two]
