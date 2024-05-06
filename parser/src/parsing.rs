@@ -1,6 +1,3 @@
-use std::fmt::Display;
-
-use slicedisplay::SliceDisplay;
 use tracing::{debug, trace, trace_span};
 
 use crate::prelude::*;

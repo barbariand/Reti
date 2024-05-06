@@ -33,11 +33,8 @@ pub(crate) use crate::{
 };
 
 use futures::FutureExt;
-use std::{fmt::Display, panic::AssertUnwindSafe};
-use tokio::{
-    sync::mpsc::{Receiver, Sender},
-    task::JoinError,
-};
+use std::panic::AssertUnwindSafe;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, error, trace, trace_span};
 ///The parse function central to the parsing functionality, and outputs an AST
 /// that can be evaluated using
