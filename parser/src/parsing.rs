@@ -6,32 +6,6 @@ use tracing::{debug, trace, trace_span};
 use crate::prelude::*;
 use async_recursion::async_recursion;
 
-#[derive(Debug)]
-pub enum ParseError {
-    UnexpectedToken { expected: Vec<Token>, found: Token },
-    Invalid(Token),
-    Trailing(Token),
-    InvalidFactor(Token),
-    InvalidBegin(String),
-    MismatchedMatrixColumnSize { prev: usize, current: usize },
-}
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParseError::UnexpectedToken { expected, found } => write!(
-                f,
-                "Got unexpected Token:\"{}\", expected one of Tokens:\"{}\"",
-                found, expected.display()
-            ),
-            ParseError::Invalid(t) => write!(f, "Got invalid token:\"{}\"", t),
-            ParseError::Trailing(t) => write!(f, "Trailing invalid token\"{}\"", t),
-            ParseError::InvalidFactor(t) => write!(f, "Trailing invalid Factor token\"{}\"", t),
-            ParseError::InvalidBegin(s) => write!(f, "Got invalid \\begin{{{}}}",s),
-            ParseError::MismatchedMatrixColumnSize { prev, current } => write!(f,"Expected it to have the same amount of columns, but previous had:{} instead got:{}",prev,current),
-        }
-    }
-}
-
 pub struct Parser {
     reader: TokenReader,
     context: MathContext,
@@ -55,8 +29,8 @@ impl Parser {
         let root_expr = self.expr().await?;
         trace!("root_expr = {root_expr:?}");
 
-        // Check if we have more to read, if not, that means we have a full expression
-        // we can return.
+        // Check if we have more to read, if not, that means we have a full
+        // expression we can return.
         let next = self.reader.read().await;
         if next == Token::EndOfContent {
             return Ok(Ast::Expression(root_expr));
@@ -67,16 +41,19 @@ impl Parser {
             let next = self.reader.read().await;
             trace!("trailing = {next}");
             if next != Token::EndOfContent {
-                return Err(ParseError::Trailing(next));
+                return Err(ParseError::Trailing { token: next });
             }
             return Ok(Ast::Equality(root_expr, rhs));
         }
         // It seems we have expected trailing tokens.
         // This means we failed to parse the expression fully.
-        Err(ParseError::Trailing(next))
+        Err(ParseError::Trailing { token: next })
     }
 
-    pub(crate) async fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
+    pub(crate) async fn expect(
+        &mut self,
+        expected: Token,
+    ) -> Result<(), ParseError> {
         let found = self.reader.read().await;
         if found == expected {
             return Ok(());
@@ -233,7 +210,7 @@ impl Parser {
                 self.factor_identifier(math_identifier).await?
             }
             Token::Minus => Factor::Constant(-1.0),
-            token => return Err(ParseError::InvalidFactor(token)),
+            token => return Err(ParseError::InvalidFactor { token }),
         };
 
         let next = self.reader.peek().await;
@@ -249,7 +226,10 @@ impl Parser {
     /// Parse a factor that is a LaTeX command.
     ///
     /// The `command` parameter is the LaTeX command.
-    async fn factor_command(&mut self, command: &str) -> Result<Factor, ParseError> {
+    async fn factor_command(
+        &mut self,
+        command: &str,
+    ) -> Result<Factor, ParseError> {
         Ok(match command {
             "sqrt" => {
                 let next = self.reader.peek().await;
@@ -284,19 +264,24 @@ impl Parser {
                     "vmatrix" | "Vmatrix" => {
                         self.expect(Token::RightCurlyBracket).await?;
                         let matrix = self.matrix(s).await?;
-                        Factor::Abs(Box::new(MathExpr::Term(Term::Factor(Factor::Matrix(
-                            matrix,
-                        )))))
+                        Factor::Abs(Box::new(MathExpr::Term(Term::Factor(
+                            Factor::Matrix(matrix),
+                        ))))
                     }
                     _ => {
-                        return Err(ParseError::InvalidBegin(s.to_owned()));
+                        return Err(ParseError::InvalidBegin {
+                            beginning: s.to_owned(),
+                        });
                     }
                 }
             }
             _ => {
                 // assume greek alphabet
                 let math_identifier = MathIdentifier {
-                    tokens: vec![Token::Backslash, Token::Identifier(command.to_string())],
+                    tokens: vec![
+                        Token::Backslash,
+                        Token::Identifier(command.to_string()),
+                    ],
                 };
                 self.factor_identifier(math_identifier).await?
             }
@@ -321,7 +306,10 @@ impl Parser {
     ///
     /// The `factor` parameter is the base, and the tokens to be parsed by this
     /// function is the exponent.
-    async fn factor_exponent(&mut self, factor: Factor) -> Result<Factor, ParseError> {
+    async fn factor_exponent(
+        &mut self,
+        factor: Factor,
+    ) -> Result<Factor, ParseError> {
         let next = self.reader.peek().await;
         let exponent = match next {
             Token::LeftCurlyBracket => {
@@ -358,7 +346,11 @@ impl Parser {
                 self.reader.skip().await;
                 MathExpr::Term(Term::Factor(Factor::Constant(parsed)))
             }
-            token => return Err(ParseError::Invalid(token.clone())),
+            token => {
+                return Err(ParseError::Invalid {
+                    token: token.clone(),
+                })
+            }
         };
 
         Ok(Factor::Power {
@@ -399,7 +391,10 @@ impl Parser {
         }))
     }
 
-    async fn matrix(&mut self, matrix_type: String) -> Result<Matrix<MathExpr>, ParseError> {
+    async fn matrix(
+        &mut self,
+        matrix_type: String,
+    ) -> Result<Matrix<MathExpr>, ParseError> {
         let mut rows = Vec::new();
         let mut current_row = Vec::new();
         let mut column_count = Option::None;
@@ -435,7 +430,8 @@ impl Parser {
                     } else {
                         // \end{matrix_type}
                         self.reader.skip().await;
-                        self.expect(Token::Identifier("end".to_owned())).await?;
+                        self.expect(Token::Identifier("end".to_owned()))
+                            .await?;
                         self.expect(Token::LeftCurlyBracket).await?;
                         self.expect(Token::Identifier(matrix_type)).await?;
                         self.expect(Token::RightCurlyBracket).await?;
@@ -488,8 +484,10 @@ mod tests {
     use crate::prelude::*;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let (lexer_in, lexer_out): (TokenSender, TokenReceiver) = mpsc::channel(32);
-        let (normalizer_in, normalizer_out): (TokenSender, TokenReceiver) = mpsc::channel(32);
+        let (lexer_in, lexer_out): (TokenSender, TokenReceiver) =
+            mpsc::channel(32);
+        let (normalizer_in, normalizer_out): (TokenSender, TokenReceiver) =
+            mpsc::channel(32);
 
         let context = MathContext::standard_math();
 
@@ -537,10 +535,9 @@ mod tests {
                     3f64.into(),
                 )),
                 Term::Multiply(
-                    Box::new(Term::Factor(Factor::Parenthesis(Box::new(MathExpr::Add(
-                        Box::new(4f64.into()),
-                        5f64.into(),
-                    ))))),
+                    Box::new(Term::Factor(Factor::Parenthesis(Box::new(
+                        MathExpr::Add(Box::new(4f64.into()), 5f64.into()),
+                    )))),
                     6f64.into(),
                 ),
             )),
@@ -584,7 +581,9 @@ mod tests {
             Ast::Expression(
                 Factor::Power {
                     base: Box::new(Factor::Constant(2.0)),
-                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(3.0)))),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(
+                        Factor::Constant(3.0),
+                    ))),
                 }
                 .into(),
             ),
@@ -601,7 +600,10 @@ mod tests {
                     base: Box::new(2f64.into()),
                     exponent: Box::new(
                         Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                            tokens: vec![
+                                Token::Backslash,
+                                Token::Identifier("pi".to_string()),
+                            ],
                         })
                         .into(),
                     ),
@@ -620,7 +622,9 @@ mod tests {
                 //2^0
                 Box::new(Term::Factor(Factor::Power {
                     base: Box::new(Factor::Constant(2.0)),
-                    exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(0.0)))),
+                    exponent: Box::new(MathExpr::Term(Term::Factor(
+                        Factor::Constant(0.0),
+                    ))),
                 })),
                 // 25
                 Factor::Constant(25.0),
@@ -660,7 +664,9 @@ mod tests {
                         base: Box::new(Factor::Variable(MathIdentifier {
                             tokens: vec![Token::Identifier("x".to_string())],
                         })),
-                        exponent: Box::new(MathExpr::Term(Term::Factor(Factor::Constant(2.0)))),
+                        exponent: Box::new(MathExpr::Term(Term::Factor(
+                            Factor::Constant(2.0),
+                        ))),
                     },
                 ))),
                 // 5xy
@@ -716,7 +722,10 @@ mod tests {
             "\\pi",
             Ast::Expression(MathExpr::Term(Term::Factor(Factor::Variable(
                 MathIdentifier {
-                    tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                    tokens: vec![
+                        Token::Backslash,
+                        Token::Identifier("pi".to_string()),
+                    ],
                 },
             )))),
         )
@@ -732,7 +741,10 @@ mod tests {
                 Box::new(Term::Multiply(
                     Box::new(
                         Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Backslash, Token::Identifier("pi".to_string())],
+                            tokens: vec![
+                                Token::Backslash,
+                                Token::Identifier("pi".to_string()),
+                            ],
                         })
                         .into(),
                     ),
@@ -745,7 +757,10 @@ mod tests {
                 )),
                 Factor::FunctionCall(FunctionCall {
                     function_name: MathIdentifier {
-                        tokens: vec![Token::Backslash, Token::Identifier("ln".to_string())],
+                        tokens: vec![
+                            Token::Backslash,
+                            Token::Identifier("ln".to_string()),
+                        ],
                     },
                     arguments: vec![Factor::Variable(MathIdentifier {
                         tokens: vec![Token::Identifier("x".to_string())],
@@ -857,7 +872,11 @@ mod tests {
         matrix.set(0, 0, 1f64.into());
         matrix.set(0, 1, 2f64.into());
         matrix.set(0, 2, 3f64.into());
-        parse_test(r#"(1,2,3)"#, Ast::Expression(Factor::Matrix(matrix).into())).await;
+        parse_test(
+            r#"(1,2,3)"#,
+            Ast::Expression(Factor::Matrix(matrix).into()),
+        )
+        .await;
     }
 
     #[tokio::test]
