@@ -4,19 +4,24 @@ use crate::prelude::*;
 ///The root of the AST that is non recursive
 #[derive(PartialEq, Debug)]
 pub enum Ast {
-    ///A simple expression with no equals
+    /// A mathematical expression that can be evaluated.
     Expression(MathExpr),
-    /// One equals for assigning
+
+    /// An equation consisting of an equality between a left-hand side and a
+    /// right-hand side.
     Equality(MathExpr, MathExpr),
 }
 
-/// The recursive part of the AST containing subtraction and addition to make
-/// the math rules enforced by the type system
+/// A mathematical expression that consists of one or more terms added
+/// or subtracted.
+///
+/// See Wikipedia article [Expression (mathematics)](https://en.wikipedia.org/wiki/Expression_(mathematics)).
 #[derive(PartialEq, Debug, Clone)]
 pub enum MathExpr {
     /// A [Term] containing the rest of the syntax that go before in evaluation
     Term(Term),
-    /// Adding a MathExpr to a Term
+
+    /// Addition between a MathExpr and a Term.
     ///  ## Examples
     ///  ```
     /// # use parser::ast::*;
@@ -36,7 +41,8 @@ pub enum MathExpr {
     /// );
     /// ```
     Add(Box<MathExpr>, Term),
-    /// Subtracting a MathExpr from a Term
+
+    /// Subtraction between a MathExpr and a Term.
     /// ## Examples
     ///  ```
     /// # use parser::ast::*;
@@ -54,7 +60,6 @@ pub enum MathExpr {
     ///         )
     ///     )
     /// );
-
     /// ```
     Subtract(Box<MathExpr>, Term),
 }
@@ -89,12 +94,26 @@ impl From<MathIdentifier> for MathExpr {
         MathExpr::Term(Term::from(value))
     }
 }
-///For multiplication and division
+
+/// A term consists of a number or variable, or the product or quotient of
+/// multiple numbers and variables.
+///
+/// In regard to the order of operations, the individual terms are always
+/// evaluated before being added or subtracted.
+///
+/// See Wikipedia article [Term (mathematics)](https://simple.wikipedia.org/wiki/Term_(mathematics)).
+///
+/// ## Examples
+/// For example, in
+/// > 1 + 2x + 8yzx
+///
+/// *1*, *2x*, and *8yzx* are three separate terms.
 #[derive(PartialEq, Debug, Clone)]
 pub enum Term {
     /// A [Factor] containing the rest of the syntax that go before in
     /// evaluation
     Factor(Factor),
+
     ///Multiplication of Term and Factor
     /// ## Examples
     ///  ```
@@ -113,10 +132,10 @@ pub enum Term {
     ///         ).into()
     ///     )
     /// );
-
     /// ```
     Multiply(Box<Term>, Factor),
-    ///Division of Term and Factor
+
+    /// Division between a Term and Factor.
     /// ## Examples
     ///  ```
     /// # use parser::ast::*;
@@ -134,7 +153,6 @@ pub enum Term {
     ///         ).into()
     ///     )
     /// );
-
     /// ```
     Divide(Box<Term>, Factor),
 }
@@ -159,7 +177,16 @@ impl From<FunctionCall> for Term {
         Term::Factor(Factor::FunctionCall(value))
     }
 }
-///The factor containing
+
+/// A factor that consists of a single value.
+///
+/// Factors are in some sense the bottom of the Abstract Syntax Tree, and
+/// factors will always be evaluated first before being multiplied or added
+/// together.
+///
+/// Factors also represent most of the mathematical syntax, like roots and
+/// functions. This is because they operate on the same level in terms of
+/// order of operations.
 #[derive(PartialEq, Debug, Clone)]
 pub enum Factor {
     /// Normal numbers
@@ -183,6 +210,7 @@ pub enum Factor {
     /// );
     /// ```
     Constant(f64),
+
     /// Parenthesis with a MathExpr
     /// ## Examples
     /// ```
@@ -202,10 +230,18 @@ pub enum Factor {
     ///         ).into()
     ///     )
     /// );
-
     /// ```
     Parenthesis(Box<MathExpr>),
-    /// A Variable that is hopefully defined
+
+    /// A variable whose value is not known at parse time.
+    ///
+    /// Note that the term variable here refers to the fact that the value is
+    /// unknown at parse time. While evaluating, the value of the variable may be
+    /// constant, for example \pi or user-defined variables/constants. The variable
+    /// could also vary, such as when defining functions. For example, if f(x)=2x,
+    /// then the value of x will vary between calls to f.
+    ///
+    /// Variables are identified using the [MathIdentifier] struct.
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -231,7 +267,8 @@ pub enum Factor {
     /// );
     /// ```
     Variable(MathIdentifier),
-    /// A Function that is hopefully defined
+
+    /// An expression that represents a function that is being invoked.
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -265,7 +302,9 @@ pub enum Factor {
     /// ));
     /// ```
     FunctionCall(FunctionCall),
-    /// To the power of
+
+    /// An exponetiation that describes an expression that is being raised to the
+    /// power of an exponent.
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -293,6 +332,7 @@ pub enum Factor {
         /// Fraction::Power
         exponent: Box<MathExpr>,
     },
+
     /// The root of a MathExpr
     /// ## Examples
     /// ```
@@ -319,7 +359,16 @@ pub enum Factor {
         /// The thing to take the Nth Root of
         radicand: Box<MathExpr>,
     },
-    /// A Fraction
+
+    /// A fraction.
+    ///
+    /// Note that fractions are treated as a factor, despite them being a division.
+    /// This is because, in expressions like \frac{1}{2}x, the fraction acts like a
+    /// factor.
+    ///
+    /// Also note that the term "fraction" is used to denote a quotient regardless
+    /// of the contents on the numerator and denominator while the mathematical
+    /// definition requires they be integers.
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -339,7 +388,8 @@ pub enum Factor {
     /// );
     /// ```
     Fraction(Box<MathExpr>, Box<MathExpr>),
-    /// Absolute
+
+    /// Take the absolute value of an expression.
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -347,19 +397,19 @@ pub enum Factor {
     /// # use parser::prelude::MathContext;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let mut context=MathContext::standard_math();
-    /// // parsing \frac{1}{2}
+    /// // parsing |3|
     /// assert_eq!(
-    ///     parse("\\frac{1}{2}", &context),
+    ///     parse("|3|", &context),
     ///     Ast::Expression(
-    ///         Factor::Fraction(
-    ///             Box::new(Factor::Constant(1.0).into()),
-    ///             Box::new(Factor::Constant(2.0).into()),
+    ///         Factor::Abs(
+    ///             Box::new(Factor::Constant(3.0).into())
     ///         ).into()
     ///     )
     /// );
     /// ```
     Abs(Box<MathExpr>),
-    /// A Function that is hopefully defined
+
+    /// A matrix or vector.
     /// ## Examples
     /// ```ignore
     /// # use parser::ast::*;
