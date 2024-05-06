@@ -9,6 +9,7 @@ mod lexer;
 use std::{ops::ControlFlow, sync::Arc};
 
 pub mod error;
+use directories::ProjectDirs;
 use prelude::*;
 mod normalizer;
 mod parsing;
@@ -16,8 +17,9 @@ mod value;
 
 mod token;
 mod token_reader;
-use clap::{command, Parser as ClapParser};
+use clap::{command, crate_authors, crate_name, Parser as ClapParser};
 use colored::Colorize;
+mod logging;
 mod matrix;
 pub mod prelude;
 use rustyline::{
@@ -29,17 +31,13 @@ use tracing_subscriber::{
 };
 
 use crate::context::MathFunction;
+
 #[tokio::main]
 pub async fn main() {
+    let project_dirs =
+        ProjectDirs::from("com", crate_authors!(), crate_name!());
     let prompt = Prompt::parse();
-    tracing_subscriber::registry()
-        .with(fmt::layer())
-        .with(
-            EnvFilter::builder()
-                .with_default_directive(prompt.tracing_level.into())
-                .from_env_lossy(),
-        )
-        .init();
+    let _guard = logging::init_logger(project_dirs, prompt.tracing_level);
     prompt.into_repl().start().await;
 }
 #[derive(ClapParser, Debug)]
