@@ -144,6 +144,7 @@ impl Repl {
     }
     fn ast_equality(&mut self, lhs: MathExpr, rhs: MathExpr) -> String {
         if let MathExpr::Term(Term::Multiply(
+            ast::MulType::Implicit,
             var,
             Factor::Parenthesis(possible_args),
         )) = lhs

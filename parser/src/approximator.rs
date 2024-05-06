@@ -81,7 +81,7 @@ impl Approximator {
     fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
         match term {
             Term::Factor(factor) => self.eval_factor(factor),
-            Term::Multiply(a, b) => {
+            Term::Multiply(_, a, b) => {
                 self.eval_term(a.as_ref())? * self.eval_factor(b)?
             }
             Term::Divide(a, b) => {
@@ -163,7 +163,7 @@ mod tests {
         sync::mpsc::{self},
     };
 
-    use crate::prelude::*;
+    use crate::{ast::MulType, prelude::*};
 
     fn eval_test_from_ast(expected: f64, ast: Ast) {
         let context = MathContext::new();
@@ -221,7 +221,11 @@ mod tests {
             // 2+3*5
             Ast::Expression(MathExpr::Add(
                 Box::new(2.0.into()),
-                Term::Multiply(Box::new(3.0.into()), 5.0.into()),
+                Term::Multiply(
+                    MulType::Asterisk,
+                    Box::new(3.0.into()),
+                    5.0.into(),
+                ),
             )),
         );
     }

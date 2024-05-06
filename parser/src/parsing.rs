@@ -1,6 +1,6 @@
-use tracing::{debug, trace, trace_span};
+use tracing::{trace, trace_span};
 
-use crate::prelude::*;
+use crate::{ast::MulType, prelude::*};
 use async_recursion::async_recursion;
 
 pub struct Parser {
@@ -106,38 +106,50 @@ impl Parser {
         let mut term = Term::Factor(self.factor().await?);
 
         loop {
-            let next = self.reader.peek().await;
-            match next {
-                Token::Asterisk => {
+            let next = self.reader.peek_range(0..=1).await;
+            match next[..] {
+                [Token::Asterisk, _] => {
                     self.reader.skip().await;
                     let rhs = self.factor().await?;
-                    term = Term::Multiply(Box::new(term), rhs);
+                    term =
+                        Term::Multiply(MulType::Asterisk, Box::new(term), rhs);
                 }
-                Token::Slash => {
+                [Token::Backslash, Token::Identifier(ident)]
+                    if ident == "cdot"
+                        || ident == "cdotp"
+                        || ident == "times" =>
+                {
+                    let mul_type = match ident.as_str() {
+                        "cdot" | "cdotp" => MulType::Cdot,
+                        "times" => MulType::Times,
+                        _ => unreachable!(),
+                    };
+                    self.reader.skip().await;
+                    self.reader.skip().await;
+                    let rhs = self.factor().await?;
+                    term = Term::Multiply(mul_type, Box::new(term), rhs);
+                }
+                [Token::Slash, _] => {
                     self.reader.skip().await;
                     let rhs = self.factor().await?;
                     term = Term::Divide(Box::new(term), rhs);
                 }
+                [Token::Backslash, Token::Backslash] => {
+                    break;
+                }
+                [Token::Backslash, Token::Identifier(ident)]
+                    if ident == "end" =>
+                {
+                    break;
+                }
                 // Implicit multiplication
-                Token::Identifier(_)
+                [Token::Identifier(_)
                 | Token::NumberLiteral(_)
                 | Token::Backslash
-                | Token::LeftParenthesis => {
-                    if self.reader.peekn(1).await == Token::Backslash {
-                        break;
-                    }
-
-                    let toks = self.reader.peekn(1).await;
-                    debug!("toks:{:?}", toks);
-                    let expect = Token::Identifier("end".to_owned());
-
-                    if toks == expect {
-                        debug!("leaving end for matrix invocation");
-                        break;
-                    }
-
+                | Token::LeftParenthesis, _] => {
                     let rhs = self.factor().await?;
-                    term = Term::Multiply(Box::new(term), rhs);
+                    term =
+                        Term::Multiply(MulType::Implicit, Box::new(term), rhs);
                 }
                 _ => break,
             }
@@ -478,7 +490,7 @@ mod tests {
         sync::mpsc::{self},
     };
 
-    use crate::prelude::*;
+    use crate::{ast::MulType, prelude::*};
 
     async fn parse_test(text: &str, expected_ast: Ast) {
         let (lexer_in, lexer_out): (TokenSender, TokenReceiver) =
@@ -532,6 +544,7 @@ mod tests {
                     3f64.into(),
                 )),
                 Term::Multiply(
+                    MulType::Asterisk,
                     Box::new(Term::Factor(Factor::Parenthesis(Box::new(
                         MathExpr::Add(Box::new(4f64.into()), 5f64.into()),
                     )))),
@@ -541,6 +554,55 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn multiplication_asterisk() {
+        parse_test(
+            "2*3",
+            Ast::Expression(
+                Term::Multiply(
+                    MulType::Asterisk,
+                    Box::new(2f64.into()),
+                    3f64.into(),
+                )
+                .into(),
+            ),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn multiplication_cdot() {
+        parse_test(
+            "2\\cdot3",
+            Ast::Expression(
+                Term::Multiply(
+                    MulType::Cdot,
+                    Box::new(2f64.into()),
+                    3f64.into(),
+                )
+                .into(),
+            ),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn multiplication_times() {
+        parse_test(
+            "2\\times3",
+            Ast::Expression(
+                Term::Multiply(
+                    MulType::Times,
+                    Box::new(2f64.into()),
+                    3f64.into(),
+                )
+                .into(),
+            ),
+        )
+        .await;
+    }
+
     #[tokio::test]
     async fn sqrt() {
         parse_test(
@@ -616,6 +678,7 @@ mod tests {
         parse_test(
             "2^025", // this is 2^0 * 25
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 //2^0
                 Box::new(Term::Factor(Factor::Power {
                     base: Box::new(Factor::Constant(2.0)),
@@ -635,6 +698,7 @@ mod tests {
         parse_test(
             "2(3)^3",
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 // 2
                 Box::new(2f64.into()),
                 // (3)^3
@@ -654,6 +718,7 @@ mod tests {
             Ast::Expression(MathExpr::Add(
                 // 2x^{2}
                 Box::new(MathExpr::Term(Term::Multiply(
+                    MulType::Implicit,
                     // 2
                     Box::new(Term::Factor(Factor::Constant(2.0))),
                     // x^{2}
@@ -668,8 +733,10 @@ mod tests {
                 ))),
                 // 5xy
                 Term::Multiply(
+                    MulType::Implicit,
                     // 5x
                     Box::new(Term::Multiply(
+                        MulType::Implicit,
                         // 5
                         Box::new(5f64.into()),
                         // x
@@ -692,8 +759,10 @@ mod tests {
         parse_test(
             "2xy^2",
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 // 2x
                 Box::new(Term::Multiply(
+                    MulType::Implicit,
                     // 2
                     Box::new(2f64.into()),
                     // x
@@ -734,8 +803,10 @@ mod tests {
         parse_test(
             "\\pi(x)\\ln(x)", // this is pi * x * ln(x)
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 // \pi(x)
                 Box::new(Term::Multiply(
+                    MulType::Implicit,
                     Box::new(
                         Factor::Variable(MathIdentifier {
                             tokens: vec![
@@ -779,6 +850,7 @@ mod tests {
             Ast::Expression(MathExpr::Add(
                 // 5/2x
                 Box::new(MathExpr::Term(Term::Multiply(
+                    MulType::Implicit,
                     // 5/2
                     Box::new(Term::Divide(
                         // 5
@@ -813,6 +885,7 @@ mod tests {
             "|-3|",
             Ast::Expression(
                 Factor::Abs(Box::new(MathExpr::Term(Term::Multiply(
+                    MulType::Implicit,
                     Box::new((-1f64).into()),
                     3f64.into(),
                 ))))

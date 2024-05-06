@@ -95,6 +95,19 @@ impl From<MathIdentifier> for MathExpr {
     }
 }
 
+/// The type of multiplication.
+///
+/// For most operands, this makes no difference, but in some cases, for example
+/// when multiplying vectors, the symbol used for multiplication makes a
+/// difference.
+#[derive(PartialEq, Debug, Clone)]
+pub enum MulType {
+    Asterisk,
+    Cdot,
+    Times,
+    Implicit,
+}
+
 /// A term consists of a number or variable, or the product or quotient of
 /// multiple numbers and variables.
 ///
@@ -125,6 +138,7 @@ pub enum Term {
     ///     parse("2*2", &context),
     ///     Ast::Expression(
     ///         Term::Multiply(
+    ///             MulType::Asterisk,
     ///             Box::new(Term::Factor(
     ///                 Factor::Constant(2.0)
     ///             )),
@@ -133,7 +147,7 @@ pub enum Term {
     ///     )
     /// );
     /// ```
-    Multiply(Box<Term>, Factor),
+    Multiply(MulType, Box<Term>, Factor),
 
     /// Division between a Term and Factor.
     /// ## Examples
