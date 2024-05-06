@@ -18,7 +18,10 @@ impl Value {
             Value::Matrix(_) => Err(EvalError::ExpectedScalar),
         }
     }
-    pub fn map_expecting_scalar(&self, func: impl Fn(&f64) -> f64) -> Result<Value, EvalError> {
+    pub fn map_expecting_scalar(
+        &self,
+        func: impl Fn(&f64) -> f64,
+    ) -> Result<Value, EvalError> {
         match self {
             Value::Scalar(v) => Ok(Value::Scalar(func(v))),
             Value::Matrix(_) => Err(EvalError::ExpectedScalar),
@@ -79,9 +82,20 @@ impl Mul for Value {
     fn mul(self, rhs: Self) -> Self::Output {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a * b),
-            (Value::Matrix(_a), Value::Matrix(_b)) => todo!("Matrix multiplication"),
-            (Value::Scalar(scalar), Value::Matrix(matrix)) => Value::Matrix((matrix * scalar)?),
-            (Value::Matrix(matrix), Value::Scalar(scalar)) => Value::Matrix((matrix * scalar)?),
+            (Value::Matrix(a), Value::Matrix(b)) => {
+                // TODO: Maintain difference between \cdot, \times and implicit multiplication.
+                let res = a * b;
+                if let Err(EvalError::IncompatibleMatrixSizes(_)) = res {
+                    // TODO try dot product instead?
+                }
+                Value::Matrix(res?)
+            }
+            (Value::Scalar(scalar), Value::Matrix(matrix)) => {
+                Value::Matrix((matrix * scalar)?)
+            }
+            (Value::Matrix(matrix), Value::Scalar(scalar)) => {
+                Value::Matrix((matrix * scalar)?)
+            }
         })
     }
 }
@@ -92,7 +106,9 @@ impl Div for Value {
     fn div(self, rhs: Self) -> Self::Output {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a / b),
-            (_, _) => return type_err("Cannot perform division with matricies."),
+            (_, _) => {
+                return type_err("Cannot perform division with matricies.")
+            }
         })
     }
 }

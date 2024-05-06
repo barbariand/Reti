@@ -351,7 +351,9 @@ pub enum Factor {
     /// // parsing |1|
     /// assert_eq!(
     ///     parse("|1|", &context),
-    ///     Ast::Expression(Factor::Abs(Box::new(Factor::Constant(1.0).into())).into())
+    ///     Ast::Expression(
+    ///         Factor::Abs(Box::new(Factor::Constant(1.0).into())).into()
+    ///     )
     /// );
     /// ```
     Abs(Box<MathExpr>),
@@ -369,7 +371,10 @@ pub enum Factor {
     ///     parse("(1,1)", &context),
     ///     Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
-    ///             vec![Factor::Constant(1.0).into(), Factor::Constant(1.0).into()],
+    ///             vec![
+    ///                 Factor::Constant(1.0).into(),
+    ///                 Factor::Constant(1.0).into()
+    ///             ],
     ///             1,
     ///             2
     ///         ))
@@ -389,7 +394,10 @@ pub enum Factor {
     ///     parse("\\begin{bmatrix}1&1\\end{bmatrix}", &context),
     ///     Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
-    ///             vec![Factor::Constant(1.0).into(), Factor::Constant(1.0).into()],
+    ///             vec![
+    ///                 Factor::Constant(1.0).into(),
+    ///                 Factor::Constant(1.0).into()
+    ///             ],
     ///             1,
     ///             2
     ///         ))
@@ -410,7 +418,10 @@ pub enum Factor {
     ///     Ast::Expression(
     ///         Factor::Abs(Box::new(
     ///             Factor::Matrix(Matrix::new(
-    ///                 vec![Factor::Constant(1.0).into(), Factor::Constant(1.0).into()],
+    ///                 vec![
+    ///                     Factor::Constant(1.0).into(),
+    ///                     Factor::Constant(1.0).into()
+    ///                 ],
     ///                 1,
     ///                 2
     ///             ))
@@ -462,7 +473,7 @@ impl MathIdentifier {
         }
     }
 }
-///A parsed function call where it has found a function with that name
+
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
     ///The name for the function called
@@ -472,8 +483,10 @@ pub struct FunctionCall {
 }
 
 impl FunctionCall {
-    ///Creating a new Functioncall
-    pub fn new(function_name: MathIdentifier, arguments: Vec<MathExpr>) -> Self {
+    pub fn new(
+        function_name: MathIdentifier,
+        arguments: Vec<MathExpr>,
+    ) -> Self {
         Self {
             function_name,
             arguments,
