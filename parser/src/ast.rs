@@ -12,7 +12,7 @@ pub enum Ast {
 
 /// The recursive part of the AST containing subtraction and addition to make
 /// the math rules enforced by the type system
-#[derive(PartialEq, Debug,Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum MathExpr {
     /// A [Term] containing the rest of the syntax that go before in evaluation
     Term(Term),
@@ -90,7 +90,7 @@ impl From<MathIdentifier> for MathExpr {
     }
 }
 ///For multiplication and division
-#[derive(PartialEq, Debug,Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Term {
     /// A [Factor] containing the rest of the syntax that go before in
     /// evaluation
@@ -160,7 +160,7 @@ impl From<FunctionCall> for Term {
     }
 }
 ///The factor containing
-#[derive(PartialEq, Debug,Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Factor {
     /// Normal numbers
     /// ## Examples
@@ -424,14 +424,17 @@ impl MathIdentifier {
     }
 }
 
-#[derive(PartialEq, Debug,Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
     pub function_name: MathIdentifier,
     pub arguments: Vec<MathExpr>,
 }
 
 impl FunctionCall {
-    pub fn new(function_name: MathIdentifier, arguments: Vec<MathExpr>) -> Self {
+    pub fn new(
+        function_name: MathIdentifier,
+        arguments: Vec<MathExpr>,
+    ) -> Self {
         Self {
             function_name,
             arguments,

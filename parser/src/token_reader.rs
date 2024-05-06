@@ -77,7 +77,10 @@ impl TokenReader {
     }
 
     /// Peek a range of tokens at once.
-    pub async fn peek_range(&mut self, range: RangeInclusive<usize>) -> Vec<&Token> {
+    pub async fn peek_range(
+        &mut self,
+        range: RangeInclusive<usize>,
+    ) -> Vec<&Token> {
         // Ensure we have peeked the tokens.
         for n in range.clone() {
             self.peekn(n).await;
@@ -126,7 +129,11 @@ impl TokenReader {
     /// ## Panics
     /// You must peek tokens before calling replace. In other words, you need to
     /// know what you are replacing before calling this function.
-    pub async fn replace(&mut self, range: RangeInclusive<usize>, replacement: Vec<Token>) {
+    pub async fn replace(
+        &mut self,
+        range: RangeInclusive<usize>,
+        replacement: Vec<Token>,
+    ) {
         if self.next.len() <= *range.end() {
             panic!(
                 "Please call peekn before calling replace. You must know what you are replacing! range = {:?}",
@@ -292,7 +299,10 @@ mod tests {
 
         assert_eq!(Token::LeftBracket, reader.read().await);
         assert_eq!(Token::Backslash, reader.peekn(0).await);
-        assert_eq!(Token::Identifier("test".to_string()), reader.peekn(1).await);
+        assert_eq!(
+            Token::Identifier("test".to_string()),
+            reader.peekn(1).await
+        );
         reader.replace(0..=1, vec![Token::Plus, Token::Minus]).await;
         assert_eq!(Token::Plus, reader.read().await);
         assert_eq!(Token::Minus, reader.read().await);

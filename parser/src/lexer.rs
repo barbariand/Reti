@@ -26,8 +26,10 @@ impl Lexer {
             let t = match c {
                 '0'..='9' | '.' => {
                     if !temp_ident.is_empty() {
-                        self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
-                            .await;
+                        self.send_or_crash(Token::Identifier(take(
+                            &mut temp_ident,
+                        )))
+                        .await;
                     }
                     trace!("temp_number::push char={c:?}");
                     temp_number.push(c);
@@ -58,8 +60,10 @@ impl Lexer {
                         self.send_or_crash(num).await;
                     }
                     if !temp_ident.is_empty() {
-                        self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
-                            .await;
+                        self.send_or_crash(Token::Identifier(take(
+                            &mut temp_ident,
+                        )))
+                        .await;
                     }
                     continue;
                 }

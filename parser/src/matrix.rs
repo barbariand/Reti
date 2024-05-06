@@ -90,7 +90,11 @@ impl<T> Matrix<T> {
 
 impl<T: Clone> Matrix<T> {
     /// Constructs a new `Matrix` instance filled with a default value.
-    pub fn new_default(row_count: usize, column_count: usize, default_value: T) -> Self {
+    pub fn new_default(
+        row_count: usize,
+        column_count: usize,
+        default_value: T,
+    ) -> Self {
         Self {
             values: vec![default_value; row_count * column_count],
             row_count,
@@ -103,11 +107,14 @@ impl<T: Clone> Matrix<T> {
     ///
     /// A new `Matrix` that represents the transpose of the original matrix.
     pub fn transpose(&self) -> Matrix<T> {
-        let mut transposed_values = Vec::with_capacity(self.row_count * self.column_count);
+        let mut transposed_values =
+            Vec::with_capacity(self.row_count * self.column_count);
 
         for column in 0..self.column_count {
             for row in 0..self.row_count {
-                transposed_values.push(self.values[row * self.column_count + column].clone());
+                transposed_values.push(
+                    self.values[row * self.column_count + column].clone(),
+                );
             }
         }
 
@@ -127,13 +134,19 @@ impl<Lhs> Matrix<Lhs> {
     ///    - Both matrices are not vectors (i.e., more than one row or column).
     ///    - The dimensions of the matrices do not match for dot product
     ///      calculation.
-    pub fn dot_product<Rhs, Res>(&self, other: &Matrix<Rhs>) -> Result<Res, &'static str>
+    pub fn dot_product<Rhs, Res>(
+        &self,
+        other: &Matrix<Rhs>,
+    ) -> Result<Res, &'static str>
     where
         Lhs: Mul<Rhs, Output = Res> + Clone,
         Res: AddAssign + Default,
         Rhs: Clone,
     {
-        if self.row_count != other.row_count || self.column_count != 1 || other.column_count != 1 {
+        if self.row_count != other.row_count
+            || self.column_count != 1
+            || other.column_count != 1
+        {
             return Err("Both matrices must be vectors of the same dimension.");
         }
 
@@ -151,7 +164,10 @@ impl<Lhs> Matrix<Lhs> {
     /// Returns an `Err` of type `IncompatibleMatrixSizes` if:
     ///    - Either matrix does not have exactly 3 rows.
     ///    - Either matrix does not have exactly 1 column.
-    pub fn cross_product<Rhs, Res>(&self, other: &Matrix<Rhs>) -> Result<Matrix<Res>, EvalError>
+    pub fn cross_product<Rhs, Res>(
+        &self,
+        other: &Matrix<Rhs>,
+    ) -> Result<Matrix<Res>, EvalError>
     where
         Lhs: Mul<Rhs, Output = Res> + Clone,
         Res: AddAssign + Sub<Output = Res>,
@@ -223,7 +239,8 @@ impl<Lhs> Matrix<Lhs> {
         let mut det = Res::default();
         for col in 0..self.column_count {
             let submatrix = self.submatrix(0, col);
-            let term = (self.get(0, col).clone() * (submatrix.determinant()?))?;
+            let term =
+                (self.get(0, col).clone() * (submatrix.determinant()?))?;
             det += term;
         }
 
@@ -289,7 +306,11 @@ impl<T> Matrix<T> {
     /// the two matrices do not match. Returns an `Err` of type `EvalError`
     /// if the provided function `func` returns an error for any of the
     /// element pairs.
-    pub fn pair_map<F, Res, Out>(&self, rhs: Matrix<Out>, func: F) -> Result<Matrix<Res>, EvalError>
+    pub fn pair_map<F, Res, Out>(
+        &self,
+        rhs: Matrix<Out>,
+        func: F,
+    ) -> Result<Matrix<Res>, EvalError>
     where
         F: Fn(T, Out) -> Result<Res, EvalError>,
         Out: Clone,
@@ -323,7 +344,10 @@ impl<T> Matrix<T> {
 #[cfg(test)]
 impl Matrix<MathExpr> {
     pub fn zero(rows: usize, cols: usize) -> Matrix<MathExpr> {
-        let values = vec![MathExpr::Term(Term::Factor(Factor::Constant(0.0))); rows * cols];
+        let values = vec![
+            MathExpr::Term(Term::Factor(Factor::Constant(0.0)));
+            rows * cols
+        ];
         Self {
             values,
             row_count: rows,
@@ -344,7 +368,11 @@ impl Mul<Matrix<Value>> for Matrix<Value> {
             .into());
         }
 
-        let mut result = Matrix::new_default(self.row_count, rhs.column_count, Value::Scalar(0.0));
+        let mut result = Matrix::new_default(
+            self.row_count,
+            rhs.column_count,
+            Value::Scalar(0.0),
+        );
         for i in 0..self.row_count {
             for j in 0..rhs.column_count {
                 let mut sum = Option::None;
@@ -428,7 +456,9 @@ where
     }
 }
 
-impl<Lhs: Clone + Mul<Value, Output = Result<Value, EvalError>>> Mul<Value> for Matrix<Lhs> {
+impl<Lhs: Clone + Mul<Value, Output = Result<Value, EvalError>>> Mul<Value>
+    for Matrix<Lhs>
+{
     type Output = Result<Matrix<Value>, EvalError>;
 
     fn mul(self, rhs: Value) -> Self::Output {
@@ -436,7 +466,9 @@ impl<Lhs: Clone + Mul<Value, Output = Result<Value, EvalError>>> Mul<Value> for 
         self.map(|val| val.clone() * rhs.clone())
     }
 }
-impl<Lhs: Clone + Mul<f64, Output = Result<Value, EvalError>>> Mul<f64> for Matrix<Lhs> {
+impl<Lhs: Clone + Mul<f64, Output = Result<Value, EvalError>>> Mul<f64>
+    for Matrix<Lhs>
+{
     type Output = Result<Matrix<Value>, EvalError>;
 
     fn mul(self, rhs: f64) -> Self::Output {

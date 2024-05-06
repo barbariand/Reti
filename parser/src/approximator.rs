@@ -65,8 +65,12 @@ impl Approximator {
     pub fn eval_expr(&self, expr: &MathExpr) -> Result<Value, EvalError> {
         match expr {
             MathExpr::Term(term) => self.eval_term(term),
-            MathExpr::Add(a, b) => self.eval_expr(a.as_ref())? + self.eval_term(b)?,
-            MathExpr::Subtract(a, b) => self.eval_expr(a.as_ref())? - self.eval_term(b)?,
+            MathExpr::Add(a, b) => {
+                self.eval_expr(a.as_ref())? + self.eval_term(b)?
+            }
+            MathExpr::Subtract(a, b) => {
+                self.eval_expr(a.as_ref())? - self.eval_term(b)?
+            }
         }
     }
     ///Evaluates a Term
@@ -77,8 +81,12 @@ impl Approximator {
     fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
         match term {
             Term::Factor(factor) => self.eval_factor(factor),
-            Term::Multiply(a, b) => self.eval_term(a.as_ref())? * self.eval_factor(b)?,
-            Term::Divide(a, b) => self.eval_term(a.as_ref())? / self.eval_factor(b)?,
+            Term::Multiply(a, b) => {
+                self.eval_term(a.as_ref())? * self.eval_factor(b)?
+            }
+            Term::Divide(a, b) => {
+                self.eval_term(a.as_ref())? / self.eval_factor(b)?
+            }
         }
     }
     ///Evaluates a Factor
@@ -99,27 +107,34 @@ impl Approximator {
                 .get(x)
                 .ok_or(EvalError::NotDefined)?
                 .clone(),
-            Factor::FunctionCall(call) => match self.context.functions.get(&call.function_name) {
-                Some(func) => {
-                    let args: Result<Vec<Value>, EvalError> = call
-                        .arguments
-                        .iter()
-                        .map(|expr| self.eval_expr(expr))
-                        .collect();
-                    (func.approximate)(args?, self.context.clone())?
+            Factor::FunctionCall(call) => {
+                match self.context.functions.get(&call.function_name) {
+                    Some(func) => {
+                        let args: Result<Vec<Value>, EvalError> = call
+                            .arguments
+                            .iter()
+                            .map(|expr| self.eval_expr(expr))
+                            .collect();
+                        (func.approximate)(args?, self.context.clone())?
+                    }
+                    None => panic!(
+                        "Parser incorrectly identified function {:?}",
+                        call
+                    ),
                 }
-                None => panic!("Parser incorrectly identified function {:?}", call),
-            },
+            }
             Factor::Power { base, exponent } => {
                 let base_val = self.eval_factor(base.as_ref())?.scalar()?;
                 let exp_val = self.eval_expr(exponent.as_ref())?.scalar()?;
                 Value::Scalar(base_val.powf(exp_val))
             }
             Factor::Root { degree, radicand } => Value::Scalar(
-                match degree.as_ref().map(|expr| self.eval_expr(expr.as_ref())) {
+                match degree.as_ref().map(|expr| self.eval_expr(expr.as_ref()))
+                {
                     None => self.eval_expr(radicand.as_ref())?.scalar()?.sqrt(),
                     Some(degree) => {
-                        let radicand_val = self.eval_expr(radicand.as_ref())?.scalar()?;
+                        let radicand_val =
+                            self.eval_expr(radicand.as_ref())?.scalar()?;
                         let degree_val = degree?.scalar()?;
                         radicand_val.powf(1.0 / degree_val)
                     }
@@ -130,8 +145,12 @@ impl Approximator {
                 let b_val = self.eval_expr(b.as_ref())?;
                 (a_val / b_val)?
             }
-            Factor::Abs(val) => Value::Scalar(self.eval_expr(val.as_ref())?.scalar()?.abs()),
-            Factor::Matrix(matrix) => Value::Matrix(matrix.map(|expr| self.eval_expr(expr))?),
+            Factor::Abs(val) => {
+                Value::Scalar(self.eval_expr(val.as_ref())?.scalar()?.abs())
+            }
+            Factor::Matrix(matrix) => {
+                Value::Matrix(matrix.map(|expr| self.eval_expr(expr))?)
+            }
         })
     }
 }
