@@ -2,7 +2,7 @@ use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
 
-use crate::prelude::Token;
+use crate::prelude::{MulType, Token};
 
 #[derive(Debug, Snafu)]
 pub enum ParseError {
@@ -29,4 +29,41 @@ pub enum AstError {
     Panic { message: String },
     #[snafu(transparent)]
     ParseError { source: ParseError },
+}
+/// The errors that can happen when evaluating a AST
+#[derive(Debug, Snafu)]
+pub enum EvalError {
+    #[snafu(display(
+        "A matrix was found when it was expected to be a scalar"
+    ))]
+    ExpectedScalar,
+    #[snafu(whatever, display("The types are not compatible: {message}"))]
+    IncompatibleTypes { message: String },
+    #[snafu(transparent)]
+    IncompatibleMatrixSizes { source: IncompatibleMatrixSizes },
+    #[snafu(display("Value is undefined"))]
+    NotDefined,
+    /// Unclear multiplication type when multiplying matricies.
+    #[snafu(display(
+        "Unclear multiplication type {type:?} when multiplying matricies"
+    ))]
+    AmbiguousMulType { r#type: MulType },
+}
+/// The error for when it required another size of the matrix
+#[derive(Debug, Snafu)]
+pub enum IncompatibleMatrixSizes {
+    #[snafu(display("Expected row {expected:?} found {found:?}"))]
+    Row {
+        /// The expected value for the matrix
+        expected: usize,
+        /// The value found
+        found: usize,
+    },
+    #[snafu(display("Expected column {expected:?} found {found:?}"))]
+    Column {
+        /// The expected value for the matrix
+        expected: usize,
+        /// The value found
+        found: usize,
+    },
 }

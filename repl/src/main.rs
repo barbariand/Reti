@@ -4,7 +4,6 @@ use clap::{command, crate_authors, crate_name, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
-    approximator::EvalError,
     ast::{Factor, MathExpr, MathIdentifier, Term},
     prelude::*,
 };
@@ -144,7 +143,7 @@ impl Repl {
     }
     fn ast_equality(&mut self, lhs: MathExpr, rhs: MathExpr) -> String {
         if let MathExpr::Term(Term::Multiply(
-            ast::MulType::Implicit,
+            parser::ast::MulType::Implicit,
             var,
             Factor::Parenthesis(possible_args),
         )) = lhs

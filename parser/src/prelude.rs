@@ -9,7 +9,7 @@ pub use crate::{
     approximator::Approximator,
     ast::Ast,
     context::{MathContext, MathFunction},
-    error::{AstError, ParseError},
+    error::{AstError, EvalError, IncompatibleMatrixSizes, ParseError},
     value::Value,
 };
 /// An alias for `Receiver<Token>` to receive tokens
@@ -21,8 +21,6 @@ pub(crate) type TokenSender = Sender<Token>;
 
 #[allow(unused_imports)]
 pub(crate) use crate::{
-    approximator::EvalError,
-    approximator::IncompatibleMatrixSizes,
     ast::{Factor, FunctionCall, MathExpr, MathIdentifier, MulType, Term},
     lexer::Lexer,
     matrix::Matrix,
