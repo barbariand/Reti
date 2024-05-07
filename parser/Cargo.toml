@@ -8,15 +8,8 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.37.0", features = ["test-util", "tracing", "rt-multi-thread", "macros"] }
 async-recursion = "1.1.0"
-colored = "2.1.0"
-clap = { version = "4.5.4", features = ["derive", "cargo"] }
 tracing = { version = "0.1.40", features = ["async-await"] }
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tracing-appender = {version = "0.2.3"}
-rustyline = "14.0.0"
-futures = "0.3.30"
 slicedisplay = "0.2.2"
 snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
-directories = "5.0.1"
 
 [lib]
