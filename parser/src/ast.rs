@@ -89,7 +89,48 @@ impl From<MathIdentifier> for MathExpr {
         MathExpr::Term(Term::from(value))
     }
 }
-///For multiplication and division
+
+/// The type of multiplication.
+///
+/// For scalar multiplication, the type of multiplication makes no difference,
+/// but in some cases, for example when multiplying vectors, the symbol used
+/// for multiplication makes a difference.
+#[derive(PartialEq, Debug, Clone)]
+pub enum MulType {
+    /// 2 * x
+    ///
+    /// Not defined when used on matrices.
+    Asterisk,
+
+    /// 2 \cdot x
+    ///
+    /// Dot product when used on matrices (vectors).
+    Cdot,
+
+    /// 2 \times x
+    ///
+    /// Cross product when used on matrices (vectors).
+    Times,
+
+    /// 2x
+    ///
+    /// Matrix multiplication when used on matrices.
+    Implicit,
+}
+
+/// A term consists of a number or variable, or the product or quotient of
+/// multiple numbers and variables.
+///
+/// In regard to the order of operations, the individual terms are always
+/// evaluated before being added or subtracted.
+///
+/// See Wikipedia article [Term (mathematics)](https://simple.wikipedia.org/wiki/Term_(mathematics)).
+///
+/// ## Examples
+/// For example, in
+/// > 1 + 2x + 8yzx
+///
+/// *1*, *2x*, and *8yzx* are three separate terms.
 #[derive(PartialEq, Debug, Clone)]
 pub enum Term {
     /// A [Factor] containing the rest of the syntax that go before in
@@ -106,6 +147,7 @@ pub enum Term {
     ///     parse("2*2", &context),
     ///     Ast::Expression(
     ///         Term::Multiply(
+    ///             MulType::Asterisk,
     ///             Box::new(Term::Factor(
     ///                 Factor::Constant(2.0)
     ///             )),
@@ -115,7 +157,7 @@ pub enum Term {
     /// );
 
     /// ```
-    Multiply(Box<Term>, Factor),
+    Multiply(MulType, Box<Term>, Factor),
     ///Division of Term and Factor
     /// ## Examples
     ///  ```
