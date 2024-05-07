@@ -9,6 +9,7 @@ edition = "2021"
 tokio = { version = "1.37.0", features = ["test-util", "tracing", "rt-multi-thread", "macros"] }
 async-recursion = "1.1.0"
 tracing = { version = "0.1.40", features = ["async-await"] }
+futures = "0.3.30"
 slicedisplay = "0.2.2"
 snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
 
