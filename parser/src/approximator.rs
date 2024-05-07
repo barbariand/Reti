@@ -2,44 +2,6 @@
 
 use super::prelude::*;
 
-/// The errors that can happen when evaluating a AST
-#[derive(Debug)]
-pub enum EvalError {
-    /// A matrix was found when it was expected to be a scalar
-    ExpectedScalar,
-    /// General error for when it can not be used
-    IncompatibleTypes(&'static str),
-    ///When the Matrix required another size for doing the operation
-    IncompatibleMatrixSizes(IncompatibleMatrixSizes),
-    /// Could nto fund the value expected
-    NotDefined,
-    /// Unclear multiplication type when multiplying matricies.
-    AmbiguousMulType(MulType),
-}
-/// The error for when it required another size of the matrix
-#[derive(Debug)]
-pub enum IncompatibleMatrixSizes {
-    /// Wrong row value for the matrix operation
-    Row {
-        /// The expected value for the matrix
-        expected: usize,
-        /// The value found
-        found: usize,
-    },
-    /// Wrong column value for the matrix operation
-    Column {
-        /// The expected value for the matrix
-        expected: usize,
-        /// The value found
-        found: usize,
-    },
-}
-
-impl From<IncompatibleMatrixSizes> for EvalError {
-    fn from(value: IncompatibleMatrixSizes) -> Self {
-        Self::IncompatibleMatrixSizes(value)
-    }
-}
 /// A simple single-threaded evaluator for an AST.
 pub struct Approximator {
     /// the MathContext holding all the defined functions

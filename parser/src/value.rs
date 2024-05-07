@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
-use crate::{approximator::EvalError, ast::MulType, matrix::Matrix};
+use crate::{ast::MulType, error::EvalError, matrix::Matrix};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
@@ -39,7 +39,9 @@ impl Display for Value {
 }
 
 fn type_err<T>(text: &'static str) -> Result<T, EvalError> {
-    Err(EvalError::IncompatibleTypes(text))
+    Err(EvalError::IncompatibleTypes {
+        message: text.to_string(),
+    })
 }
 
 impl Add for Value {
@@ -88,7 +90,11 @@ impl Value {
                 MulType::Implicit => Value::Matrix((a.matrix_mul(b))?),
                 MulType::Cdot => todo!("a.dot_product(b)"),
                 MulType::Times => todo!("a.cross_product(b)"),
-                _ => return Err(EvalError::AmbiguousMulType(mul_type.clone())),
+                _ => {
+                    return Err(EvalError::AmbiguousMulType {
+                        r#type: mul_type.clone(),
+                    })
+                }
             },
             (Value::Scalar(scalar), Value::Matrix(matrix)) => {
                 Value::Matrix((matrix * scalar)?)

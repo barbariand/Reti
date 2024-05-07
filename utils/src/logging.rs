@@ -4,7 +4,7 @@ use directories::{BaseDirs, ProjectDirs};
 use tracing::level_filters::LevelFilter;
 use tracing_appender::{non_blocking::WorkerGuard, rolling::Rotation};
 use tracing_subscriber::{
-    layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
+    layer::SubscriberExt, util::SubscriberInitExt, Layer,
 };
 
 pub trait LogsDirectory {

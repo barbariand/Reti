@@ -92,8 +92,8 @@ impl MathContext {
         );
 
         // TODO add proper functions system so we can define the definition
-        //  and value sets to validate the amount of arguments, the types of arguments
-        //  (scalar or matrix).
+        //  and value sets to validate the amount of arguments, the types of
+        // arguments  (scalar or matrix).
 
         // Trigonometric functions
         context.add_function(
@@ -147,6 +147,8 @@ where
 }
 
 mod test {
+    use snafu::whatever;
+
     #[allow(unused_imports)]
     use crate::prelude::*;
 
@@ -174,7 +176,7 @@ mod test {
         let mut c1 = MathContext::new();
         c1.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |_, _| Err(EvalError::IncompatibleTypes("testing")),
+            |_, _| whatever!("testing"),
         );
         c1.merge(&c2);
         assert!((c1.functions[&MathIdentifier::new(vec![
