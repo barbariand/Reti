@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
-use crate::{approximator::EvalError, matrix::Matrix};
+use crate::{approximator::EvalError, ast::MulType, matrix::Matrix};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
@@ -76,20 +76,20 @@ impl Sub for Value {
     }
 }
 
-impl Mul for Value {
-    type Output = Result<Value, EvalError>;
-
-    fn mul(self, rhs: Self) -> Self::Output {
+impl Value {
+    pub fn mul(
+        self,
+        mul_type: &MulType,
+        rhs: Self,
+    ) -> Result<Value, EvalError> {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a * b),
-            (Value::Matrix(a), Value::Matrix(b)) => {
-                // TODO: Maintain difference between \cdot, \times and implicit multiplication.
-                let res = a * b;
-                if let Err(EvalError::IncompatibleMatrixSizes(_)) = res {
-                    // TODO try dot product instead?
-                }
-                Value::Matrix(res?)
-            }
+            (Value::Matrix(a), Value::Matrix(b)) => match mul_type {
+                MulType::Implicit => Value::Matrix((a.matrix_mul(b))?),
+                MulType::Cdot => todo!("a.dot_product(b)"),
+                MulType::Times => todo!("a.cross_product(b)"),
+                _ => return Err(EvalError::AmbiguousMulType(mul_type.clone())),
+            },
             (Value::Scalar(scalar), Value::Matrix(matrix)) => {
                 Value::Matrix((matrix * scalar)?)
             }
@@ -117,6 +117,6 @@ impl Mul<f64> for Value {
     type Output = Result<Value, EvalError>;
 
     fn mul(self, rhs: f64) -> Self::Output {
-        Value::Scalar(rhs) * self
+        Value::Scalar(rhs).mul(&MulType::Implicit, self)
     }
 }
