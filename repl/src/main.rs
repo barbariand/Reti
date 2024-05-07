@@ -1,45 +1,29 @@
-//! RETI REPL
-// #![warn(missing_docs, clippy::missing_docs_in_private_items)]
-
-mod approximator;
-mod ast;
-mod context;
-mod lexer;
-
 use std::{ops::ControlFlow, sync::Arc};
 
-pub mod error;
-use prelude::*;
-mod normalizer;
-mod parsing;
-mod value;
-
-mod token;
-mod token_reader;
-use clap::{command, Parser as ClapParser};
+use clap::{command, crate_authors, crate_name, Parser as ClapParser};
 use colored::Colorize;
-mod matrix;
-pub mod prelude;
+use directories::ProjectDirs;
+use parser::{
+    approximator::EvalError,
+    ast::{Factor, MathExpr, MathIdentifier, Term},
+    prelude::*,
+};
 use rustyline::{
     error::ReadlineError, history::FileHistory, DefaultEditor, Editor,
 };
-use tracing::{debug, error, info, level_filters::LevelFilter, trace_span};
-use tracing_subscriber::{
-    fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
-};
+use tracing::{debug, error, info, trace_span};
+use tracing_subscriber::filter::LevelFilter;
 
-use crate::context::MathFunction;
+use parser::context::MathFunction;
 #[tokio::main]
 pub async fn main() {
+    let project_dirs = ProjectDirs::from("", "", "Reti");
     let prompt = Prompt::parse();
-    tracing_subscriber::registry()
-        .with(fmt::layer())
-        .with(
-            EnvFilter::builder()
-                .with_default_directive(prompt.tracing_level.into())
-                .from_env_lossy(),
-        )
-        .init();
+    let _guard = utils::logging::init_logger(
+        project_dirs,
+        prompt.tracing_level,
+        "reti-repl",
+    );
     prompt.into_repl().start().await;
 }
 #[derive(ClapParser, Debug)]
