@@ -1,7 +1,5 @@
 //! Simple single-threaded Approximator for AST
 
-use crate::ast::MulType;
-
 use super::prelude::*;
 
 /// The errors that can happen when evaluating a AST
@@ -168,7 +166,7 @@ mod tests {
         sync::mpsc::{self},
     };
 
-    use crate::{ast::MulType, prelude::*};
+    use crate::prelude::*;
 
     fn eval_test_from_ast(expected: f64, ast: Ast) {
         let context = MathContext::new();

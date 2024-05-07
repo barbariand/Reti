@@ -1,7 +1,7 @@
 //!
 use std::ops::{Add, AddAssign, Mul, Sub};
 
-use crate::{ast::MulType, prelude::*};
+use crate::prelude::*;
 
 #[derive(PartialEq, Debug)]
 

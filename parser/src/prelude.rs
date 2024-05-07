@@ -23,7 +23,7 @@ pub(crate) type TokenSender = Sender<Token>;
 pub(crate) use crate::{
     approximator::EvalError,
     approximator::IncompatibleMatrixSizes,
-    ast::{Factor, FunctionCall, MathExpr, MathIdentifier, Term},
+    ast::{Factor, FunctionCall, MathExpr, MathIdentifier, MulType, Term},
     lexer::Lexer,
     matrix::Matrix,
     normalizer::Normalizer,
@@ -153,7 +153,7 @@ where
 }
 #[cfg(test)]
 mod tests {
-    use crate::{ast::MulType, prelude::*};
+    use crate::prelude::*;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
         let found_ast =

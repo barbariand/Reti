@@ -1,6 +1,6 @@
 use tracing::{trace, trace_span};
 
-use crate::{ast::MulType, prelude::*};
+use crate::prelude::*;
 use async_recursion::async_recursion;
 
 pub struct Parser {
@@ -490,7 +490,7 @@ mod tests {
         sync::mpsc::{self},
     };
 
-    use crate::{ast::MulType, prelude::*};
+    use crate::prelude::*;
 
     async fn parse_test(text: &str, expected_ast: Ast) {
         let (lexer_in, lexer_out): (TokenSender, TokenReceiver) =

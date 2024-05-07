@@ -97,14 +97,29 @@ impl From<MathIdentifier> for MathExpr {
 
 /// The type of multiplication.
 ///
-/// For most operands, this makes no difference, but in some cases, for example
-/// when multiplying vectors, the symbol used for multiplication makes a
-/// difference.
+/// For scalar multiplication, the type of multiplication makes no difference,
+/// but in some cases, for example when multiplying vectors, the symbol used
+/// for multiplication makes a difference.
 #[derive(PartialEq, Debug, Clone)]
 pub enum MulType {
+    /// 2 * x
+    ///
+    /// Not defined when used on matrices.
     Asterisk,
+
+    /// 2 \cdot x
+    ///
+    /// Dot product when used on matrices (vectors).
     Cdot,
+
+    /// 2 \times x
+    ///
+    /// Cross product when used on matrices (vectors).
     Times,
+
+    /// 2x
+    ///
+    /// Matrix multiplication when used on matrices.
     Implicit,
 }
 
