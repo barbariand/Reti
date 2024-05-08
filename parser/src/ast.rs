@@ -252,11 +252,7 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("(1)", &context),
     ///     Ast::Expression(
-    ///         Factor::Parenthesis(
-    ///             Box::new(
-    ///                 Factor::Constant(1.0).into()
-    ///             )
-    ///         ).into()
+    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0).into())).into()
     ///     )
     /// );
     /// ```
@@ -265,10 +261,11 @@ pub enum Factor {
     /// A variable whose value is not known at parse time.
     ///
     /// Note that the term variable here refers to the fact that the value is
-    /// unknown at parse time. While evaluating, the value of the variable may be
-    /// constant, for example \pi or user-defined variables/constants. The variable
-    /// could also vary, such as when defining functions. For example, if f(x)=2x,
-    /// then the value of x will vary between calls to f.
+    /// unknown at parse time. While evaluating, the value of the variable may
+    /// be constant, for example \pi or user-defined variables/constants.
+    /// The variable could also vary, such as when defining functions. For
+    /// example, if f(x)=2x, then the value of x will vary between calls to
+    /// f.
     ///
     /// Variables are identified using the [MathIdentifier] struct.
     /// ## Examples
@@ -308,7 +305,7 @@ pub enum Factor {
     /// # use std::sync::Arc;
     /// # use parser::value::Value;
     /// # let mut context=MathContext::standard_math();
-    /// # context.functions.insert(MathIdentifier::new(vec![Token::Identifier("f".to_owned())]), MathFunction::new(Arc::new(|_,_|Ok(Value::Scalar(2.0)))));
+    /// # context.functions.insert(MathIdentifier::new(vec![Token::Identifier("f".to_owned())]), MathFunction::new(Arc::new(|_,_|Ok(Value::Scalar(2.0))),1));
     /// // parsing f(x)
     /// // where f needs to be defined for it to be interpreted as a function call
     ///
@@ -332,8 +329,8 @@ pub enum Factor {
     /// ```
     FunctionCall(FunctionCall),
 
-    /// An exponetiation that describes an expression that is being raised to the
-    /// power of an exponent.
+    /// An exponetiation that describes an expression that is being raised to
+    /// the power of an exponent.
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -391,13 +388,13 @@ pub enum Factor {
 
     /// A fraction.
     ///
-    /// Note that fractions are treated as a factor, despite them being a division.
-    /// This is because, in expressions like \frac{1}{2}x, the fraction acts like a
-    /// factor.
+    /// Note that fractions are treated as a factor, despite them being a
+    /// division. This is because, in expressions like \frac{1}{2}x, the
+    /// fraction acts like a factor.
     ///
-    /// Also note that the term "fraction" is used to denote a quotient regardless
-    /// of the contents on the numerator and denominator while the mathematical
-    /// definition requires they be integers.
+    /// Also note that the term "fraction" is used to denote a quotient
+    /// regardless of the contents on the numerator and denominator while
+    /// the mathematical definition requires they be integers.
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -410,9 +407,10 @@ pub enum Factor {
     ///     parse("\\frac{1}{2}", &context),
     ///     Ast::Expression(
     ///         Factor::Fraction(
-    ///            Box::new(Factor::Constant(1.0).into()),
+    ///             Box::new(Factor::Constant(1.0).into()),
     ///             Box::new(Factor::Constant(2.0).into()),
-    ///         ).into()
+    ///         )
+    ///         .into()
     ///     )
     /// );
     /// ```
@@ -430,9 +428,7 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("|3|", &context),
     ///     Ast::Expression(
-    ///         Factor::Abs(
-    ///             Box::new(Factor::Constant(3.0).into())
-    ///         ).into()
+    ///         Factor::Abs(Box::new(Factor::Constant(3.0).into())).into()
     ///     )
     /// );
     /// ```

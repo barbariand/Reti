@@ -43,11 +43,13 @@ pub enum EvalError {
     IncompatibleMatrixSizes { source: IncompatibleMatrixSizes },
     #[snafu(display("Value is undefined"))]
     NotDefined,
-    /// Unclear multiplication type when multiplying matricies.
+    /// Unclear multiplication type when multiplying matrices.
     #[snafu(display(
-        "Unclear multiplication type {type:?} when multiplying matricies"
+        "Unclear multiplication type {type:?} when multiplying matrices"
     ))]
     AmbiguousMulType { r#type: MulType },
+    ///Invalid amount of arguments
+    ArgumentLengthMismatch { expected: Vec<usize>, found: usize },
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
