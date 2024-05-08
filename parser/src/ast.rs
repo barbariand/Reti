@@ -95,6 +95,34 @@ impl From<MathIdentifier> for MathExpr {
     }
 }
 
+/// The type of multiplication.
+///
+/// For scalar multiplication, the type of multiplication makes no difference,
+/// but in some cases, for example when multiplying vectors, the symbol used
+/// for multiplication makes a difference.
+#[derive(PartialEq, Debug, Clone)]
+pub enum MulType {
+    /// 2 * x
+    ///
+    /// Not defined when used on matrices.
+    Asterisk,
+
+    /// 2 \cdot x
+    ///
+    /// Dot product when used on matrices (vectors).
+    Cdot,
+
+    /// 2 \times x
+    ///
+    /// Cross product when used on matrices (vectors).
+    Times,
+
+    /// 2x
+    ///
+    /// Matrix multiplication when used on matrices.
+    Implicit,
+}
+
 /// A term consists of a number or variable, or the product or quotient of
 /// multiple numbers and variables.
 ///
@@ -125,6 +153,7 @@ pub enum Term {
     ///     parse("2*2", &context),
     ///     Ast::Expression(
     ///         Term::Multiply(
+    ///             MulType::Asterisk,
     ///             Box::new(Term::Factor(
     ///                 Factor::Constant(2.0)
     ///             )),
@@ -133,7 +162,7 @@ pub enum Term {
     ///     )
     /// );
     /// ```
-    Multiply(Box<Term>, Factor),
+    Multiply(MulType, Box<Term>, Factor),
 
     /// Division between a Term and Factor.
     /// ## Examples
@@ -276,7 +305,7 @@ pub enum Factor {
     /// # use std::sync::Arc;
     /// # use parser::value::Value;
     /// # let mut context=MathContext::standard_math();
-    /// # context.functions.insert(MathIdentifier::new(vec![Token::Identifier("f".to_owned())]), MathFunction::new(Arc::new(|_,_|Ok(Value::Scalar(2.0)))));
+    /// # context.functions.insert(MathIdentifier::new(vec![Token::Identifier("f".to_owned())]), MathFunction::new(Arc::new(|_,_|Ok(Value::Scalar(2.0))),1));
     /// // parsing f(x)
     /// // where f needs to be defined for it to be interpreted as a function call
     ///

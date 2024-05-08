@@ -1,45 +1,7 @@
 //! Simple single-threaded Approximator for AST
+
 use super::prelude::*;
 
-/// The errors that can happen when evaluating a AST
-#[derive(Debug)]
-pub enum EvalError {
-    /// A matrix was found when it was expected to be a scalar
-    ExpectedScalar,
-    /// General error for when it can not be used
-    IncompatibleTypes(&'static str),
-    ///When the Matrix required another size for doing the operation
-    IncompatibleMatrixSizes(IncompatibleMatrixSizes),
-    /// Could nto fund the value expected
-    NotDefined,
-    ///Invalid amount of arguments
-    ArgumentLengthMismatch { expected: Vec<usize>, found: usize },
-}
-
-/// The error for when it required another size of the matrix
-#[derive(Debug)]
-pub enum IncompatibleMatrixSizes {
-    /// Wrong row value for the matrix operation
-    Row {
-        /// The expected value for the matrix
-        expected: usize,
-        /// The value found
-        found: usize,
-    },
-    /// Wrong column value for the matrix operation
-    Column {
-        /// The expected value for the matrix
-        expected: usize,
-        /// The value found
-        found: usize,
-    },
-}
-
-impl From<IncompatibleMatrixSizes> for EvalError {
-    fn from(value: IncompatibleMatrixSizes) -> Self {
-        Self::IncompatibleMatrixSizes(value)
-    }
-}
 /// A simple single-threaded evaluator for an AST.
 pub struct Approximator {
     /// the MathContext holding all the defined functions
@@ -84,9 +46,9 @@ impl Approximator {
     fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
         match term {
             Term::Factor(factor) => self.eval_factor(factor),
-            Term::Multiply(a, b) => {
-                self.eval_term(a.as_ref())? * self.eval_factor(b)?
-            }
+            Term::Multiply(mul_type, a, b) => self
+                .eval_term(a.as_ref())?
+                .mul(mul_type, self.eval_factor(b)?),
             Term::Divide(a, b) => {
                 self.eval_term(a.as_ref())? / self.eval_factor(b)?
             }
@@ -224,7 +186,11 @@ mod tests {
             // 2+3*5
             Ast::Expression(MathExpr::Add(
                 Box::new(2.0.into()),
-                Term::Multiply(Box::new(3.0.into()), 5.0.into()),
+                Term::Multiply(
+                    MulType::Asterisk,
+                    Box::new(3.0.into()),
+                    5.0.into(),
+                ),
             )),
         );
     }

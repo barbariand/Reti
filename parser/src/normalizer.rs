@@ -44,9 +44,6 @@ impl Normalizer {
             [Token::Backslash, Token::Identifier(v)] => {
                 trace!("ident = {v}");
                 match v.as_str() {
-                    "cdot" | "cdotp" | "times" => {
-                        self.reader.replace(0..=1, vec![Token::Asterisk]).await;
-                    }
                     "left" | "middle" | "right" => {
                         self.reader.replace(0..=1, vec![]).await;
                         // TODO Remove dot after, for example "\left."
@@ -158,66 +155,6 @@ mod tests {
                 Token::Caret,
                 Token::NumberLiteral("0".to_owned().into()),
                 Token::NumberLiteral("25".to_owned().into()),
-                Token::EndOfContent,
-            ]
-        );
-    }
-
-    #[tokio::test]
-    async fn replace_cdot_with_asterisk() {
-        assert_eq!(
-            normalize(vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Backslash,
-                Token::Identifier("cdot".to_string()),
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ])
-            .await,
-            vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Asterisk,
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ]
-        );
-    }
-
-    #[tokio::test]
-    async fn replace_cdotp_with_asterisk() {
-        assert_eq!(
-            normalize(vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Backslash,
-                Token::Identifier("cdotp".to_string()),
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ])
-            .await,
-            vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Asterisk,
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ]
-        );
-    }
-
-    #[tokio::test]
-    async fn replace_times_with_asterisk() {
-        assert_eq!(
-            normalize(vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Backslash,
-                Token::Identifier("times".to_string()),
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ])
-            .await,
-            vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Asterisk,
-                Token::NumberLiteral("1".to_owned().into()),
                 Token::EndOfContent,
             ]
         );

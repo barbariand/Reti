@@ -9,6 +9,7 @@ pub use crate::{
     approximator::Approximator,
     ast::Ast,
     context::{MathContext, MathFunction},
+    error::{AstError, EvalError, IncompatibleMatrixSizes, ParseError},
     value::Value,
 };
 /// An alias for `Receiver<Token>` to receive tokens
@@ -20,10 +21,7 @@ pub(crate) type TokenSender = Sender<Token>;
 
 #[allow(unused_imports)]
 pub(crate) use crate::{
-    approximator::EvalError,
-    approximator::IncompatibleMatrixSizes,
-    ast::{Factor, FunctionCall, MathExpr, MathIdentifier, Term},
-    error::{AstError, ParseError},
+    ast::{Factor, FunctionCall, MathExpr, MathIdentifier, MulType, Term},
     lexer::Lexer,
     matrix::Matrix,
     normalizer::Normalizer,
@@ -191,6 +189,7 @@ mod tests {
                     3f64.into(),
                 )),
                 Term::Multiply(
+                    MulType::Asterisk,
                     Box::new(Term::Factor(Factor::Parenthesis(Box::new(
                         MathExpr::Add(Box::new(4f64.into()), 5f64.into()),
                     )))),
@@ -275,6 +274,7 @@ mod tests {
         parse_test(
             "2^025", // this is 2^0 * 25
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 //2^0
                 Box::new(Term::Factor(Factor::Power {
                     base: Box::new(Factor::Constant(2.0)),
@@ -294,6 +294,7 @@ mod tests {
         parse_test(
             "2(3)^3",
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 // 2
                 Box::new(2f64.into()),
                 // (3)^3
@@ -313,6 +314,7 @@ mod tests {
             Ast::Expression(MathExpr::Add(
                 // 2x^{2}
                 Box::new(MathExpr::Term(Term::Multiply(
+                    MulType::Implicit,
                     // 2
                     Box::new(Term::Factor(Factor::Constant(2.0))),
                     // x^{2}
@@ -327,8 +329,10 @@ mod tests {
                 ))),
                 // 5xy
                 Term::Multiply(
+                    MulType::Implicit,
                     // 5x
                     Box::new(Term::Multiply(
+                        MulType::Implicit,
                         // 5
                         Box::new(5f64.into()),
                         // x
@@ -351,8 +355,10 @@ mod tests {
         parse_test(
             "2xy^2",
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 // 2x
                 Box::new(Term::Multiply(
+                    MulType::Implicit,
                     // 2
                     Box::new(2f64.into()),
                     // x
@@ -393,8 +399,10 @@ mod tests {
         parse_test(
             "\\pi(x)\\ln(x)", // this is pi * x * ln(x)
             Ast::Expression(MathExpr::Term(Term::Multiply(
+                MulType::Implicit,
                 // \pi(x)
                 Box::new(Term::Multiply(
+                    MulType::Implicit,
                     Box::new(
                         Factor::Variable(MathIdentifier {
                             tokens: vec![
@@ -438,6 +446,7 @@ mod tests {
             Ast::Expression(MathExpr::Add(
                 // 5/2x
                 Box::new(MathExpr::Term(Term::Multiply(
+                    MulType::Implicit,
                     // 5/2
                     Box::new(Term::Divide(
                         // 5
@@ -472,6 +481,7 @@ mod tests {
             "|-3|",
             Ast::Expression(
                 Factor::Abs(Box::new(MathExpr::Term(Term::Multiply(
+                    MulType::Implicit,
                     Box::new((-1f64).into()),
                     3f64.into(),
                 ))))
