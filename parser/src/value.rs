@@ -95,7 +95,7 @@ impl Value {
             (Value::Matrix(a), Value::Matrix(b)) => match mul_type {
                 MulType::Implicit => Value::Matrix((a.matrix_mul(&b))?),
                 MulType::Cdot => a.dot_product(&b)?,
-                MulType::Times => todo!("a.cross_product(b)"),
+                MulType::Times => Value::Matrix(a.cross_product(&b)?),
                 _ => {
                     return Err(EvalError::AmbiguousMulType {
                         r#type: mul_type.clone(),

@@ -225,6 +225,71 @@ impl Matrix<Value> {
         }
         Ok(sum.expect("Empty vector"))
     }
+
+    /// Calculates the three dimensional cross product of two matricies (treated
+    /// as vectors.)
+    ///
+    /// # Errors
+    /// Returns an `Err` if:
+    /// - One of the matricies isn't a vector.
+    /// - One of the matricies isn't a vector with 3 components.
+    pub fn cross_product(
+        &self,
+        other: &Matrix<Value>,
+    ) -> Result<Matrix<Value>, EvalError> {
+        // Validation
+        fn vector_err(m: &Matrix<Value>) -> EvalError {
+            EvalError::IncompatibleMatrixSizes {
+                source: IncompatibleMatrixSizes::Vector {
+                    rows: m.row_count(),
+                    columns: m.column_count(),
+                },
+            }
+        }
+        fn size_err(m: &Matrix<Value>) -> EvalError {
+            EvalError::IncompatibleMatrixSizes {
+                source: IncompatibleMatrixSizes::CrossProduct {
+                    found_size: m.get_vector_size(),
+                },
+            }
+        }
+
+        if !self.is_vector() {
+            return Err(vector_err(self));
+        }
+        if !other.is_vector() {
+            return Err(vector_err(other));
+        }
+        if self.get_vector_size() != 3 {
+            return Err(size_err(self));
+        }
+        if other.get_vector_size() != 3 {
+            return Err(size_err(other));
+        }
+
+        // Calculation
+        let (x1, y1, z1) = (
+            self.get_vector_element(0),
+            self.get_vector_element(1),
+            self.get_vector_element(2),
+        );
+        let (x2, y2, z2) = (
+            other.get_vector_element(0),
+            other.get_vector_element(1),
+            other.get_vector_element(2),
+        );
+        let mt = &MulType::Implicit;
+        let values = vec![
+            (y1.mul(mt, z2)? - z1.mul(mt, y2)?)?,
+            (z1.mul(mt, x2)? - x1.mul(mt, z2)?)?,
+            (x1.mul(mt, y2)? - y1.mul(mt, x2)?)?,
+        ];
+        Ok(Matrix {
+            values,
+            row_count: 3,
+            column_count: 1,
+        })
+    }
 }
 
 impl<Lhs> Matrix<Lhs> {
@@ -262,6 +327,7 @@ impl<Lhs> Matrix<Lhs> {
     }
     */
 
+    /*
     /// Calculates the cross product of two 3D vectors represented as matrices.
     ///
     /// # Errors
@@ -320,6 +386,7 @@ impl<Lhs> Matrix<Lhs> {
             column_count: 1,
         })
     }
+    */
     /// Calculates the determinant of a square matrix.
     ///
     /// # Errors
@@ -688,5 +755,28 @@ mod tests {
 
         assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
         assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+    }
+
+    #[test]
+    fn cross_product() {
+        let mut x = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        x.set(0, 0, Value::Scalar(1.0));
+        x.set(1, 0, Value::Scalar(0.0));
+        x.set(2, 0, Value::Scalar(0.0));
+        let mut y = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        y.set(0, 0, Value::Scalar(0.0));
+        y.set(1, 0, Value::Scalar(1.0));
+        y.set(2, 0, Value::Scalar(0.0));
+        let mut z = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        z.set(0, 0, Value::Scalar(0.0));
+        z.set(1, 0, Value::Scalar(0.0));
+        z.set(2, 0, Value::Scalar(1.0));
+
+        assert_eq!(x.cross_product(&y).unwrap(), z);
+        assert_eq!(y.cross_product(&x).unwrap(), (&z * -1.0).unwrap());
+        assert_eq!(z.cross_product(&x).unwrap(), y);
+        assert_eq!(x.cross_product(&z).unwrap(), (&y * -1.0).unwrap());
+        assert_eq!(y.cross_product(&z).unwrap(), x);
+        assert_eq!(z.cross_product(&y).unwrap(), (&x * -1.0).unwrap());
     }
 }

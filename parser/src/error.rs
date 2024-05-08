@@ -72,6 +72,11 @@ pub enum IncompatibleMatrixSizes {
         /// The value found
         found: usize,
     },
+    #[snafu(display("Cross product can only be used on vectors with 3 components, got {found_size:?}"))]
+    CrossProduct {
+        /// The found size of the vector.
+        found_size: usize,
+    },
     #[snafu(display(
         "Expected a vector but got a {rows:?}x{columns:?} matrix."
     ))]
