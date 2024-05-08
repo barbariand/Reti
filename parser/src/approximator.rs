@@ -13,7 +13,7 @@ pub enum EvalError {
     /// Could nto fund the value expected
     NotDefined,
     ///Invalid amount of arguments
-    ArgumentLenghtMissmatch { expected: Vec<usize>, found: usize },
+    ArgumentLengthMismatch { expected: Vec<usize>, found: usize },
 }
 
 /// The error for when it required another size of the matrix

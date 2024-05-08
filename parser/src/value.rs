@@ -83,7 +83,8 @@ impl Mul for Value {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a * b),
             (Value::Matrix(a), Value::Matrix(b)) => {
-                // TODO: Maintain difference between \cdot, \times and implicit multiplication.
+                // TODO: Maintain difference between \cdot, \times and implicit
+                // multiplication.
                 let res = a * b;
                 if let Err(EvalError::IncompatibleMatrixSizes(_)) = res {
                     // TODO try dot product instead?
