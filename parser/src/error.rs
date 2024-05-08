@@ -20,6 +20,8 @@ pub enum ParseError {
     InvalidBegin { beginning: String },
     #[snafu(display("Expected it to have the same amount of columns, but previous had:{prev} instead got:{current}"))]
     MismatchedMatrixColumnSize { prev: usize, current: usize },
+    #[snafu(display("A matrix cannot be empty."))]
+    EmptyMatrix,
 }
 #[derive(Debug, Snafu)]
 pub enum AstError {
@@ -54,6 +56,8 @@ pub enum EvalError {
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
 pub enum IncompatibleMatrixSizes {
+    // TODO I don't like how we say that something is "expected" here. We can't say
+    // something is expected, we just know that they are incompatible. /Alvin
     #[snafu(display("Expected row {expected:?} found {found:?}"))]
     Row {
         /// The expected value for the matrix
@@ -68,4 +72,12 @@ pub enum IncompatibleMatrixSizes {
         /// The value found
         found: usize,
     },
+    #[snafu(display(
+        "Expected a vector but got a {rows:?}x{columns:?} matrix."
+    ))]
+    Vector { rows: usize, columns: usize },
+    #[snafu(display(
+        "Vectors must be of the same size, but got {a:?} and {b:?}"
+    ))]
+    SameSizeVectors { a: usize, b: usize },
 }
