@@ -35,18 +35,18 @@ impl MathFunction {
             arguments,
         }
     }
-    pub fn from_fn_pointer_expecting_scalars(
-        func: fn(Vec<f64>) -> f64,
+    pub fn from_fn_pointer_expecting_scalars<F:Fn(Vec<f64>) -> f64 + Send + Sync +'static>(
+        func: F,
         arguments: usize,
     ) -> Self {
-        Self::from_fn_pointer(
-            |v, c| {
+        Self{
+            approximate:Arc::new(move |v:Vec<Value>, _:MathContext| {
                 let v_new: Result<Vec<f64>, EvalError> =
                     v.into_iter().map(|val| val.scalar()).collect();
                 Ok(Value::Scalar(func(v_new?)))
-            },
+            }),
             arguments,
-        )
+        }
     }
     pub fn eval(
         &self,
@@ -54,8 +54,8 @@ impl MathFunction {
         context: MathContext,
     ) -> Result<Value, EvalError> {
         if vec.len() != self.arguments {
-            Err(EvalError::ArgumentLenghtMissmatch {
-                expected: self.arguments,
+            return Err(EvalError::ArgumentLenghtMissmatch {
+                expected:vec![ self.arguments],
                 found: vec.len(),
             })
         }
@@ -108,7 +108,7 @@ impl MathContext {
         func: impl IntoMathFunction,
     ) {
         self.functions
-            .insert(MathIdentifier { tokens: identifier }, func.into());
+            .insert(MathIdentifier { tokens: identifier }, func.into_math_function());
     }
 
     pub fn standard_math() -> MathContext {
@@ -131,26 +131,47 @@ impl MathContext {
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].sin(), 1),
+            f64::sin
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
-            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].cos(), 1),
+            f64::cos
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("tan".to_string())],
-            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].tan(), 1),
+            f64::tan
         );
 
         // Logarithm
         context.add_function(
             vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            MathFunction::from_fn_pointer_expecting_scalars(|v| v[0].ln(), 1),
+            f64::ln
         );
 
         context
     }
 }
+trait IntoMathFunction{
+    fn into_math_function(self)->MathFunction;
+}
+impl<F> IntoMathFunction for (F,usize)
+where F:Fn(Vec<Value>,MathContext)->Result<Value,EvalError> +Send+Sync +'static{
+    fn into_math_function(self)->MathFunction {
+        MathFunction::new(Arc::new(self.0), self.1)
+    }
+}
+impl IntoMathFunction for MathFunction{
+    fn into_math_function(self)->MathFunction {
+        self
+    }
+}
+impl<F:Fn(f64)->f64> IntoMathFunction for F
+where F:Send+Sync+'static{
+    fn into_math_function(self)->MathFunction {
+        MathFunction::from_fn_pointer_expecting_scalars(move |v| (self)(v[0]), 1)
+    }
+}
+
 
 mod test {
     #[allow(unused_imports)]
@@ -161,7 +182,7 @@ mod test {
         let mut c = MathContext::new();
         c.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |v: Vec<Value>, _: MathContext| Ok(v[0].clone()),
+        |v: f64| v,
         );
         let mut c1 = MathContext::new();
         c1.merge(&c);
@@ -175,12 +196,12 @@ mod test {
         let mut c2 = MathContext::new();
         c2.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |v: Vec<Value>, _: MathContext| Ok(v[0].clone()),
+            |v: f64| v,
         );
         let mut c1 = MathContext::new();
         c1.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |_, _| Err(EvalError::IncompatibleTypes("testing")),
+            (|_, _| Err(EvalError::IncompatibleTypes("testing")),1),
         );
         c1.merge(&c2);
         assert!((c1.functions[&MathIdentifier::new(vec![
