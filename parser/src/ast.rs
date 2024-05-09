@@ -515,7 +515,7 @@ impl MathIdentifier {
         }
     }
 }
-
+/// an identified function
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
     ///The name for the function called
@@ -525,6 +525,7 @@ pub struct FunctionCall {
 }
 
 impl FunctionCall {
+    ///a helper method
     pub fn new(
         function_name: MathIdentifier,
         arguments: Vec<MathExpr>,
