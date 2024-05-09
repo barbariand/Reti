@@ -1,9 +1,12 @@
+//!Removing inconsistencies and style choices using the Normalizer
 use tracing::{debug, trace, trace_span};
 
 use crate::prelude::*;
-
+///The normalizer for making the tokens easier to handle by removing stylization for example
 pub struct Normalizer {
+    ///The input from the lexer
     reader: TokenReader,
+    ///The output to the parser
     output: TokenSender,
 }
 impl Normalizer {
@@ -16,7 +19,8 @@ impl Normalizer {
             output,
         }
     }
-
+    ///Starting the normalization process will read until EOF
+    /// for more info read on in the TokenSender
     pub async fn normalize(mut self) {
         let span = trace_span!("normalizer::normalize");
         let _enter = span.enter();
@@ -35,7 +39,7 @@ impl Normalizer {
             }
         }
     }
-
+    ///Removing unwanted stuff to make the stream easier to handle
     async fn normalize_tokens(&mut self) {
         let span = trace_span!("normalize_tokens");
         let _enter = span.enter();
