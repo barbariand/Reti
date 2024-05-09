@@ -99,7 +99,7 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {
     match parser_result {
         Err(e) => {
             error!("parser task failed");
-            return Err(e.into());
+            Err(e.into())
         }
         Ok(Err(err)) => {
             error!("parser task failed");
@@ -121,6 +121,7 @@ pub mod _private {
             .unwrap()
     }
 }
+///starting a task that has a certain output and returning the JoinHandle making sure to catch panics as results
 fn spawn_logging_task<F, T>(
     future: F,
 ) -> tokio::task::JoinHandle<Result<T, &'static str>>
