@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 use crate::logging::init_logger;
 use leptos::*;
-use katex;
 use tracing::warn;
 
 /// |-------------|
@@ -42,10 +41,18 @@ fn Results() -> impl IntoView {
         <div>Results</div>
     }
 }
+#[cfg(target_arch="wasm32")]
 #[component]
 fn Output() -> impl IntoView {
     let opts = katex::Opts::builder().display_mode(true).build().unwrap();
     let html_in_display_mode =
         katex::render_with_opts("E = mc^2", &opts).unwrap();
     view! {<div inner_html=html_in_display_mode />}
+}
+
+#[cfg(not(target_arch="wasm32"))]
+#[component]
+fn Output() -> impl IntoView {
+
+    view! {<div inner_html="Katex not supported" />}
 }
