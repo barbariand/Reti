@@ -1,14 +1,19 @@
-//!
+//! # Matrix
+//! 
+//! implementing all the matrix multiplication scalar or otherwise
 use std::ops::{Add, AddAssign, Mul, Sub};
 
 use crate::prelude::*;
 
+///The matrix struct holding all the values as a single Vec
 #[derive(PartialEq, Debug)]
-
 pub struct Matrix<T> {
-    // values[row][column]
+    /// all the values stored in a Vec stored column per column so first in:
+    /// values\[row*column_count+column]
     values: Vec<T>,
+    ///The amount of rows in the Vec
     row_count: usize,
+    ///The amount of columns in the Vec
     column_count: usize,
 }
 
@@ -41,7 +46,7 @@ impl<T> Matrix<T> {
             column_count,
         }
     }
-
+    ///get by column and row
     pub fn index(&self, row: usize, column: usize) -> usize {
         if row >= self.row_count {
             panic!("Row out out bounds. {}/{}", row, self.row_count);
@@ -49,7 +54,7 @@ impl<T> Matrix<T> {
         if column >= self.column_count {
             panic!("Column out out bounds. {}/{}", column, self.column_count);
         }
-        return row * self.column_count + column;
+        row * self.column_count + column
     }
 
     /// Accesses the element at the specified `row` and `column`.
@@ -358,6 +363,7 @@ impl Matrix<MathExpr> {
 }
 
 impl Matrix<Value> {
+    ///Normal matrix multiplication
     pub fn matrix_mul(
         self,
         rhs: Matrix<Value>,
