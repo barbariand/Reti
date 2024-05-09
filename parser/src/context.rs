@@ -1,3 +1,6 @@
+//! # Context
+//! this module is for helping with keeping track of variables and functions
+//! for that it uses MathContext where you can add any function or variable  
 use std::{collections::HashMap, sync::Arc};
 
 use crate::prelude::*;
@@ -94,7 +97,8 @@ impl MathContext {
         }
     }
     ///merging the functions available from a MathContext
-    /// in case of collision it not mutate itself preferring to keep those values
+    /// in case of collision it not mutate itself preferring to keep those
+    /// values
     pub fn merge(&mut self, other: &MathContext) {
         other.variables.iter().for_each(|(key, value)| {
             self.variables.entry(key.clone()).or_insert(value.clone());
@@ -109,7 +113,7 @@ impl MathContext {
         // println!("is_function({:?}) = {}", ident, res); TODO tracing
         self.functions.contains_key(ident)
     }
-    ///Adding a variable 
+    ///Adding a variable
     fn add_var(&mut self, identifier: Vec<Token>, value: Value) {
         self.variables
             .insert(MathIdentifier { tokens: identifier }, value);
@@ -129,7 +133,7 @@ impl MathContext {
     /// Variables:
     /// * pi
     /// * e
-    /// 
+    ///
     /// Functions:
     /// * sin
     /// * cos
@@ -155,7 +159,7 @@ impl MathContext {
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            &f64::sin,
+            f64::sin,
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
@@ -239,7 +243,7 @@ mod test {
         let mut c1 = MathContext::new();
         c1.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            (|_, _| whatever!("testing"),1),
+            (|_, _| whatever!("testing"), 1),
         );
         c1.merge(&c2);
         assert!((c1.functions[&MathIdentifier::new(vec![
