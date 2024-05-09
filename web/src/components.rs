@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 use crate::logging::init_logger;
 use leptos::*;
+use katex;
 use tracing::warn;
 
 /// |-------------|
@@ -13,6 +14,7 @@ use tracing::warn;
 #[component]
 pub fn App() -> impl IntoView {
     init_logger();
+    let a=1;
     view! {
         <div class={"container"}>
             <div class={"ui"}>

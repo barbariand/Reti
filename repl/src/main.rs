@@ -10,8 +10,9 @@ use parser::{
 use rustyline::{
     error::ReadlineError, history::FileHistory, DefaultEditor, Editor,
 };
+mod logging;
 use tracing::{debug, error, info, trace_span};
-use utils::logging::{init_logger, LevelFilter};
+use logging::{init_logger, LevelFilter};
 
 use parser::context::MathFunction;
 #[tokio::main]

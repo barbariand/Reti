@@ -1,9 +1,7 @@
-cargo-features = ["per-package-target"]
 [package]
 name = "web"
 version = "0.1.0"
 edition = "2021"
-forced-target = "wasm32-unknown-unknown"
 
 [dependencies]
 getrandom = {version="0.2.15", features = ["js"]}
