@@ -1,6 +1,7 @@
 use leptos::{mount_to_body, view};
 
 mod components;
+mod logging;
 
 use crate::components::App;
 

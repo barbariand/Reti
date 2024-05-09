@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use directories::{BaseDirs, ProjectDirs};
-use tracing::level_filters::LevelFilter;
+pub use tracing::level_filters::LevelFilter;
 use tracing_appender::{non_blocking::WorkerGuard, rolling::Rotation};
 use tracing_subscriber::{
     layer::SubscriberExt, util::SubscriberInitExt, Layer,

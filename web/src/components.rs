@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
+use crate::logging::init_logger;
 use leptos::*;
+use tracing::warn;
 
 /// |-------------|
 /// | input   |res|
@@ -10,6 +12,7 @@ use leptos::*;
 /// |-------------|
 #[component]
 pub fn App() -> impl IntoView {
+    init_logger();
     view! {
         <div class={"container"}>
             <div class={"ui"}>
@@ -23,6 +26,7 @@ pub fn App() -> impl IntoView {
 
 #[component]
 fn Editor() -> impl IntoView {
+    warn!("This is called from Editor component!");
     view! {
         <div class={"editor"}>
             <div class={"linenumbers"}/>

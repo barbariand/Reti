@@ -11,18 +11,14 @@ use rustyline::{
     error::ReadlineError, history::FileHistory, DefaultEditor, Editor,
 };
 use tracing::{debug, error, info, trace_span};
-use tracing_subscriber::filter::LevelFilter;
+use utils::logging::{init_logger, LevelFilter};
 
 use parser::context::MathFunction;
 #[tokio::main]
 pub async fn main() {
     let project_dirs = ProjectDirs::from("", "", "Reti");
     let prompt = Prompt::parse();
-    let _guard = utils::logging::init_logger(
-        project_dirs,
-        prompt.tracing_level,
-        "reti-repl",
-    );
+    let _guard = init_logger(project_dirs, prompt.tracing_level, "reti-repl");
     prompt.into_repl().start().await;
 }
 #[derive(ClapParser, Debug)]

@@ -9,4 +9,4 @@ edition = "2021"
 parser={path="./parser"}
 
 [workspace]
-members = ["parser", "repl", "utils", "web"]
+members = ["parser", "repl", "web"]
