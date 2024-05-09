@@ -12,6 +12,5 @@ tracing = "0.1.40"
 tracing-subscriber-wasm = "0.1.0"
 tracing-subscriber = "0.3.18"
 
-[target.'cfg(all(target_arch="wasm32", target_os="unknown"))'.dependancies]
+[target.wasm32-unknown-unknown.dependencies]
 katex = { version = "0.4.6", default-features = false, features = ["wasm-js"] }
-

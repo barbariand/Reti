@@ -41,7 +41,7 @@ fn Results() -> impl IntoView {
         <div>Results</div>
     }
 }
-#[cfg(target_arch="wasm32")]
+#[cfg(all(target_arch="wasm32",target_os="unknown"))]
 #[component]
 fn Output() -> impl IntoView {
     let opts = katex::Opts::builder().display_mode(true).build().unwrap();
