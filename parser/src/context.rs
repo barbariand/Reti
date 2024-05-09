@@ -1,18 +1,21 @@
 use std::{collections::HashMap, sync::Arc};
 
 use crate::prelude::*;
-/// A Mathfunction that can be run
+/// A MathFunction that can be run
 #[derive(Clone)]
 pub struct MathFunction {
+    ///The function to run
     approximate: Arc<
         dyn Fn(Vec<Value>, MathContext) -> Result<Value, EvalError>
             + Send
             + Sync,
     >,
+    ///the amount of acceptable arguments
     arguments: usize,
 }
 
 impl MathFunction {
+    ///Helper new
     pub fn new(
         func: Arc<
             dyn Fn(Vec<Value>, MathContext) -> Result<Value, EvalError>
@@ -26,6 +29,7 @@ impl MathFunction {
             arguments,
         }
     }
+    ///Helper new for fn pointers
     pub fn from_fn_pointer(
         func: fn(Vec<Value>, MathContext) -> Result<Value, EvalError>,
         arguments: usize,
@@ -35,6 +39,7 @@ impl MathFunction {
             arguments,
         }
     }
+    ///Helper new for fn pointers with f64s
     pub fn from_fn_pointer_expecting_scalars<
         F: Fn(Vec<f64>) -> f64 + Send + Sync + 'static,
     >(
@@ -50,6 +55,7 @@ impl MathFunction {
             arguments,
         }
     }
+    /// run the function with given arguments
     pub fn eval(
         &self,
         vec: Vec<Value>,
@@ -64,9 +70,12 @@ impl MathFunction {
         (self.approximate)(vec, context)
     }
 }
+///The MathContext, holding all the functions and variables
 #[derive(Clone)]
 pub struct MathContext {
+    ///The variables
     pub variables: HashMap<MathIdentifier, Value>,
+    /// The functions defined in this math context
     pub functions: HashMap<MathIdentifier, MathFunction>,
 }
 
@@ -77,13 +86,15 @@ impl Default for MathContext {
 }
 
 impl MathContext {
+    ///Creates a new empty MathContext
     pub fn new() -> Self {
         Self {
             variables: HashMap::new(),
             functions: HashMap::new(),
         }
     }
-    //this will be non overriding
+    ///merging the functions available from a MathContext
+    /// in case of collision it not mutate itself preferring to keep those values
     pub fn merge(&mut self, other: &MathContext) {
         other.variables.iter().for_each(|(key, value)| {
             self.variables.entry(key.clone()).or_insert(value.clone());
@@ -93,17 +104,17 @@ impl MathContext {
             self.functions.entry(key.clone()).or_insert(value.clone());
         });
     }
-
+    ///if the function is contained
     pub fn is_defined_function(&self, ident: &MathIdentifier) -> bool {
         // println!("is_function({:?}) = {}", ident, res); TODO tracing
         self.functions.contains_key(ident)
     }
-
+    ///Adding a variable 
     fn add_var(&mut self, identifier: Vec<Token>, value: Value) {
         self.variables
             .insert(MathIdentifier { tokens: identifier }, value);
     }
-
+    ///Adding a function when it is IntoMathFunction
     fn add_function(
         &mut self,
         identifier: Vec<Token>,
@@ -114,7 +125,16 @@ impl MathContext {
             func.into_math_function(),
         );
     }
-
+    ///The standard math
+    /// Variables:
+    /// * pi
+    /// * e
+    /// 
+    /// Functions:
+    /// * sin
+    /// * cos
+    /// * tan
+    /// * ln - natural log
     pub fn standard_math() -> MathContext {
         let mut context = MathContext::new();
 
@@ -135,7 +155,7 @@ impl MathContext {
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            f64::sin,
+            &f64::sin,
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
@@ -155,7 +175,9 @@ impl MathContext {
         context
     }
 }
+/// The trait for easier managing of functions
 trait IntoMathFunction {
+    ///Tto convert to math functions
     fn into_math_function(self) -> MathFunction;
 }
 impl<F> IntoMathFunction for (F, usize)
@@ -186,6 +208,7 @@ where
     }
 }
 
+#[cfg(test)]
 mod test {
     use snafu::whatever;
 
