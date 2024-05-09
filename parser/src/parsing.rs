@@ -1,14 +1,18 @@
+//!Parsing the TokenStream to an AST
 use tracing::{trace, trace_span};
 
 use crate::prelude::*;
 use async_recursion::async_recursion;
-
+///Parser for parsing the stream when it is done by the normalizer
 pub struct Parser {
+    ///token stream from the normalizer
     reader: TokenReader,
+    ///the context in witch it operates in
     context: MathContext,
 }
 
 impl Parser {
+    ///creating a new 
     pub fn new(tokens: TokenReceiver, context: MathContext) -> Self {
         trace!("created Parser");
 
@@ -17,7 +21,7 @@ impl Parser {
             context,
         }
     }
-
+    ///Starting the parser
     pub async fn parse(mut self) -> Result<Ast, ParseError> {
         let span = trace_span!("parse");
         let _enter = span.enter();
@@ -46,7 +50,7 @@ impl Parser {
         // This means we failed to parse the expression fully.
         Err(ParseError::Trailing { token: next })
     }
-
+    ///expect the next token to be of a type 
     pub(crate) async fn expect(
         &mut self,
         expected: Token,
@@ -60,7 +64,7 @@ impl Parser {
             found,
         })
     }
-
+    ///reads the token until it is not a char and then adds them up
     async fn read_identifier(&mut self) -> Result<String, ParseError> {
         let token = self.reader.read().await;
         match token {
@@ -296,7 +300,7 @@ impl Parser {
             }
         })
     }
-
+    ///identify if it is a defined function and then return it as such
     async fn factor_identifier(
         &mut self,
         identifier: MathIdentifier,
@@ -367,7 +371,7 @@ impl Parser {
             exponent: Box::new(exponent),
         })
     }
-
+    ///parsing a suspected function
     async fn factor_function_call(
         &mut self,
         function_name: MathIdentifier,
@@ -399,7 +403,7 @@ impl Parser {
             arguments,
         }))
     }
-
+    ///Parsing a suspected matrix
     async fn matrix(
         &mut self,
         matrix_type: String,
