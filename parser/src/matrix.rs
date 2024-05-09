@@ -30,9 +30,10 @@ impl<T> Matrix<T> {
                 column_count,
                 values.len()
             );
-            //should it be a panic or an err? i mean its probably a parse error here but i think we want that as a result
-            // No I think it should be a panic. If this is called with an incorrect vec that is a bug that
-            // we need to fix.
+            //should it be a panic or an err? i mean its probably a parse error
+            // here but i think we want that as a result No I think
+            // it should be a panic. If this is called with an incorrect vec
+            // that is a bug that we need to fix.
         }
         Self {
             values,
@@ -288,8 +289,8 @@ impl<T> Matrix<T> {
     ///
     /// # Errors
     ///
-    /// Returns an `Err` of type `EvalError` if the provided function `func` returns an error
-    /// for any of the matrix elements.
+    /// Returns an `Err` of type `EvalError` if the provided function `func`
+    /// returns an error for any of the matrix elements.
     pub fn map<F, Res>(&self, func: F) -> Result<Matrix<Res>, EvalError>
     where
         F: Fn(&T) -> Result<Res, EvalError>,
