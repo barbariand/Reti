@@ -1,12 +1,16 @@
+//!Helper methods for reading a stream of tokens
 use tracing::{debug, trace_span};
 
 use crate::prelude::*;
 use std::{collections::VecDeque, ops::RangeInclusive};
-/// A struct for easeier management of tokens
+/// A struct for easier management of tokens
 #[derive(Debug)]
 pub struct TokenReader {
+    ///The actual token stream
     tokens: TokenReceiver,
+    ///The cached tokens
     next: VecDeque<Token>,
+    /// if the stream has reached EOF
     eof: bool,
 }
 
