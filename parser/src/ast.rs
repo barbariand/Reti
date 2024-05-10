@@ -12,7 +12,6 @@ pub enum Ast {
 }
 /// A mathematical expression that consists of one or more terms added
 /// or subtracted.
-/// MathExpr also ensures
 ///
 /// See Wikipedia article [Expression (mathematics)](https://en.wikipedia.org/wiki/Expression_(mathematics)).
 #[derive(PartialEq, Debug, Clone)]
