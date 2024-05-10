@@ -20,6 +20,13 @@ pub struct Matrix<T> {
 impl<T> Matrix<T> {
     /// Constructs a new `Matrix` instance from a vector containing the values
     ///
+    /// In the Matrix internal representation the data as a Vec<T> witch is why
+    /// it is required to provide a Vec<T> instead of Vec<Vec<T>>
+    ///
+    /// Note that this means that the elements need to be column per column so
+    /// that indexing an element in row 1 and column 2 with size
+    /// 3(row)x4(column) its 1 * 4 + 2=6
+    ///
     /// # Panics
     ///
     /// This constructor panics if the length of `values` is not equal to
@@ -58,7 +65,7 @@ impl<T> Matrix<T> {
     /// if the row or column is bigger than the row_count or column_count given
     /// when instantiated it will be considered out of bounds witch is most
     /// likely to be a bug
-    pub fn index(&self, row: usize, column: usize) -> usize {
+    fn index(&self, row: usize, column: usize) -> usize {
         if row >= self.row_count {
             panic!("Row out out bounds. {}/{}", row, self.row_count);
         }

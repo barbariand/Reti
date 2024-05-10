@@ -479,7 +479,8 @@ pub enum Factor {
     ///     )
     /// );
     /// ```
-    /// Vmatrix means it is a determinant for witch absolute is wrapping the matrix
+    /// Vmatrix means it is a determinant for witch absolute is wrapping the
+    /// matrix
     /// ```
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
