@@ -101,17 +101,17 @@ impl<T> Matrix<T> {
     /// Returns whether this matrix is a vector. (Could be a row vector
     /// or a column vector).
     pub fn is_vector(&self) -> bool {
-        return self.is_row_vector() || self.is_column_vector();
+        self.is_row_vector() || self.is_column_vector()
     }
 
     /// Returns whether this matrix is a row vector.
     pub fn is_row_vector(&self) -> bool {
-        return self.row_count == 1;
+        self.row_count == 1
     }
 
     /// Returns whether this matrix is a column vector.
     pub fn is_column_vector(&self) -> bool {
-        return self.column_count == 1;
+        self.column_count == 1
     }
 
     /// Get the amount of elements this vector has.
@@ -186,20 +186,20 @@ impl Matrix<Value> {
     ///
     /// # Errors
     /// Returns an `Err` if:
-    /// - One of the matricies isn't a vector.
+    /// - One of the matrices isn't a vector.
     /// - The vectors do not have the same size.
     pub fn dot_product(
         &self,
         other: &Matrix<Value>,
     ) -> Result<Value, EvalError> {
-        // Validation
+        ///helper function that returns a [IncompatibleMatrixSizes::Vector] error 
         fn vector_err(m: &Matrix<Value>) -> EvalError {
-            return EvalError::IncompatibleMatrixSizes {
+            EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::Vector {
                     rows: m.row_count(),
                     columns: m.column_count(),
                 },
-            };
+            }
         }
 
         if !self.is_vector() {
@@ -242,7 +242,7 @@ impl Matrix<Value> {
         &self,
         other: &Matrix<Value>,
     ) -> Result<Matrix<Value>, EvalError> {
-        // Validation
+        ///helper function that returns a [IncompatibleMatrixSizes::Vector] error 
         fn vector_err(m: &Matrix<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::Vector {
@@ -251,6 +251,7 @@ impl Matrix<Value> {
                 },
             }
         }
+        ///helper function that returns a [IncompatibleMatrixSizes::CrossProduct] error 
         fn size_err(m: &Matrix<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::CrossProduct {

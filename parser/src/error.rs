@@ -120,6 +120,7 @@ pub enum EvalError {
 pub enum IncompatibleMatrixSizes {
     // TODO I don't like how we say that something is "expected" here. We can't say
     // something is expected, we just know that they are incompatible. /Alvin
+    ///Rows don't match
     #[snafu(display("Expected row {expected:?} found {found:?}"))]
     Row {
         /// The expected value for the matrix
@@ -135,17 +136,29 @@ pub enum IncompatibleMatrixSizes {
         /// The value found
         found: usize,
     },
+    ///Invalid Vector size for cross product
     #[snafu(display("Cross product can only be used on vectors with 3 components, got {found_size:?}"))]
     CrossProduct {
         /// The found size of the vector.
         found_size: usize,
     },
+    ///Was not a Vector instead had more then 1 row and column
     #[snafu(display(
         "Expected a vector but got a {rows:?}x{columns:?} matrix."
     ))]
-    Vector { rows: usize, columns: usize },
+    Vector {
+        ///The rows of the matrix
+        rows: usize, 
+        ///The columns of the matrix
+        columns: usize
+    },
+    ///The vectors are not the same dimensions
     #[snafu(display(
         "Vectors must be of the same size, but got {a:?} and {b:?}"
     ))]
-    SameSizeVectors { a: usize, b: usize },
+    SameSizeVectors {
+        ///first vector dimensions
+        a: usize, 
+        ///Second Vector dimensions
+        b: usize },
 }
