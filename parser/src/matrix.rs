@@ -21,6 +21,8 @@ impl<T> Matrix<T> {
     /// `row_count * column_count`. This ensures data consistency within the
     /// matrix and prevents potential errors later due to an incorrect
     /// underlying representation.
+    ///
+    /// Will also panic if the Matrix has a row or column count of zero.
     pub fn new(values: Vec<T>, row_count: usize, column_count: usize) -> Self {
         if values.len() != row_count * column_count {
             panic!(
@@ -34,6 +36,9 @@ impl<T> Matrix<T> {
             // here but i think we want that as a result No I think
             // it should be a panic. If this is called with an incorrect vec
             // that is a bug that we need to fix.
+        }
+        if row_count == 0 || column_count == 0 {
+            panic!("Empty matrix.");
         }
         Self {
             values,
@@ -87,6 +92,50 @@ impl<T> Matrix<T> {
     pub fn column_count(&self) -> usize {
         self.column_count
     }
+
+    /// Returns whether this matrix is a vector. (Could be a row vector
+    /// or a column vector).
+    pub fn is_vector(&self) -> bool {
+        return self.is_row_vector() || self.is_column_vector();
+    }
+
+    /// Returns whether this matrix is a row vector.
+    pub fn is_row_vector(&self) -> bool {
+        return self.row_count == 1;
+    }
+
+    /// Returns whether this matrix is a column vector.
+    pub fn is_column_vector(&self) -> bool {
+        return self.column_count == 1;
+    }
+
+    /// Get the amount of elements this vector has.
+    ///
+    /// ## Panics
+    /// Panics if this matrix is not a vector.
+    pub fn get_vector_size(&self) -> usize {
+        if self.is_row_vector() {
+            return self.column_count;
+        }
+        if self.is_column_vector() {
+            return self.row_count;
+        }
+        panic!("Not a vector.");
+    }
+
+    /// Get the elements at an index in this vector.
+    ///
+    /// ## Panics
+    /// Panics if this matrix is not a vector.
+    pub fn get_vector_element(&self, index: usize) -> &T {
+        if self.is_row_vector() {
+            return self.get(0, index);
+        }
+        if self.is_column_vector() {
+            return self.get(index, 0);
+        }
+        panic!("Not a vector.");
+    }
 }
 
 impl<T: Clone> Matrix<T> {
@@ -126,7 +175,125 @@ impl<T: Clone> Matrix<T> {
         }
     }
 }
+
+impl Matrix<Value> {
+    /// Calculates the dot product of two matrices (treated as vectors).
+    ///
+    /// # Errors
+    /// Returns an `Err` if:
+    /// - One of the matricies isn't a vector.
+    /// - The vectors do not have the same size.
+    pub fn dot_product(
+        &self,
+        other: &Matrix<Value>,
+    ) -> Result<Value, EvalError> {
+        // Validation
+        fn vector_err(m: &Matrix<Value>) -> EvalError {
+            return EvalError::IncompatibleMatrixSizes {
+                source: IncompatibleMatrixSizes::Vector {
+                    rows: m.row_count(),
+                    columns: m.column_count(),
+                },
+            };
+        }
+
+        if !self.is_vector() {
+            return Err(vector_err(self));
+        }
+        if !other.is_vector() {
+            return Err(vector_err(other));
+        }
+        if self.get_vector_size() != other.get_vector_size() {
+            return Err(EvalError::IncompatibleMatrixSizes {
+                source: IncompatibleMatrixSizes::SameSizeVectors {
+                    a: self.get_vector_size(),
+                    b: other.get_vector_size(),
+                },
+            });
+        }
+
+        // Calculation
+        let mut sum = Option::None;
+        for i in 0..self.get_vector_size() {
+            let a_i = self.get_vector_element(i);
+            let b_i = other.get_vector_element(i);
+            let term = a_i.mul(&MulType::Implicit, b_i)?;
+            sum = Some(match sum {
+                Some(sum) => (sum + term)?,
+                None => term,
+            });
+        }
+        Ok(sum.expect("Empty vector"))
+    }
+
+    /// Calculates the three dimensional cross product of two matricies (treated
+    /// as vectors.)
+    ///
+    /// # Errors
+    /// Returns an `Err` if:
+    /// - One of the matricies isn't a vector.
+    /// - One of the matricies isn't a vector with 3 components.
+    pub fn cross_product(
+        &self,
+        other: &Matrix<Value>,
+    ) -> Result<Matrix<Value>, EvalError> {
+        // Validation
+        fn vector_err(m: &Matrix<Value>) -> EvalError {
+            EvalError::IncompatibleMatrixSizes {
+                source: IncompatibleMatrixSizes::Vector {
+                    rows: m.row_count(),
+                    columns: m.column_count(),
+                },
+            }
+        }
+        fn size_err(m: &Matrix<Value>) -> EvalError {
+            EvalError::IncompatibleMatrixSizes {
+                source: IncompatibleMatrixSizes::CrossProduct {
+                    found_size: m.get_vector_size(),
+                },
+            }
+        }
+
+        if !self.is_vector() {
+            return Err(vector_err(self));
+        }
+        if !other.is_vector() {
+            return Err(vector_err(other));
+        }
+        if self.get_vector_size() != 3 {
+            return Err(size_err(self));
+        }
+        if other.get_vector_size() != 3 {
+            return Err(size_err(other));
+        }
+
+        // Calculation
+        let (x1, y1, z1) = (
+            self.get_vector_element(0),
+            self.get_vector_element(1),
+            self.get_vector_element(2),
+        );
+        let (x2, y2, z2) = (
+            other.get_vector_element(0),
+            other.get_vector_element(1),
+            other.get_vector_element(2),
+        );
+        let mt = &MulType::Implicit;
+        let values = vec![
+            (y1.mul(mt, z2)? - z1.mul(mt, y2)?)?,
+            (z1.mul(mt, x2)? - x1.mul(mt, z2)?)?,
+            (x1.mul(mt, y2)? - y1.mul(mt, x2)?)?,
+        ];
+        Ok(Matrix {
+            values,
+            row_count: 3,
+            column_count: 1,
+        })
+    }
+}
+
 impl<Lhs> Matrix<Lhs> {
+    /*
     /// Calculates the dot product of two matrices (treated as vectors).
     ///
     /// # Errors
@@ -158,6 +325,9 @@ impl<Lhs> Matrix<Lhs> {
 
         Ok(result)
     }
+    */
+
+    /*
     /// Calculates the cross product of two 3D vectors represented as matrices.
     ///
     /// # Errors
@@ -216,6 +386,7 @@ impl<Lhs> Matrix<Lhs> {
             column_count: 1,
         })
     }
+    */
     /// Calculates the determinant of a square matrix.
     ///
     /// # Errors
@@ -359,8 +530,8 @@ impl Matrix<MathExpr> {
 
 impl Matrix<Value> {
     pub fn matrix_mul(
-        self,
-        rhs: Matrix<Value>,
+        &self,
+        rhs: &Matrix<Value>,
     ) -> Result<Matrix<Value>, EvalError> {
         if self.column_count != rhs.row_count {
             return Err(IncompatibleMatrixSizes::Row {
@@ -379,8 +550,8 @@ impl Matrix<Value> {
             for j in 0..rhs.column_count {
                 let mut sum = Option::None;
                 for k in 0..self.column_count {
-                    let a = self.get(i, k).clone();
-                    let b = rhs.get(k, j).clone();
+                    let a = self.get(i, k);
+                    let b = rhs.get(k, j);
                     let term = (a.mul(&MulType::Implicit, b))?;
                     sum = Some(match sum {
                         Some(prev) => (prev + term)?,
@@ -468,14 +639,12 @@ impl<Lhs: Clone + Mul<Value, Output = Result<Value, EvalError>>> Mul<Value>
         self.map(|val| val.clone() * rhs.clone())
     }
 }
-impl<Lhs: Clone + Mul<f64, Output = Result<Value, EvalError>>> Mul<f64>
-    for Matrix<Lhs>
-{
+impl Mul<f64> for &Matrix<Value> {
     type Output = Result<Matrix<Value>, EvalError>;
 
     fn mul(self, rhs: f64) -> Self::Output {
         // Multiply matrix components by self
-        self.map(|val| val.clone() * rhs)
+        self.map(|val| val * rhs)
     }
 }
 
@@ -520,7 +689,7 @@ mod tests {
         c.set(1, 0, Value::Scalar(43.0));
         c.set(1, 1, Value::Scalar(50.0));
 
-        assert_eq!((a.matrix_mul(b)).unwrap(), c);
+        assert_eq!((a.matrix_mul(&b)).unwrap(), c);
     }
 
     #[test]
@@ -540,6 +709,74 @@ mod tests {
         c.set(1, 0, Value::Scalar(53.0));
         c.set(2, 0, Value::Scalar(83.0));
 
-        assert_eq!((a.matrix_mul(b)).unwrap(), c);
+        assert_eq!((a.matrix_mul(&b)).unwrap(), c);
+    }
+
+    #[test]
+    fn dot_product_row_column_vectors() {
+        let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0));
+        a.set(0, 0, Value::Scalar(1.0));
+        a.set(0, 1, Value::Scalar(2.0));
+        a.set(0, 2, Value::Scalar(3.0));
+        let mut b = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        b.set(0, 0, Value::Scalar(4.0));
+        b.set(1, 0, Value::Scalar(5.0));
+        b.set(2, 0, Value::Scalar(6.0));
+
+        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
+        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+    }
+
+    #[test]
+    fn dot_product_row_vectors() {
+        let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0));
+        a.set(0, 0, Value::Scalar(1.0));
+        a.set(0, 1, Value::Scalar(2.0));
+        a.set(0, 2, Value::Scalar(3.0));
+        let mut b = Matrix::new_default(1, 3, Value::Scalar(0.0));
+        b.set(0, 1, Value::Scalar(5.0));
+        b.set(0, 0, Value::Scalar(4.0));
+        b.set(0, 2, Value::Scalar(6.0));
+
+        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
+        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+    }
+
+    #[test]
+    fn dot_product_column_vectors() {
+        let mut a = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        a.set(0, 0, Value::Scalar(1.0));
+        a.set(1, 0, Value::Scalar(2.0));
+        a.set(2, 0, Value::Scalar(3.0));
+        let mut b = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        b.set(0, 0, Value::Scalar(4.0));
+        b.set(1, 0, Value::Scalar(5.0));
+        b.set(2, 0, Value::Scalar(6.0));
+
+        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
+        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+    }
+
+    #[test]
+    fn cross_product() {
+        let mut x = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        x.set(0, 0, Value::Scalar(1.0));
+        x.set(1, 0, Value::Scalar(0.0));
+        x.set(2, 0, Value::Scalar(0.0));
+        let mut y = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        y.set(0, 0, Value::Scalar(0.0));
+        y.set(1, 0, Value::Scalar(1.0));
+        y.set(2, 0, Value::Scalar(0.0));
+        let mut z = Matrix::new_default(3, 1, Value::Scalar(0.0));
+        z.set(0, 0, Value::Scalar(0.0));
+        z.set(1, 0, Value::Scalar(0.0));
+        z.set(2, 0, Value::Scalar(1.0));
+
+        assert_eq!(x.cross_product(&y).unwrap(), z);
+        assert_eq!(y.cross_product(&x).unwrap(), (&z * -1.0).unwrap());
+        assert_eq!(z.cross_product(&x).unwrap(), y);
+        assert_eq!(x.cross_product(&z).unwrap(), (&y * -1.0).unwrap());
+        assert_eq!(y.cross_product(&z).unwrap(), x);
+        assert_eq!(z.cross_product(&y).unwrap(), (&x * -1.0).unwrap());
     }
 }

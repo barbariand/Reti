@@ -15,7 +15,13 @@ impl Value {
     pub fn scalar(&self) -> Result<f64, EvalError> {
         match self {
             Value::Scalar(val) => Ok(*val),
-            Value::Matrix(_) => Err(EvalError::ExpectedScalar),
+            Value::Matrix(m) => {
+                // Treat a 1x1 matrix as a scalar.
+                if m.row_count() == 1 && m.column_count() == 1 {
+                    return m.get(0, 0).scalar();
+                }
+                Err(EvalError::ExpectedScalar)
+            }
         }
     }
     pub fn map_expecting_scalar(
@@ -80,16 +86,16 @@ impl Sub for Value {
 
 impl Value {
     pub fn mul(
-        self,
+        &self,
         mul_type: &MulType,
-        rhs: Self,
+        rhs: &Self,
     ) -> Result<Value, EvalError> {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a * b),
             (Value::Matrix(a), Value::Matrix(b)) => match mul_type {
-                MulType::Implicit => Value::Matrix((a.matrix_mul(b))?),
-                MulType::Cdot => todo!("a.dot_product(b)"),
-                MulType::Times => todo!("a.cross_product(b)"),
+                MulType::Implicit => Value::Matrix((a.matrix_mul(&b))?),
+                MulType::Cdot => a.dot_product(&b)?,
+                MulType::Times => Value::Matrix(a.cross_product(&b)?),
                 _ => {
                     return Err(EvalError::AmbiguousMulType {
                         r#type: mul_type.clone(),
@@ -97,10 +103,10 @@ impl Value {
                 }
             },
             (Value::Scalar(scalar), Value::Matrix(matrix)) => {
-                Value::Matrix((matrix * scalar)?)
+                Value::Matrix((matrix.mul(*scalar))?)
             }
             (Value::Matrix(matrix), Value::Scalar(scalar)) => {
-                Value::Matrix((matrix * scalar)?)
+                Value::Matrix((matrix * *scalar)?)
             }
         })
     }
@@ -119,7 +125,7 @@ impl Div for Value {
     }
 }
 
-impl Mul<f64> for Value {
+impl Mul<f64> for &Value {
     type Output = Result<Value, EvalError>;
 
     fn mul(self, rhs: f64) -> Self::Output {
