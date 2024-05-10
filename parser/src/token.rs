@@ -7,102 +7,64 @@ pub enum Token {
     Identifier(String),
 
     /// A number with extra info
-    /// 
-    /// For all types of numbers
+    /// specifically matching [ `0` - `9` ] and `.`
     NumberLiteral(NumberLiteral),
 
     /// String representation:`\`
-    /// 
-    /// The Backslash: command starts and separating matrixes
     Backslash,
 
     /// String representation:`{`
-    /// The left curly brackets: opening command expressions
     LeftCurlyBracket,
 
     /// String representation:`}`
-    /// 
-    /// The right curly bracket: closing command expressions
     RightCurlyBracket,
 
     /// String representation:`[`
-    /// 
-    /// The left bracket: degrees in sqrt
     LeftBracket,
 
     /// String representation:`]`
-    /// 
-    /// The right bracket: closing degrees in sqrt
     RightBracket,
 
     /// String representation:`(`
-    /// 
-    /// The right parenthesis: opening expressions
     LeftParenthesis,
 
     /// String representation:`)`
-    /// 
-    /// The right parenthesis: closing expressions 
     RightParenthesis,
 
     /// String representation:`+`
-    /// 
-    /// The plus sign: addition
     Plus,
     
     /// String representation:`-`
-    /// 
-    /// The minus sign: subtraction 
     Minus,
     
     /// String representation:`*`
-    /// 
-    /// The asterisk: multiplication 
     Asterisk,
     
     /// String representation:`/`
-    /// 
-    /// The slash: division
     Slash,
     
     /// String representation:`'`
-    /// 
-    /// The apostrophe: derivation
     Apostrophe,
     
     /// String representation:`_`
-    /// 
-    /// The underscore: identification
     Underscore,
     
     /// String representation:`^`
-    /// 
-    /// The caret: power of
     Caret,
     
     /// String representation:`|`
-    /// 
-    /// The vertical pipe:absolute and determinant
     VerticalPipe,
 
     /// String representation:`,`
-    /// 
-    /// The comma: separating things in a vector
     Comma,
 
     /// String representation:`&`
-    /// 
-    /// The Ampersand: matrixes
     Ampersand,
 
     /// String representation:`=`
-    /// 
-    /// The equals: For equality
     Equals,
 
     /// No string representation
-    /// 
-    /// A special token that represents the end of content.
     EndOfContent,
 }
 
