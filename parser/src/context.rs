@@ -179,9 +179,13 @@ impl MathContext {
         context
     }
 }
-/// The trait for easier managing of functions
+/// The trait for easier managing of functions by automatically implementing it
+/// for common functions of f64 and other types
+///
+/// Note that if this is only implemented for Fn(f64)->f64 not Fn(&f64)->f64
+/// because a limitation in rusts compiler as they are seen as conflicting
 trait IntoMathFunction {
-    ///Tto convert to math functions
+    ///To convert to math function
     fn into_math_function(self) -> MathFunction;
 }
 impl<F> IntoMathFunction for (F, usize)

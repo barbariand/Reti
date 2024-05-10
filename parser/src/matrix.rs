@@ -1,11 +1,11 @@
 //! # Matrix
-//! 
+//!
 //! implementing all the matrix multiplication scalar or otherwise
 use std::ops::{Add, AddAssign, Mul, Sub};
 
 use crate::prelude::*;
 
-///The matrix struct holding all the values as a single Vec
+///The matrix struct representing a Matrix with one or more rows and columns
 #[derive(PartialEq, Debug)]
 pub struct Matrix<T> {
     /// all the values stored in a Vec stored column per column so first in:
@@ -18,7 +18,7 @@ pub struct Matrix<T> {
 }
 
 impl<T> Matrix<T> {
-    /// Constructs a new `Matrix` instance.
+    /// Constructs a new `Matrix` instance from a vector containing the values
     ///
     /// # Panics
     ///
@@ -51,7 +51,13 @@ impl<T> Matrix<T> {
             column_count,
         }
     }
-    ///get by column and row
+    ///Calculate the index for the Matrix given the row number and column
+    /// number
+    ///
+    /// # Panics
+    /// if the row or column is bigger than the row_count or column_count given
+    /// when instantiated it will be considered out of bounds witch is most
+    /// likely to be a bug
     pub fn index(&self, row: usize, column: usize) -> usize {
         if row >= self.row_count {
             panic!("Row out out bounds. {}/{}", row, self.row_count);
@@ -192,7 +198,8 @@ impl Matrix<Value> {
         &self,
         other: &Matrix<Value>,
     ) -> Result<Value, EvalError> {
-        ///helper function that returns a [IncompatibleMatrixSizes::Vector] error 
+        ///helper function that returns a [IncompatibleMatrixSizes::Vector]
+        /// error
         fn vector_err(m: &Matrix<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::Vector {
@@ -231,18 +238,19 @@ impl Matrix<Value> {
         Ok(sum.expect("Empty vector"))
     }
 
-    /// Calculates the three dimensional cross product of two matricies (treated
+    /// Calculates the three dimensional cross product of two matrices (treated
     /// as vectors.)
     ///
     /// # Errors
     /// Returns an `Err` if:
-    /// - One of the matricies isn't a vector.
-    /// - One of the matricies isn't a vector with 3 components.
+    /// - One of the matrices isn't a vector.
+    /// - One of the matrices isn't a vector with 3 components.
     pub fn cross_product(
         &self,
         other: &Matrix<Value>,
     ) -> Result<Matrix<Value>, EvalError> {
-        ///helper function that returns a [IncompatibleMatrixSizes::Vector] error 
+        ///helper function that returns a [IncompatibleMatrixSizes::Vector]
+        /// error
         fn vector_err(m: &Matrix<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::Vector {
@@ -251,7 +259,8 @@ impl Matrix<Value> {
                 },
             }
         }
-        ///helper function that returns a [IncompatibleMatrixSizes::CrossProduct] error 
+        ///helper function that returns a
+        /// [IncompatibleMatrixSizes::CrossProduct] error
         fn size_err(m: &Matrix<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::CrossProduct {

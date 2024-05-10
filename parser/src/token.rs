@@ -33,25 +33,25 @@ pub enum Token {
 
     /// String representation:`+`
     Plus,
-    
+
     /// String representation:`-`
     Minus,
-    
+
     /// String representation:`*`
     Asterisk,
-    
+
     /// String representation:`/`
     Slash,
-    
+
     /// String representation:`'`
     Apostrophe,
-    
+
     /// String representation:`_`
     Underscore,
-    
+
     /// String representation:`^`
     Caret,
-    
+
     /// String representation:`|`
     VerticalPipe,
 
@@ -115,10 +115,6 @@ impl Token {
             Self::Identifier(v) => Some(v),
             _ => None,
         }
-    }
-    ///is end of content
-    pub fn is_eoc(&self) -> bool {
-        self == Token::EndOfContent
     }
 }
 impl PartialEq<Token> for &Token {
