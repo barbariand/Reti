@@ -121,7 +121,8 @@ pub mod _private {
             .unwrap()
     }
 }
-///starting a task that has a certain output and returning the JoinHandle making sure to catch panics as results
+///starting a task that has a certain output and returning the JoinHandle
+/// making sure to catch panics as results
 fn spawn_logging_task<F, T>(
     future: F,
 ) -> tokio::task::JoinHandle<Result<T, &'static str>>

@@ -1,4 +1,4 @@
-//!Managing the different values that can exist 
+//!Managing the different values that can exist
 use std::{
     fmt::Display,
     ops::{Add, Div, Mul, Sub},
@@ -29,7 +29,8 @@ impl Value {
             }
         }
     }
-    /// mapping it for a function where it is a scalar and if not it returns an error
+    /// mapping it for a function where it is a scalar and if not it returns an
+    /// error
     pub fn map_expecting_scalar(
         &self,
         func: impl Fn(&f64) -> f64,
@@ -126,7 +127,7 @@ impl Div for Value {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a / b),
             (_, _) => {
-                return type_err("Cannot perform division with matricies.")
+                return type_err("Cannot perform division with matrices.")
             }
         })
     }

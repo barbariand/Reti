@@ -2,7 +2,8 @@
 use tracing::{debug, trace, trace_span};
 
 use crate::prelude::*;
-///The normalizer for making the tokens easier to handle by removing stylization for example
+///The normalizer for making the tokens easier to handle by removing
+/// stylization for example
 pub struct Normalizer {
     ///The input from the lexer
     reader: TokenReader,

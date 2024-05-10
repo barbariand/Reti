@@ -118,8 +118,9 @@ pub enum EvalError {
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
 pub enum IncompatibleMatrixSizes {
-    // TODO I don't like how we say that something is "expected" here. We can't say
-    // something is expected, we just know that they are incompatible. /Alvin
+    // TODO I don't like how we say that something is "expected" here. We
+    // can't say something is expected, we just know that they are
+    // incompatible. /Alvin
     ///Rows don't match
     #[snafu(display("Expected row {expected:?} found {found:?}"))]
     Row {
@@ -148,9 +149,9 @@ pub enum IncompatibleMatrixSizes {
     ))]
     Vector {
         ///The rows of the matrix
-        rows: usize, 
+        rows: usize,
         ///The columns of the matrix
-        columns: usize
+        columns: usize,
     },
     ///The vectors are not the same dimensions
     #[snafu(display(
@@ -158,7 +159,8 @@ pub enum IncompatibleMatrixSizes {
     ))]
     SameSizeVectors {
         ///first vector dimensions
-        a: usize, 
+        a: usize,
         ///Second Vector dimensions
-        b: usize },
+        b: usize,
+    },
 }

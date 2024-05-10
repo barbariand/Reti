@@ -12,7 +12,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    ///creating a new 
+    ///creating a new
     pub fn new(tokens: TokenReceiver, context: MathContext) -> Self {
         trace!("created Parser");
 
@@ -50,7 +50,7 @@ impl Parser {
         // This means we failed to parse the expression fully.
         Err(ParseError::Trailing { token: next })
     }
-    ///expect the next token to be of a type 
+    ///expect the next token to be of a type
     pub(crate) async fn expect(
         &mut self,
         expected: Token,
