@@ -48,7 +48,7 @@ impl Approximator {
             Term::Factor(factor) => self.eval_factor(factor),
             Term::Multiply(mul_type, a, b) => self
                 .eval_term(a.as_ref())?
-                .mul(mul_type, self.eval_factor(b)?),
+                .mul(mul_type, &self.eval_factor(b)?),
             Term::Divide(a, b) => {
                 self.eval_term(a.as_ref())? / self.eval_factor(b)?
             }

@@ -49,6 +49,9 @@ pub enum ParseError {
         ///what was found
         current: usize,
     },
+    #[snafu(display("A matrix cannot be empty."))]
+    ///The matrix was an empty matrix
+    EmptyMatrix,
 }
 ///The errors that can happen when generating the AST
 #[derive(Debug, Snafu)]
@@ -115,7 +118,8 @@ pub enum EvalError {
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
 pub enum IncompatibleMatrixSizes {
-    ///Rows don't match
+    // TODO I don't like how we say that something is "expected" here. We can't say
+    // something is expected, we just know that they are incompatible. /Alvin
     #[snafu(display("Expected row {expected:?} found {found:?}"))]
     Row {
         /// The expected value for the matrix
@@ -131,4 +135,17 @@ pub enum IncompatibleMatrixSizes {
         /// The value found
         found: usize,
     },
+    #[snafu(display("Cross product can only be used on vectors with 3 components, got {found_size:?}"))]
+    CrossProduct {
+        /// The found size of the vector.
+        found_size: usize,
+    },
+    #[snafu(display(
+        "Expected a vector but got a {rows:?}x{columns:?} matrix."
+    ))]
+    Vector { rows: usize, columns: usize },
+    #[snafu(display(
+        "Vectors must be of the same size, but got {a:?} and {b:?}"
+    ))]
+    SameSizeVectors { a: usize, b: usize },
 }

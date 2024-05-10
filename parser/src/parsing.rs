@@ -483,6 +483,10 @@ impl Parser {
             }
         }
 
+        if row_count == 0 || column_count == 0 {
+            return Err(ParseError::EmptyMatrix);
+        }
+
         Ok(Matrix::new(values, row_count, column_count))
     }
 }
