@@ -409,7 +409,7 @@ pub enum Factor {
     /// # let mut context=MathContext::standard_math();
     /// // parsing |1|
     /// assert_eq!(
-    ///     parse("|1|", &context),
+    ///     parse("|3|", &context),
     ///     Ast::Expression(
     ///         Factor::Abs(Box::new(Factor::Constant(3.0).into())).into()
     ///     )
