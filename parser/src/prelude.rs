@@ -30,6 +30,7 @@ pub(crate) use crate::{
     normalizer::Normalizer,
     parsing::Parser,
     token::Token,
+    context::IntoMathFunction,
     token_reader::TokenReader,
 };
 
