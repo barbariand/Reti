@@ -3,7 +3,7 @@
 //! for that it uses MathContext where you can add any function or variable  
 use std::{collections::HashMap, sync::Arc};
 
-use crate::prelude::*;
+use crate::{prelude::*, token::NumberLiteral};
 /// A MathFunction that can be run
 #[derive(Clone)]
 pub struct MathFunction {
@@ -15,6 +15,7 @@ pub struct MathFunction {
     >,
     ///the amount of acceptable arguments
     arguments: usize,
+    derivative: Option<MathExpr>,
 }
 
 impl MathFunction {
@@ -26,20 +27,24 @@ impl MathFunction {
                 + Sync,
         >,
         arguments: usize,
+        derivative: Option<MathExpr>,
     ) -> Self {
         Self {
             approximate: func,
             arguments,
+            derivative,
         }
     }
     ///Helper new for fn pointers
     pub fn from_fn_pointer(
         func: fn(Vec<Value>, MathContext) -> Result<Value, EvalError>,
         arguments: usize,
+        derivative: Option<MathExpr>,
     ) -> Self {
         Self {
             approximate: Arc::new(func),
             arguments,
+            derivative,
         }
     }
     ///Helper new for fn pointers with f64s
@@ -48,6 +53,7 @@ impl MathFunction {
     >(
         func: F,
         arguments: usize,
+        derivative: Option<MathExpr>,
     ) -> Self {
         Self {
             approximate: Arc::new(move |v: Vec<Value>, _: MathContext| {
@@ -56,6 +62,24 @@ impl MathFunction {
                 Ok(Value::Scalar(func(v_new?)))
             }),
             arguments,
+            derivative,
+        }
+    }
+    ///Helper function for creating a new when expecting single
+    pub fn from_fn_pointer_expecting_single_scalar<
+        F: Fn(f64) -> f64 + Send + Sync + 'static,
+    >(
+        func: F,
+        arguments: usize,
+        derivative: Option<MathExpr>,
+    ) -> Self {
+        Self {
+            approximate: Arc::new(move |v: Vec<Value>, _: MathContext| {
+                let s = v[0].scalar()?;
+                Ok(Value::Scalar(func(s)))
+            }),
+            arguments,
+            derivative,
         }
     }
     /// run the function with given arguments
@@ -159,21 +183,96 @@ impl MathContext {
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            f64::sin,
+            (
+                f64::sin,
+                Some(MathExpr::Subtract(
+                    Box::new(Factor::Constant(0.0).into()),
+                    Factor::FunctionCall(FunctionCall {
+                        function_name: MathIdentifier::new(vec![
+                            Token::Backslash,
+                            Token::Identifier("cos".to_owned()),
+                        ]),
+                        arguments: vec![Factor::Variable(
+                            MathIdentifier::new_from_one(Token::Identifier(
+                                "x".to_owned(),
+                            )),
+                        )
+                        .into()],
+                    })
+                    .into(),
+                )),
+            ),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
-            f64::cos,
+            (
+                f64::cos,
+                Some(
+                    Factor::FunctionCall(FunctionCall {
+                        function_name: MathIdentifier::new(vec![
+                            Token::Backslash,
+                            Token::Identifier("sin".to_owned()),
+                        ]),
+                        arguments: vec![Factor::Variable(
+                            MathIdentifier::new_from_one(Token::Identifier(
+                                "x".to_owned(),
+                            )),
+                        )
+                        .into()],
+                    })
+                    .into(),
+                ),
+            ),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("tan".to_string())],
-            f64::tan,
+            (
+                f64::tan,
+                Some(
+                    Term::Multiply(
+                        MulType::Implicit,
+                        Box::new(Term::Factor(Factor::FunctionCall(
+                            FunctionCall {
+                                function_name: MathIdentifier::new(vec![
+                                    Token::Backslash,
+                                    Token::Identifier("cos".to_owned()),
+                                ]),
+                                arguments: vec![Factor::Variable(
+                                    MathIdentifier::new_from_one(
+                                        Token::Identifier("x".to_owned()),
+                                    ),
+                                )
+                                .into()],
+                            },
+                        ))),
+                        Factor::Constant(-1.0),
+                    )
+                    .into(),
+                ),
+            ),
         );
 
         // Logarithm
         context.add_function(
             vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            f64::ln,
+            (
+                f64::ln,
+                Some(
+                    Factor::FunctionCall(FunctionCall {
+                        function_name: MathIdentifier::new(vec![
+                            Token::Backslash,
+                            Token::Identifier("cos".to_owned()),
+                        ]),
+                        arguments: vec![Factor::Variable(
+                            MathIdentifier::new_from_one(Token::Identifier(
+                                "x".to_owned(),
+                            )),
+                        )
+                        .into()],
+                    })
+                    .into(),
+                ),
+            ),
         );
 
         context
@@ -188,7 +287,7 @@ trait IntoMathFunction {
     ///To convert to math function
     fn into_math_function(self) -> MathFunction;
 }
-impl<F> IntoMathFunction for (F, usize)
+impl<F> IntoMathFunction for (F, usize, Option<MathExpr>)
 where
     F: Fn(Vec<Value>, MathContext) -> Result<Value, EvalError>
         + Send
@@ -196,7 +295,7 @@ where
         + 'static,
 {
     fn into_math_function(self) -> MathFunction {
-        MathFunction::new(Arc::new(self.0), self.1)
+        MathFunction::new(Arc::new(self.0), self.1, self.2)
     }
 }
 impl IntoMathFunction for MathFunction {
@@ -204,15 +303,12 @@ impl IntoMathFunction for MathFunction {
         self
     }
 }
-impl<F: Fn(f64) -> f64> IntoMathFunction for F
+impl<F: Fn(f64) -> f64> IntoMathFunction for (F, Option<MathExpr>)
 where
     F: Send + Sync + 'static,
 {
     fn into_math_function(self) -> MathFunction {
-        MathFunction::from_fn_pointer_expecting_scalars(
-            move |v| (self)(v[0]),
-            1,
-        )
+        MathFunction::from_fn_pointer_expecting_single_scalar(self.0, 1, self.1)
     }
 }
 
@@ -228,7 +324,7 @@ mod test {
         let mut c = MathContext::new();
         c.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |v: f64| v,
+            (|v: f64| v, None),
         );
         let mut c1 = MathContext::new();
         c1.merge(&c);
@@ -242,12 +338,12 @@ mod test {
         let mut c2 = MathContext::new();
         c2.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |v: f64| v,
+            (|v: f64| v, None),
         );
         let mut c1 = MathContext::new();
         c1.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            (|_, _| whatever!("testing"), 1),
+            (|_, _| whatever!("testing"), 1, None),
         );
         c1.merge(&c2);
         assert!((c1.functions[&MathIdentifier::new(vec![

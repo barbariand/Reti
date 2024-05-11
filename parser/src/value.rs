@@ -33,10 +33,10 @@ impl Value {
     /// error
     pub fn map_expecting_scalar(
         &self,
-        func: impl Fn(&f64) -> f64,
+        func: impl Fn(f64) -> f64,
     ) -> Result<Value, EvalError> {
         match self {
-            Value::Scalar(v) => Ok(Value::Scalar(func(v))),
+            Value::Scalar(v) => Ok(Value::Scalar(func(*v))),
             Value::Matrix(_) => Err(EvalError::ExpectedScalar),
         }
     }
