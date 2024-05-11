@@ -300,7 +300,11 @@ pub enum Factor {
     /// # use std::sync::Arc;
     /// # use parser::value::Value;
     /// # let mut context=MathContext::standard_math();
-    /// # context.functions.insert(MathIdentifier::new(vec![Token::Identifier("f".to_owned())]), MathFunction::new(Arc::new(|_,_|Ok(Value::Scalar(2.0))),1));
+    /// # context.functions.insert(
+    /// # MathIdentifier::new(
+    /// # vec![Token::Identifier("f".to_owned())]), 
+    /// # (|_x:f64|{2.0},None).into()
+    /// # );
     /// // parsing f(x)
     /// // where f needs to be defined for it to be interpreted as a function call
     ///
@@ -318,8 +322,10 @@ pub enum Factor {
     ///                     )
     ///                 ).into()
     ///             ],
-    ///         )
+    ///      
+    ///      )
     ///     ).into()
+
     /// ));
     /// ```
     FunctionCall(FunctionCall),

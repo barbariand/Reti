@@ -209,9 +209,10 @@ fn math_function(
             for (var, value) in variables.iter().cloned().zip(values) {
                 context.variables.insert(var, value);
             }
-            let aprox = Approximator::new(context);
-            aprox.eval_expr(&rhs)
+            let aproximator = Approximator::new(context);
+            aproximator.eval_expr(&rhs)
         }),
         n,
+        None
     )
 }
