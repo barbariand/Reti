@@ -204,7 +204,7 @@ fn math_function(
 ) -> MathFunction {
     let n = variables.len();
     MathFunction::new(
-        Arc::new(move |values: Vec<Value>, outer_context: MathContext| {
+        Arc::new(move |values: Vec<Value>, outer_context:&MathContext| {
             let mut context = outer_context.clone();
             for (var, value) in variables.iter().cloned().zip(values) {
                 context.variables.insert(var, value);
