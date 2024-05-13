@@ -1,6 +1,10 @@
 //! AST for representing Latex
 use crate::prelude::*;
-
+pub mod derive;
+pub mod helper;
+pub mod into;
+pub mod simplify;
+pub mod tolatex;
 ///The root of the AST that is non recursive
 #[derive(PartialEq, Debug)]
 pub enum Ast {
@@ -9,17 +13,6 @@ pub enum Ast {
     /// An equation consisting of an equality between a left-hand side and a
     /// right-hand side.
     Equality(MathExpr, MathExpr),
-}
-impl Ast {
-    fn derivative(&self, dependent: &MathIdentifier) -> Result<Ast, EvalError> {
-        Ok(match self {
-            Ast::Expression(m) => Ast::Expression(m.derivative(dependent)?),
-            Ast::Equality(lhs, rhs) => Ast::Equality(
-                lhs.derivative(dependent)?,
-                rhs.derivative(dependent)?,
-            ),
-        })
-    }
 }
 /// A mathematical expression that consists of one or more terms added
 /// or subtracted.
@@ -32,8 +25,7 @@ pub enum MathExpr {
     /// Addition between a MathExpr and a Term.
     ///  ## Examples
     ///  ```
-    /// # use parser::ast::*;
-    /// # use parser::prelude::MathContext;
+    /// # use parser#[allow(dead_code)]::prelude::MathContext;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
@@ -70,65 +62,6 @@ pub enum MathExpr {
 
     /// ```
     Subtract(Box<MathExpr>, Term),
-}
-impl From<Term> for MathExpr {
-    fn from(value: Term) -> Self {
-        MathExpr::Term(value)
-    }
-}
-
-impl From<Factor> for MathExpr {
-    fn from(value: Factor) -> Self {
-        MathExpr::Term(Term::Factor(value))
-    }
-}
-impl From<f64> for MathExpr {
-    fn from(value: f64) -> Self {
-        MathExpr::Term(Term::from(value))
-    }
-}
-impl From<f64> for Box<MathExpr> {
-    fn from(value: f64) -> Self {
-        Box::new(value.into())
-    }
-}
-impl From<FunctionCall> for MathExpr {
-    fn from(value: FunctionCall) -> Self {
-        MathExpr::Term(Term::from(value))
-    }
-}
-impl From<MathIdentifier> for MathExpr {
-    fn from(value: MathIdentifier) -> Self {
-        MathExpr::Term(Term::from(value))
-    }
-}
-impl From<Factor> for Box<MathExpr> {
-    fn from(value: Factor) -> Self {
-        Box::new(MathExpr::Term(Term::Factor(value)))
-    }
-}
-impl From<Term> for Box<MathExpr> {
-    fn from(value: Term) -> Self {
-        Box::new(MathExpr::Term(value))
-    }
-}
-impl Derivative for MathExpr {
-    fn derivative(
-        &self,
-        dependent: &MathIdentifier,
-    ) -> Result<MathExpr, EvalError> {
-        Ok(match self {
-            MathExpr::Term(t) => t.derivative(dependent)?,
-            MathExpr::Add(lhs, rhs) => MathExpr::Add(
-                lhs.derivative(dependent)?.boxed(),
-                rhs.derivative(dependent)?.get_term()?.clone(),
-            ),
-            MathExpr::Subtract(lhs, rhs) => MathExpr::Subtract(
-                lhs.derivative(dependent)?.boxed(),
-                rhs.derivative(dependent)?.get_term()?.clone(),
-            ),
-        })
-    }
 }
 
 /// The type of multiplication.
@@ -220,58 +153,6 @@ pub enum Term {
 
     /// ```
     Divide(Box<Term>, Factor),
-}
-
-impl From<Factor> for Term {
-    fn from(value: Factor) -> Self {
-        Self::Factor(value)
-    }
-}
-impl From<f64> for Term {
-    fn from(value: f64) -> Self {
-        Term::Factor(Factor::Constant(value))
-    }
-}
-impl From<MathIdentifier> for Term {
-    fn from(value: MathIdentifier) -> Self {
-        Term::Factor(Factor::Variable(value))
-    }
-}
-impl From<FunctionCall> for Term {
-    fn from(value: FunctionCall) -> Self {
-        Term::Factor(Factor::FunctionCall(value))
-    }
-}
-impl From<Factor> for Box<Term> {
-    fn from(value: Factor) -> Self {
-        Box::new(Term::Factor(value))
-    }
-}
-impl Derivative for Term {
-    fn derivative(
-        &self,
-        dependent: &MathIdentifier,
-    ) -> Result<MathExpr, EvalError> {
-        Ok(match self {
-            Term::Factor(f) => f.derivative(dependent)?,
-            Term::Multiply(mul, rhs, lhs) => MathExpr::Add(
-                Box::new(
-                    Term::Multiply(
-                        mul.clone(),
-                        rhs.derivative(dependent)?.get_term()?.clone().boxed(),
-                        lhs.clone(),
-                    )
-                    .into(),
-                ),
-                Term::Multiply(
-                    mul.clone(),
-                    rhs.clone(),
-                    lhs.derivative(dependent)?.get_factor()?.clone(),
-                ),
-            ),
-            Term::Divide(_, _) => todo!("division"),
-        })
-    }
 }
 /// A factor that consists of a single value.
 ///
@@ -446,7 +327,7 @@ pub enum Factor {
     ///             radicand: Box::new(Factor::Constant(2.0).into()),
     ///         }
     ///         .into()
-    ///     )
+    //     )
     /// );
     /// ```
     Root {
@@ -584,66 +465,6 @@ pub enum Factor {
     /// ```
     Matrix(Matrix<MathExpr>),
 }
-impl MathExpr {
-    ///Returns a term or a eval error
-    fn get_term(&self) -> Result<&Term, EvalError> {
-        match self {
-            MathExpr::Term(t) => Ok(t),
-            _ => Err(EvalError::ExpectedTerm {
-                found: self.clone(),
-            }),
-        }
-    }
-    ///Returns a factor or a eval error
-    fn get_factor(&self) -> Result<&Factor, EvalError> {
-        match self {
-            MathExpr::Term(t) => t.get_factor(),
-            _ => Err(EvalError::ExpectedFactor {
-                found: self.clone(),
-            }),
-        }
-    }
-    ///Boxes self
-    fn boxed(self) -> Box<Self> {
-        Box::new(self)
-    }
-}
-impl Term {
-    ///Returns a factor or a eval error
-    fn get_factor(&self) -> Result<&Factor, EvalError> {
-        match self {
-            Term::Factor(f) => Ok(f),
-            _ => Err(EvalError::ExpectedFactor {
-                found: self.clone().into(),
-            }),
-        }
-    }
-    ///Boxes self
-    fn boxed(self) -> Box<Self> {
-        Box::new(self)
-    }
-}
-impl Factor {
-    ///Boxes self
-    fn boxed(self) -> Box<Self> {
-        Box::new(self)
-    }
-}
-impl From<f64> for Factor {
-    fn from(value: f64) -> Self {
-        Factor::Constant(value)
-    }
-}
-impl From<MathIdentifier> for Factor {
-    fn from(value: MathIdentifier) -> Self {
-        Factor::Variable(value)
-    }
-}
-impl From<FunctionCall> for Factor {
-    fn from(value: FunctionCall) -> Self {
-        Factor::FunctionCall(value)
-    }
-}
 
 /// A mathematical identifier, for example variable or function names.
 ///
@@ -655,27 +476,6 @@ pub struct MathIdentifier {
     pub tokens: Vec<Token>,
 }
 
-impl MathIdentifier {
-    ///Creates a new MathIdentifier fom a vec to identify a variable and
-    /// function
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens }
-    }
-    ///Creates a new MathIdentifier from a single Token to identify a variable
-    /// and a function
-    pub fn new_from_one(token: Token) -> Self {
-        Self {
-            tokens: vec![token],
-        }
-    }
-    ///# Warning
-    /// does no conversion or latex translation
-    pub fn from_single_ident(s: &str) -> Self {
-        Self {
-            tokens: vec![Token::Identifier(s.to_owned())],
-        }
-    }
-}
 /// an identified function
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
@@ -685,105 +485,3 @@ pub struct FunctionCall {
     pub arguments: Vec<MathExpr>,
 }
 
-impl FunctionCall {
-    ///a helper method
-    pub fn new(
-        function_name: MathIdentifier,
-        arguments: Vec<MathExpr>,
-    ) -> Self {
-        Self {
-            function_name,
-            arguments,
-        }
-    }
-}
-impl Derivative for Factor {
-    fn derivative(
-        &self,
-        dependent: &MathIdentifier,
-    ) -> Result<MathExpr, EvalError> {
-        Ok(match self {
-            Factor::Constant(_) => Factor::Constant(0.0).into(),
-            Factor::Parenthesis(e) => e.derivative(dependent)?,
-            Factor::Variable(v) => match v == dependent {
-                true => Factor::Constant(1.0).into(),
-                false => Factor::Constant(0.0).into(),
-            },
-            Factor::FunctionCall(f) => todo!("function call"),
-            Factor::Power { base, exponent } => MathExpr::Add(
-                Term::Multiply(
-                    MulType::Implicit,
-                    Term::Multiply(
-                        MulType::Implicit,
-                        Term::Factor(*base.clone()).boxed(),
-                        Factor::Power {
-                            base: base.clone(),
-                            exponent: MathExpr::Subtract(
-                                exponent.clone(),
-                                Factor::Constant(1.0).into(),
-                            )
-                            .boxed(),
-                        },
-                    )
-                    .into(),
-                    base.derivative(dependent)?.get_factor()?.clone(),
-                )
-                .into(),
-                Term::Multiply(
-                    MulType::Implicit,
-                    Term::Multiply(
-                        MulType::Implicit,
-                        Factor::FunctionCall(FunctionCall::new(
-                            MathIdentifier::new(vec![
-                                Token::Backslash,
-                                Token::Identifier("ln".to_owned()),
-                            ]),
-                            vec![*exponent.clone()],
-                        ))
-                        .into(),
-                        Factor::Power {
-                            base: base.clone(),
-                            exponent: exponent.clone(),
-                        },
-                    )
-                    .into(),
-                    exponent.derivative(dependent)?.get_factor()?.clone(),
-                ),
-            ),
-
-            Factor::Root { degree, radicand } => todo!("root"),
-            Factor::Fraction(_, _) => todo!("fraction"),
-            Factor::Abs(math) => todo!("abs"),
-            Factor::Matrix(_) => todo!("matrix"),
-        })
-    }
-}
-#[cfg(test)]
-mod test {
-    use crate::prelude::*;
-    async fn ast_test(
-        text: &str,
-        dependent: &MathIdentifier,
-        expected_ast: Ast,
-    ) {
-        let found_ast = parse(text, &MathContext::standard_math())
-            .await
-            .expect("failed to parse AST")
-            .derivative(dependent)
-            .expect("Failed");
-
-        // Compare and print with debug and formatting otherwise.
-        if expected_ast != found_ast {
-            panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
-        }
-    }
-    #[tokio::test]
-    async fn x_squared_derivative() {
-        ast_test(
-            "x^2",
-            &MathIdentifier::new_from_one(Token::Identifier("x".to_owned())),
-            Ast::Expression(Factor::Constant(1.0).into()),
-        )
-        .await;
-    }
-}

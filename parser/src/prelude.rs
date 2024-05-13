@@ -25,7 +25,6 @@ pub(crate) type TokenSender = Sender<Token>;
 pub(crate) use crate::{
     ast::{Factor, FunctionCall, MathExpr, MathIdentifier, MulType, Term},
     context::IntoMathFunction,
-    derivative::Derivative,
     lexer::Lexer,
     matrix::Matrix,
     normalizer::Normalizer,

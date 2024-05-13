@@ -4,7 +4,7 @@
 pub mod approximator;
 pub mod ast;
 pub mod context;
-pub mod derivative;
+
 pub mod error;
 pub mod lexer;
 pub mod matrix;
