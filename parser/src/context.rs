@@ -3,9 +3,12 @@
 //! for that it uses MathContext where you can add any function or variable  
 use std::{collections::HashMap, sync::Arc};
 ///The inner type alias for the function to execute to find the value
-type InnerMathFunction=Arc<dyn Fn(Vec<Value>,&MathContext)->Result<Value,EvalError> +Send+Sync>;
+type InnerMathFunction = Arc<
+    dyn Fn(Vec<Value>, &MathContext) -> Result<Value, EvalError> + Send + Sync,
+>;
 ///The inner type alias for the derivative function
-type InnerDeriveFunction=Arc<dyn Fn(Vec<MathExpr>)->Result<MathExpr,EvalError>+Send+Sync>;
+type InnerDeriveFunction =
+    Arc<dyn Fn(Vec<MathExpr>) -> Result<MathExpr, EvalError> + Send + Sync>;
 use crate::prelude::*;
 /// A MathFunction that can be run
 #[derive(Clone)]
@@ -33,7 +36,7 @@ impl MathFunction {
     }
     ///Helper new for fn pointers
     pub fn from_fn_pointer(
-        func: fn(Vec<Value>,&MathContext) -> Result<Value, EvalError>,
+        func: fn(Vec<Value>, &MathContext) -> Result<Value, EvalError>,
         arguments: usize,
         derivative: Option<InnerDeriveFunction>,
     ) -> Self {
@@ -52,7 +55,7 @@ impl MathFunction {
         derivative: Option<InnerDeriveFunction>,
     ) -> Self {
         Self {
-            approximate: Arc::new(move |v: Vec<Value>,_:&MathContext| {
+            approximate: Arc::new(move |v: Vec<Value>, _: &MathContext| {
                 let v_new: Result<Vec<f64>, EvalError> =
                     v.into_iter().map(|val| val.scalar()).collect();
                 Ok(Value::Scalar(func(v_new?)))
@@ -70,7 +73,7 @@ impl MathFunction {
         derivative: Option<InnerDeriveFunction>,
     ) -> Self {
         Self {
-            approximate: Arc::new(move |v: Vec<Value>,_:&MathContext| {
+            approximate: Arc::new(move |v: Vec<Value>, _: &MathContext| {
                 let s = v[0].scalar()?;
                 Ok(Value::Scalar(func(s)))
             }),
@@ -82,7 +85,7 @@ impl MathFunction {
     pub fn eval(
         &self,
         vec: Vec<Value>,
-        cont:&MathContext
+        cont: &MathContext,
     ) -> Result<Value, EvalError> {
         if vec.len() != self.arguments {
             return Err(EvalError::ArgumentLengthMismatch {
@@ -90,7 +93,7 @@ impl MathFunction {
                 found: vec.len(),
             });
         }
-        (self.approximate)(vec,cont)
+        (self.approximate)(vec, cont)
     }
 }
 ///The MathContext, holding all the functions and variables
@@ -184,33 +187,21 @@ impl MathContext {
         // Trigonometric functions
         context.add_function(
             vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            (
-                f64::sin,
-                None
-            ),
+            (f64::sin, None),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("cos".to_string())],
-            (
-                f64::cos,
-                None
-            ),
+            (f64::cos, None),
         );
         context.add_function(
             vec![Token::Backslash, Token::Identifier("tan".to_string())],
-            (
-                f64::tan,
-                None
-            ),
+            (f64::tan, None),
         );
 
         // Logarithm
         context.add_function(
             vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            (
-                f64::ln,
-                None
-            ),
+            (f64::ln, None),
         );
 
         context
@@ -227,7 +218,7 @@ pub(crate) trait IntoMathFunction {
 }
 impl<F> IntoMathFunction for (F, usize, Option<InnerDeriveFunction>)
 where
-    F: Fn(Vec<Value>,&MathContext) -> Result<Value, EvalError>
+    F: Fn(Vec<Value>, &MathContext) -> Result<Value, EvalError>
         + Send
         + Sync
         + 'static,
@@ -281,14 +272,14 @@ mod test {
         let mut c1 = MathContext::new();
         c1.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            (|_,_:&MathContext| whatever!("testing"), 1, None),
+            (|_, _: &MathContext| whatever!("testing"), 1, None),
         );
         c1.merge(&c2);
         assert!((c1.functions[&MathIdentifier::new(vec![
             Token::Backslash,
             Token::Identifier("nothing".to_owned())
         ])]
-            .approximate)(vec![Value::Scalar(1.1)],&c1)
+            .approximate)(vec![Value::Scalar(1.1)], &c1)
         .is_err());
     }
 }
