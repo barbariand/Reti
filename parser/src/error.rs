@@ -130,8 +130,11 @@ pub enum EvalError {
         found: MathExpr,
     },
     #[snafu(display("Expected a factor found {found:?}"))]
-    ///
-    ExpectedFactor { found: MathExpr },
+    ///expected a factor
+    ExpectedFactor { 
+        ///the found value
+        found: MathExpr 
+    },
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
@@ -185,4 +188,10 @@ pub enum IncompatibleMatrixSizes {
 #[derive(Debug, Snafu)]
 ///All the ways we cant derive
 pub enum DeriveError {
+    ///So it don't complain
+    #[snafu(whatever, display("The types are not compatible: {message}"))]
+    All{
+        ///the message
+        message:String
+    }
 }
