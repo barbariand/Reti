@@ -14,6 +14,17 @@ pub enum Ast {
     /// right-hand side.
     Equality(MathExpr, MathExpr),
 }
+impl Ast {
+    fn derivative(&self, dependent: &MathIdentifier) -> Result<Ast, EvalError> {
+        Ok(match self {
+            Ast::Expression(m) => Ast::Expression(m.derivative(dependent)?),
+            Ast::Equality(lhs, rhs) => Ast::Equality(
+                lhs.derivative(dependent)?,
+                rhs.derivative(dependent)?,
+            ),
+        })
+    }
+}
 /// A mathematical expression that consists of one or more terms added
 /// or subtracted.
 ///
@@ -259,7 +270,7 @@ pub enum Factor {
     /// # );
     /// # context.functions.insert(
     /// # MathIdentifier::new(
-    /// # vec![Token::Identifier("f".to_owned())]), 
+    /// # vec![Token::Identifier("f".to_owned())]),
     /// # Into::<IntoMathFunction>::into((|_x:f64|{2.0},None)).into_math_function()
     /// # );
     /// // parsing f(x)
