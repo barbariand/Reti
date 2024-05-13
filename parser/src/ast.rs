@@ -14,17 +14,6 @@ pub enum Ast {
     /// right-hand side.
     Equality(MathExpr, MathExpr),
 }
-impl Ast {
-    fn derivative(&self, dependent: &MathIdentifier) -> Result<Ast, EvalError> {
-        Ok(match self {
-            Ast::Expression(m) => Ast::Expression(m.derivative(dependent)?),
-            Ast::Equality(lhs, rhs) => Ast::Equality(
-                lhs.derivative(dependent)?,
-                rhs.derivative(dependent)?,
-            ),
-        })
-    }
-}
 /// A mathematical expression that consists of one or more terms added
 /// or subtracted.
 ///
@@ -347,7 +336,7 @@ pub enum Factor {
     ///             radicand: Box::new(Factor::Constant(2.0).into()),
     ///         }
     ///         .into()
-    ///     )
+    //     )
     /// );
     /// ```
     Root {
