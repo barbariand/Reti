@@ -3,7 +3,7 @@ use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
 
-use crate::prelude::{MulType, Token};
+use crate::prelude::{MathExpr, MulType, Token};
 ///The errors that can happen while parsing latex
 #[derive(Debug, Snafu)]
 pub enum ParseError {
@@ -107,6 +107,9 @@ pub enum EvalError {
         r#type: MulType,
     },
     ///Invalid amount of arguments
+    #[snafu(display(
+        "Invalid amount of arguments, expected lengths of {}, but found the length {}",expected.display(),found
+    ))]
     ArgumentLengthMismatch {
         ///The possible amounts of arguments it can have because of
         /// overloading
@@ -114,6 +117,21 @@ pub enum EvalError {
         ///the found amount of arguments
         found: usize,
     },
+    #[snafu(transparent)]
+    ///Cant derive this expression
+    DeriveError {
+        ///The actual derive error
+        source: DeriveError,
+    },
+    #[snafu(display("Expected a term found {found:?}"))]
+    ///Expected term
+    ExpectedTerm {
+        ///the found value
+        found: MathExpr,
+    },
+    #[snafu(display("Expected a factor found {found:?}"))]
+    ///
+    ExpectedFactor { found: MathExpr },
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
@@ -163,4 +181,8 @@ pub enum IncompatibleMatrixSizes {
         ///Second Vector dimensions
         b: usize,
     },
+}
+#[derive(Debug, Snafu)]
+///All the ways we cant derive
+pub enum DeriveError {
 }
