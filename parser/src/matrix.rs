@@ -1,19 +1,31 @@
+//! # Matrix
 //!
+//! implementing all the matrix multiplication scalar or otherwise
 use std::ops::{Add, AddAssign, Mul, Sub};
 
 use crate::prelude::*;
 
+///The matrix struct representing a Matrix with one or more rows and columns
 #[derive(PartialEq, Debug)]
-
 pub struct Matrix<T> {
-    // values[row][column]
+    /// all the values stored in a Vec stored column per column so first in:
+    /// values\[row*column_count+column]
     values: Vec<T>,
+    ///The amount of rows in the Vec
     row_count: usize,
+    ///The amount of columns in the Vec
     column_count: usize,
 }
 
 impl<T> Matrix<T> {
-    /// Constructs a new `Matrix` instance.
+    /// Constructs a new `Matrix` instance from a vector containing the values
+    ///
+    /// In the Matrix internal representation the data as a Vec<T> witch is why
+    /// it is required to provide a Vec<T> instead of Vec<Vec<T>>
+    ///
+    /// Note that this means that the elements need to be column per column so
+    /// that indexing an element in row 1 and column 2 with size
+    /// 3(row)x4(column) its 1 * 4 + 2=6
     ///
     /// # Panics
     ///
@@ -46,15 +58,21 @@ impl<T> Matrix<T> {
             column_count,
         }
     }
-
-    pub fn index(&self, row: usize, column: usize) -> usize {
+    ///Calculate the index for the Matrix given the row number and column
+    /// number
+    ///
+    /// # Panics
+    /// if the row or column is bigger than the row_count or column_count given
+    /// when instantiated it will be considered out of bounds witch is most
+    /// likely to be a bug
+    fn index(&self, row: usize, column: usize) -> usize {
         if row >= self.row_count {
             panic!("Row out out bounds. {}/{}", row, self.row_count);
         }
         if column >= self.column_count {
             panic!("Column out out bounds. {}/{}", column, self.column_count);
         }
-        return row * self.column_count + column;
+        row * self.column_count + column
     }
 
     /// Accesses the element at the specified `row` and `column`.
@@ -96,17 +114,17 @@ impl<T> Matrix<T> {
     /// Returns whether this matrix is a vector. (Could be a row vector
     /// or a column vector).
     pub fn is_vector(&self) -> bool {
-        return self.is_row_vector() || self.is_column_vector();
+        self.is_row_vector() || self.is_column_vector()
     }
 
     /// Returns whether this matrix is a row vector.
     pub fn is_row_vector(&self) -> bool {
-        return self.row_count == 1;
+        self.row_count == 1
     }
 
     /// Returns whether this matrix is a column vector.
     pub fn is_column_vector(&self) -> bool {
-        return self.column_count == 1;
+        self.column_count == 1
     }
 
     /// Get the amount of elements this vector has.
@@ -181,20 +199,21 @@ impl Matrix<Value> {
     ///
     /// # Errors
     /// Returns an `Err` if:
-    /// - One of the matricies isn't a vector.
+    /// - One of the matrices isn't a vector.
     /// - The vectors do not have the same size.
     pub fn dot_product(
         &self,
         other: &Matrix<Value>,
     ) -> Result<Value, EvalError> {
-        // Validation
+        ///helper function that returns a [IncompatibleMatrixSizes::Vector]
+        /// error
         fn vector_err(m: &Matrix<Value>) -> EvalError {
-            return EvalError::IncompatibleMatrixSizes {
+            EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::Vector {
                     rows: m.row_count(),
                     columns: m.column_count(),
                 },
-            };
+            }
         }
 
         if !self.is_vector() {
@@ -226,18 +245,19 @@ impl Matrix<Value> {
         Ok(sum.expect("Empty vector"))
     }
 
-    /// Calculates the three dimensional cross product of two matricies (treated
+    /// Calculates the three dimensional cross product of two matrices (treated
     /// as vectors.)
     ///
     /// # Errors
     /// Returns an `Err` if:
-    /// - One of the matricies isn't a vector.
-    /// - One of the matricies isn't a vector with 3 components.
+    /// - One of the matrices isn't a vector.
+    /// - One of the matrices isn't a vector with 3 components.
     pub fn cross_product(
         &self,
         other: &Matrix<Value>,
     ) -> Result<Matrix<Value>, EvalError> {
-        // Validation
+        ///helper function that returns a [IncompatibleMatrixSizes::Vector]
+        /// error
         fn vector_err(m: &Matrix<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::Vector {
@@ -246,6 +266,8 @@ impl Matrix<Value> {
                 },
             }
         }
+        ///helper function that returns a
+        /// [IncompatibleMatrixSizes::CrossProduct] error
         fn size_err(m: &Matrix<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::CrossProduct {
@@ -529,6 +551,7 @@ impl Matrix<MathExpr> {
 }
 
 impl Matrix<Value> {
+    ///Normal matrix multiplication
     pub fn matrix_mul(
         &self,
         rhs: &Matrix<Value>,

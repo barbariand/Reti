@@ -1,63 +1,127 @@
+//!The errors that can happen when evaluating a latex string
 use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
 
 use crate::prelude::{MulType, Token};
-
+///The errors that can happen while parsing latex
 #[derive(Debug, Snafu)]
 pub enum ParseError {
+    ///Unexpected token, expected one off
     #[snafu(display(
         "Got unexpected Token:\"{found}\", expected one of Tokens:\"{}\"", expected.display()
     ))]
-    UnexpectedToken { expected: Vec<Token>, found: Token },
+    UnexpectedToken {
+        /// expected one of the tokens here
+        expected: Vec<Token>,
+        ///but found this one instead
+        found: Token,
+    },
+    ///Invalid token
     #[snafu(display("Got invalid token:\"{token}\""))]
-    Invalid { token: Token },
+    Invalid {
+        ///this token is invalid
+        token: Token,
+    },
+    ///Invalid Trailing token
     #[snafu(display("Trailing invalid token\"{token}\""))]
-    Trailing { token: Token },
-    #[snafu(display("Got invalid \\begin{{{token}}}"))]
-    InvalidFactor { token: Token },
-    #[snafu(display("Trailing invalid token\"{beginning}\""))]
-    InvalidBegin { beginning: String },
+    Trailing {
+        ///the Trailing token
+        token: Token,
+    },
+    ///Invalid Factor
+    #[snafu(display("Got invalid when parsing factor{{{token}}}"))]
+    InvalidFactor {
+        ///The token could not be understood when parsing a factor
+        token: Token,
+    },
+    ///Invalid in begin statement
+    #[snafu(display("Got invalid \\begin{{{beginning}}}"))]
+    InvalidBegin {
+        ///The string of what was to "begin"
+        beginning: String,
+    },
+    ///Column size is wrong
     #[snafu(display("Expected it to have the same amount of columns, but previous had:{prev} instead got:{current}"))]
-    MismatchedMatrixColumnSize { prev: usize, current: usize },
+    MismatchedMatrixColumnSize {
+        ///the expected
+        prev: usize,
+        ///what was found
+        current: usize,
+    },
     #[snafu(display("A matrix cannot be empty."))]
+    ///The matrix was an empty matrix
     EmptyMatrix,
 }
+///The errors that can happen when generating the AST
 #[derive(Debug, Snafu)]
 pub enum AstError {
+    ///could not join the threads
     #[snafu(transparent)]
-    Join { source: JoinError },
+    Join {
+        ///the source of what crashed
+        source: JoinError,
+    },
+    ///Thread panicked
     #[snafu(whatever)]
-    Panic { message: String },
+    Panic {
+        ///panic message
+        message: String,
+    },
+    ///Got a parse error
     #[snafu(transparent)]
-    ParseError { source: ParseError },
+    ParseError {
+        ///The ParseError
+        source: ParseError,
+    },
 }
 /// The errors that can happen when evaluating a AST
 #[derive(Debug, Snafu)]
 pub enum EvalError {
+    ///Expected a scalar but found a matrix
     #[snafu(display(
         "A matrix was found when it was expected to be a scalar"
     ))]
     ExpectedScalar,
+    ///Incompatible types
     #[snafu(whatever, display("The types are not compatible: {message}"))]
-    IncompatibleTypes { message: String },
+    IncompatibleTypes {
+        ///The message describing it further
+        message: String,
+    },
+    ///When the matrix is not correctly sized for the operation
     #[snafu(transparent)]
-    IncompatibleMatrixSizes { source: IncompatibleMatrixSizes },
+    IncompatibleMatrixSizes {
+        ///Enum for describing what is wrong
+        source: IncompatibleMatrixSizes,
+    },
+    ///The variable or function is not defined
     #[snafu(display("Value is undefined"))]
     NotDefined,
     /// Unclear multiplication type when multiplying matrices.
     #[snafu(display(
         "Unclear multiplication type {type:?} when multiplying matrices"
     ))]
-    AmbiguousMulType { r#type: MulType },
+    AmbiguousMulType {
+        ///there is not a matrix operation defined for that type
+        r#type: MulType,
+    },
     ///Invalid amount of arguments
-    ArgumentLengthMismatch { expected: Vec<usize>, found: usize },
+    ArgumentLengthMismatch {
+        ///The possible amounts of arguments it can have because of
+        /// overloading
+        expected: Vec<usize>,
+        ///the found amount of arguments
+        found: usize,
+    },
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
 pub enum IncompatibleMatrixSizes {
-    // TODO I don't like how we say that something is "expected" here. We can't say
-    // something is expected, we just know that they are incompatible. /Alvin
+    // TODO I don't like how we say that something is "expected" here. We
+    // can't say something is expected, we just know that they are
+    // incompatible. /Alvin
+    ///Rows don't match
     #[snafu(display("Expected row {expected:?} found {found:?}"))]
     Row {
         /// The expected value for the matrix
@@ -65,6 +129,7 @@ pub enum IncompatibleMatrixSizes {
         /// The value found
         found: usize,
     },
+    ///Columns don't match
     #[snafu(display("Expected column {expected:?} found {found:?}"))]
     Column {
         /// The expected value for the matrix
@@ -72,17 +137,30 @@ pub enum IncompatibleMatrixSizes {
         /// The value found
         found: usize,
     },
+    ///Invalid Vector size for cross product
     #[snafu(display("Cross product can only be used on vectors with 3 components, got {found_size:?}"))]
     CrossProduct {
         /// The found size of the vector.
         found_size: usize,
     },
+    ///Was not a Vector instead had more then 1 row and column
     #[snafu(display(
         "Expected a vector but got a {rows:?}x{columns:?} matrix."
     ))]
-    Vector { rows: usize, columns: usize },
+    Vector {
+        ///The rows of the matrix
+        rows: usize,
+        ///The columns of the matrix
+        columns: usize,
+    },
+    ///The vectors are not the same dimensions
     #[snafu(display(
         "Vectors must be of the same size, but got {a:?} and {b:?}"
     ))]
-    SameSizeVectors { a: usize, b: usize },
+    SameSizeVectors {
+        ///first vector dimensions
+        a: usize,
+        ///Second Vector dimensions
+        b: usize,
+    },
 }

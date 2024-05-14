@@ -1,3 +1,4 @@
+//!Managing the different values that can exist
 use std::{
     fmt::Display,
     ops::{Add, Div, Mul, Sub},
@@ -5,13 +6,17 @@ use std::{
 
 use crate::{ast::MulType, error::EvalError, matrix::Matrix};
 
+///The different types of values that can exist
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
+    ///A normal number
     Scalar(f64),
+    ///A matrix of Values
     Matrix(Matrix<Value>),
 }
 
 impl Value {
+    ///returns as a scalar or fails
     pub fn scalar(&self) -> Result<f64, EvalError> {
         match self {
             Value::Scalar(val) => Ok(*val),
@@ -24,6 +29,8 @@ impl Value {
             }
         }
     }
+    /// mapping it for a function where it is a scalar and if not it returns an
+    /// error
     pub fn map_expecting_scalar(
         &self,
         func: impl Fn(&f64) -> f64,
@@ -43,7 +50,7 @@ impl Display for Value {
         }
     }
 }
-
+///Creates an incompatible type with the expected message
 fn type_err<T>(text: &'static str) -> Result<T, EvalError> {
     Err(EvalError::IncompatibleTypes {
         message: text.to_string(),
@@ -85,6 +92,7 @@ impl Sub for Value {
 }
 
 impl Value {
+    /// multiplication with the different types of multiplication
     pub fn mul(
         &self,
         mul_type: &MulType,
@@ -93,9 +101,9 @@ impl Value {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a * b),
             (Value::Matrix(a), Value::Matrix(b)) => match mul_type {
-                MulType::Implicit => Value::Matrix((a.matrix_mul(&b))?),
-                MulType::Cdot => a.dot_product(&b)?,
-                MulType::Times => Value::Matrix(a.cross_product(&b)?),
+                MulType::Implicit => Value::Matrix((a.matrix_mul(b))?),
+                MulType::Cdot => a.dot_product(b)?,
+                MulType::Times => Value::Matrix(a.cross_product(b)?),
                 _ => {
                     return Err(EvalError::AmbiguousMulType {
                         r#type: mul_type.clone(),
@@ -119,7 +127,7 @@ impl Div for Value {
         Ok(match (self, rhs) {
             (Value::Scalar(a), Value::Scalar(b)) => Value::Scalar(a / b),
             (_, _) => {
-                return type_err("Cannot perform division with matricies.")
+                return type_err("Cannot perform division with matrices.")
             }
         })
     }

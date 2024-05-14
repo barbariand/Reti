@@ -6,12 +6,10 @@ use crate::prelude::*;
 pub enum Ast {
     /// A mathematical expression that can be evaluated.
     Expression(MathExpr),
-
     /// An equation consisting of an equality between a left-hand side and a
     /// right-hand side.
     Equality(MathExpr, MathExpr),
 }
-
 /// A mathematical expression that consists of one or more terms added
 /// or subtracted.
 ///
@@ -20,7 +18,6 @@ pub enum Ast {
 pub enum MathExpr {
     /// A [Term] containing the rest of the syntax that go before in evaluation
     Term(Term),
-
     /// Addition between a MathExpr and a Term.
     ///  ## Examples
     ///  ```
@@ -29,9 +26,9 @@ pub enum MathExpr {
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
-    ///     parse("2-2", &context),
+    ///     parse("2+2", &context),
     ///     Ast::Expression(
-    ///         MathExpr::Subtract(
+    ///         MathExpr::Add(
     ///             Box::new(
     ///                 Factor::Constant(2.0).into()
     ///             ),
@@ -41,7 +38,6 @@ pub enum MathExpr {
     /// );
     /// ```
     Add(Box<MathExpr>, Term),
-
     /// Subtraction between a MathExpr and a Term.
     /// ## Examples
     ///  ```
@@ -60,6 +56,7 @@ pub enum MathExpr {
     ///         )
     ///     )
     /// );
+
     /// ```
     Subtract(Box<MathExpr>, Term),
 }
@@ -141,7 +138,6 @@ pub enum Term {
     /// A [Factor] containing the rest of the syntax that go before in
     /// evaluation
     Factor(Factor),
-
     ///Multiplication of Term and Factor
     /// ## Examples
     ///  ```
@@ -161,9 +157,9 @@ pub enum Term {
     ///         ).into()
     ///     )
     /// );
+
     /// ```
     Multiply(MulType, Box<Term>, Factor),
-
     /// Division between a Term and Factor.
     /// ## Examples
     ///  ```
@@ -182,6 +178,7 @@ pub enum Term {
     ///         ).into()
     ///     )
     /// );
+
     /// ```
     Divide(Box<Term>, Factor),
 }
@@ -206,7 +203,6 @@ impl From<FunctionCall> for Term {
         Term::Factor(Factor::FunctionCall(value))
     }
 }
-
 /// A factor that consists of a single value.
 ///
 /// Factors are in some sense the bottom of the Abstract Syntax Tree, and
@@ -232,14 +228,13 @@ pub enum Factor {
     ///     )
     /// );
     /// assert_eq!(
-    ///     parse("1", &context),
+    ///     parse("1.1", &context),
     ///     Ast::Expression(
-    ///         Factor::Constant(1.0).into()
+    ///         Factor::Constant(1.1).into()
     ///     )
     /// );
     /// ```
     Constant(f64),
-
     /// Parenthesis with a MathExpr
     /// ## Examples
     /// ```
@@ -255,6 +250,7 @@ pub enum Factor {
     ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0).into())).into()
     ///     )
     /// );
+
     /// ```
     Parenthesis(Box<MathExpr>),
 
@@ -293,7 +289,6 @@ pub enum Factor {
     /// );
     /// ```
     Variable(MathIdentifier),
-
     /// An expression that represents a function that is being invoked.
     /// ## Examples
     /// ```
@@ -358,7 +353,6 @@ pub enum Factor {
         /// Fraction::Power
         exponent: Box<MathExpr>,
     },
-
     /// The root of a MathExpr
     /// ## Examples
     /// ```
@@ -395,6 +389,7 @@ pub enum Factor {
     /// Also note that the term "fraction" is used to denote a quotient
     /// regardless of the contents on the numerator and denominator while
     /// the mathematical definition requires they be integers.
+    ///
     /// ## Examples
     /// ```
     /// # use parser::ast::*;
@@ -415,7 +410,6 @@ pub enum Factor {
     /// );
     /// ```
     Fraction(Box<MathExpr>, Box<MathExpr>),
-
     /// Take the absolute value of an expression.
     /// ## Examples
     /// ```
@@ -433,30 +427,82 @@ pub enum Factor {
     /// );
     /// ```
     Abs(Box<MathExpr>),
-
-    /// A matrix or vector.
+    /// A Matrix
+    ///
     /// ## Examples
-    /// ```ignore
+    /// Vector matrixes:
+    /// ```
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
     /// # use parser::prelude::MathContext;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let mut context=MathContext::standard_math();
-    /// // parsing \frac{1}{2}
+    /// // parsing (1,1)
     /// assert_eq!(
     ///     parse("(1,1)", &context),
     ///     Ast::Expression(
-    ///         Factor::Matrix(
-    ///             Matrix::new(
+    ///         Factor::Matrix(Matrix::new(
+    ///             vec![
+    ///                 Factor::Constant(1.0).into(),
+    ///                 Factor::Constant(1.0).into()
+    ///             ],
+    ///             1,
+    ///             2
+    ///         ))
+    ///         .into()
+    ///     )
+    /// );
+    /// ```
+    /// "Normal" matrix
+    /// ```
+    /// # use parser::ast::*;
+    /// # use parser::matrix::Matrix;
+    /// # use parser::token::Token;
+    /// # use parser::prelude::MathContext;
+    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # let mut context=MathContext::standard_math();
+    /// // parsing \begin{bmatrix}1\\1\end{bmatrix}
+    /// assert_eq!(
+    ///     parse("\\begin{bmatrix}1&1\\end{bmatrix}", &context),
+    ///     Ast::Expression(
+    ///         Factor::Matrix(Matrix::new(
+    ///             vec![
+    ///                 Factor::Constant(1.0).into(),
+    ///                 Factor::Constant(1.0).into()
+    ///             ],
+    ///             1,
+    ///             2
+    ///         ))
+    ///         .into()
+    ///     )
+    /// );
+    /// ```
+    /// Vmatrix means it is a determinant for witch absolute is wrapping the
+    /// matrix
+    /// ```
+    /// # use parser::ast::*;
+    /// # use parser::matrix::Matrix;
+    /// # use parser::token::Token;
+    /// # use parser::prelude::MathContext;
+    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # let mut context=MathContext::standard_math();
+    /// // parsing \begin{Vmatrix}1\\1\end{Vmatrix}
+    /// assert_eq!(
+    ///     parse("\\begin{Vmatrix}1&1\\end{Vmatrix}", &context),
+    ///     Ast::Expression(
+    ///         Factor::Abs(Box::new(
+    ///             Factor::Matrix(Matrix::new(
     ///                 vec![
     ///                     Factor::Constant(1.0).into(),
     ///                     Factor::Constant(1.0).into()
     ///                 ],
     ///                 1,
     ///                 2
-    ///             )
-    ///         ).into()
+    ///             ))
+    ///             .into()
+    ///         ))
+    ///         .into()
     ///     )
     /// );
     /// ```
@@ -489,23 +535,30 @@ pub struct MathIdentifier {
 }
 
 impl MathIdentifier {
+    ///Creates a new MathIdentifier fom a vec to identify a variable and
+    /// function
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens }
     }
+    ///Creates a new MathIdentifier from a single Token to identify a variable
+    /// and a function
     pub fn new_from_one(token: Token) -> Self {
         Self {
             tokens: vec![token],
         }
     }
 }
-
+/// an identified function
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
+    ///The name for the function called
     pub function_name: MathIdentifier,
+    ///The input to the function
     pub arguments: Vec<MathExpr>,
 }
 
 impl FunctionCall {
+    ///a helper method
     pub fn new(
         function_name: MathIdentifier,
         arguments: Vec<MathExpr>,

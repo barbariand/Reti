@@ -1,20 +1,25 @@
+//! Creating a token stream from a string
 use crate::prelude::*;
 use std::mem::take;
 use tracing::{debug, trace, trace_span};
-
+///The lexer creating tokens from a string
 pub struct Lexer {
+    ///where it sends the tokens
     channel: TokenSender,
 }
 
 impl Lexer {
+    ///creating a new Lexer
     pub fn new(channel: TokenSender) -> Self {
         trace!("created Lexer");
         Self { channel }
     }
+    ///for sending or crashing when the pipe is broken
     async fn send_or_crash(&self, token: Token) {
         trace!("send_or_crash token={token}");
         self.channel.send(token).await.expect("Broken Pipe")
     }
+    ///The main function of the Lexer, will create tokens and send them away
     pub async fn tokenize(self, s: &str) {
         let span = trace_span!("lexer::tokenize");
         let _enter = span.enter();

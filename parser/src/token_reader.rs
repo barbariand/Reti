@@ -1,16 +1,21 @@
+//!Helper methods for reading a stream of tokens
 use tracing::{debug, trace_span};
 
 use crate::prelude::*;
 use std::{collections::VecDeque, ops::RangeInclusive};
-/// A struct for easeier management of tokens
+/// A struct for easier management of tokens
 #[derive(Debug)]
 pub struct TokenReader {
+    ///The actual token stream
     tokens: TokenReceiver,
+    ///The cached tokens
     next: VecDeque<Token>,
+    /// if the stream has reached EOF
     eof: bool,
 }
 
 impl TokenReader {
+    /// Creates a new TokenReader
     pub fn new(tokens: TokenReceiver) -> Self {
         TokenReader {
             tokens,
@@ -115,7 +120,7 @@ impl TokenReader {
     /// Replace a range of tokens that have been peeked with a vector of
     /// replacements.
     ///
-    /// ## Pseudocode Example
+    /// ## Examples
     /// ```ignore
     /// peeked tokens before:
     /// [1, Backslash, "cdot", Two]
