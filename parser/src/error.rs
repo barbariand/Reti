@@ -3,7 +3,7 @@ use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
 
-use crate::prelude::{MathExpr, MulType, Token};
+use crate::prelude::{MulType, Token};
 ///The errors that can happen while parsing latex
 #[derive(Debug, Snafu)]
 pub enum ParseError {
