@@ -159,7 +159,7 @@ impl TokenReader {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     #[tokio::test]
     async fn read_test() {
         let (tx, rx): (TokenSender, TokenReceiver) = mpsc::channel(32);

@@ -675,7 +675,7 @@ impl Mul<f64> for &Matrix<Value> {
 mod tests {
     use super::Matrix;
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     #[test]
     fn matrix_scalar_value_addition() {
         let a = Matrix::new_default(2, 3, Value::Scalar(1.0));
