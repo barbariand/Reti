@@ -1,5 +1,7 @@
 //! the implementations of simplification
 use crate::prelude::*;
+
+use super::helper::Compare;
 impl Ast {
     ///simplify the ast
     pub fn simplify(&self) -> Ast {
@@ -88,9 +90,9 @@ impl Term {
 
                     if let MathExpr::Term(t) = simple {
                         if let Term::Factor(Factor::Constant(c)) = t {
-                            if (c - 1.0).abs() < f64::EPSILON {
+                            if c.is_one() {
                                 return rhs.simplify();
-                            } else if c.abs() < f64::EPSILON {
+                            } else if c.is_zero() {
                                 return Factor::Constant(0.0).into();
                             }
                         }
@@ -105,9 +107,9 @@ impl Term {
                     let simple = rhs.simplify();
                     if let MathExpr::Term(Term::Factor(f)) = simple {
                         if let Factor::Constant(c) = f {
-                            if (c - 1.0).abs() < f64::EPSILON {
+                            if c.is_one(){
                                 return lhs.simplify();
-                            } else if c.abs() < f64::EPSILON {
+                            } else if c.is_zero() {
                                 return Factor::Constant(0.0).into();
                             }
                         }
@@ -133,18 +135,16 @@ impl Factor {
             Factor::Variable(_) => self.clone().into(),
             Factor::FunctionCall(_) => self.clone().into(),
             Factor::Power { base, exponent } => {
-                println!("simplifying power");
                 let simple_base = base.simplify();
                 let exponent_simple = exponent.simplify();
 
                 if let MathExpr::Term(Term::Factor(Factor::Constant(c))) =
                     exponent_simple
                 {
-                    println!("constat power: {c}");
-                    if (c - 1.0).abs() < f64::EPSILON {
+                    if c.is_one() {
                         //exponent is 1
                         return simple_base;
-                    } else if c < f64::EPSILON {
+                    } else if c.is_zero(){
                         return Factor::Constant(0.0).into();
                     }
                 }
@@ -155,7 +155,7 @@ impl Factor {
                             c,
                         ))) = simple_base
                         {
-                            if (c - 1.0).abs() < f64::EPSILON {
+                            if c.is_one() {
                                 return Factor::Constant(1.0).into();
                             } else {
                                 Factor::Constant(c).into()
