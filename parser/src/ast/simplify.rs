@@ -181,47 +181,48 @@ impl Factor {
 #[cfg(test)]
 mod test {
     use crate::prelude::*;
-    async fn ast_test_simplify(text: &str, expected_ast: Ast) {
-        let found_ast = parse(text, &MathContext::standard_math())
+    use pretty_assertions::assert_eq;
+    async fn ast_test_simplify(text: &str, expected_latex:&str) {
+        let context=MathContext::standard_math();
+        let found_ast = parse(text, &context)
             .await
             .expect("failed to parse AST")
             .simplify();
+        let expected_ast=parse(expected_latex,&context).await.expect("failed to parse latex to ast");
         // Compare and print with debug and formatting otherwise.
-        if expected_ast != found_ast {
-            panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
-        }
+        assert_eq!(found_ast,expected_ast)
     }
     #[tokio::test]
     async fn one_minus_one() {
-        ast_test_simplify("1-1", Ast::Expression(Factor::Constant(0.0).into()))
+        ast_test_simplify("1-1", "0")
             .await;
     }
     #[tokio::test]
     async fn one_plus_one() {
-        ast_test_simplify("1+1", Ast::Expression(Factor::Constant(2.0).into()))
+        ast_test_simplify("1+1", "2")
             .await;
     }
     #[tokio::test]
     async fn one_times_one() {
-        ast_test_simplify("1*1", Ast::Expression(Factor::Constant(1.0).into()))
+        ast_test_simplify("1*1", "1")
             .await;
     }
     #[tokio::test]
     async fn one_times_zero() {
-        ast_test_simplify("1*0", Ast::Expression(Factor::Constant(0.0).into()))
+        ast_test_simplify("1*0", "0")
             .await;
     }
     #[tokio::test]
-    async fn one_times_parenthasis() {
+    async fn zero_times_parenthesis() {
         ast_test_simplify(
             "0*(1+1+1+1+1*2)",
-            Ast::Expression(Factor::Constant(0.0).into()),
+            "0",
         )
         .await;
     }
     #[tokio::test]
     async fn two_minus_one() {
-        ast_test_simplify("2-1", Ast::Expression(Factor::Constant(1.0).into()))
+        ast_test_simplify("2-1", "1")
             .await;
     }
 }
