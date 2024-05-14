@@ -26,11 +26,11 @@ impl MathExpr {
             MathExpr::Term(t) => t.derivative(dependent)?,
             MathExpr::Add(lhs, rhs) => MathExpr::Add(
                 lhs.derivative(dependent)?.boxed(),
-                rhs.derivative(dependent)?.get_term()?.clone(),
+                rhs.derivative(dependent)?.expect_term()?.clone(),
             ),
             MathExpr::Subtract(lhs, rhs) => MathExpr::Subtract(
                 lhs.derivative(dependent)?.boxed(),
-                rhs.derivative(dependent)?.get_term()?.clone(),
+                rhs.derivative(dependent)?.expect_term()?.clone(),
             ),
         })
     }
@@ -47,7 +47,10 @@ impl Term {
                 Box::new(
                     Term::Multiply(
                         mul.clone(),
-                        rhs.derivative(dependent)?.get_term()?.clone().boxed(),
+                        rhs.derivative(dependent)?
+                            .expect_term()?
+                            .clone()
+                            .boxed(),
                         lhs.clone(),
                     )
                     .into(),
@@ -117,7 +120,10 @@ impl Factor {
                 ),
             ),
 
-            Factor::Root { degree:_, radicand:_ } => todo!("root"),
+            Factor::Root {
+                degree: _,
+                radicand: _,
+            } => todo!("root"),
             Factor::Fraction(_, _) => todo!("fraction"),
             Factor::Abs(_math) => todo!("ABS"),
             Factor::Matrix(_) => todo!("matrix"),
@@ -145,13 +151,13 @@ mod test {
             panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
         }
     }
-    
+
     #[tokio::test]
     async fn x_squared_derivative() {
         ast_test_derive(
             "x^2",
             &MathIdentifier::from_single_ident("x"),
-            Ast::Expression(Factor::Constant(1.0).into()),
+            Ast::Expression(Term::Multiply(MulType::Implicit, Factor::Constant(2.0).into(), Factor::Variable(MathIdentifier::from_single_ident("x"))).into()),
         )
         .await;
     }
