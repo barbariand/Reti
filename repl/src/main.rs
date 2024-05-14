@@ -1,6 +1,6 @@
 use std::{ops::ControlFlow, sync::Arc};
 
-use clap::{command, crate_authors, crate_name, Parser as ClapParser};
+use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
@@ -155,7 +155,7 @@ impl Repl {
             {
                 let variable_name = args.clone();
                 // FIXME: this is not perfect but i think we might need to live
-                // with it otherwise we just dont know what it
+                // with it otherwise we just don't know what it
                 // is
                 self.approximator.context_mut().functions.insert(
                     var.clone(),

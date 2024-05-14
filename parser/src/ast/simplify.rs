@@ -18,7 +18,7 @@ impl Ast {
 impl MathExpr {
     ///Tries to simplify this
     fn simplify(&self) -> MathExpr {
-        println!("simplifying mathexpr");
+        println!("simplifying MathExpr");
         match self {
             MathExpr::Term(t) => t.simplify(),
             MathExpr::Add(lhs, rhs) => {
