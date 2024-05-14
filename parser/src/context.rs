@@ -18,6 +18,8 @@ pub struct MathFunction {
     ///the amount of acceptable arguments
     arguments: usize,
     ///the function to get the derivative
+    /// not used yet
+    #[allow(dead_code)]
     derivative: Option<InnerDeriveFunction>,
 }
 
@@ -247,7 +249,7 @@ mod test {
 
     #[allow(unused_imports)]
     use crate::prelude::*;
-    
+
     #[test]
     pub fn merging_functions() {
         let mut c = MathContext::new();

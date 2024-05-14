@@ -3,7 +3,7 @@ use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
 
-use crate::prelude::{MathExpr, MulType, Token};
+use crate::prelude::{MulType, Token};
 ///The errors that can happen while parsing latex
 #[derive(Debug, Snafu)]
 pub enum ParseError {
@@ -122,18 +122,6 @@ pub enum EvalError {
     DeriveError {
         ///The actual derive error
         source: DeriveError,
-    },
-    #[snafu(display("Expected a term found {found:#?}"))]
-    ///Expected term
-    ExpectedTerm {
-        ///the found value
-        found: MathExpr,
-    },
-    #[snafu(display("Expected a factor found {found:#?}"))]
-    ///expected a factor
-    ExpectedFactor {
-        ///the found value
-        found: MathExpr,
     },
 }
 /// The error for when it required another size of the matrix

@@ -26,11 +26,11 @@ impl MathExpr {
             MathExpr::Term(t) => t.derivative(dependent)?,
             MathExpr::Add(lhs, rhs) => MathExpr::Add(
                 lhs.derivative(dependent)?.boxed(),
-                rhs.derivative(dependent)?.expect_term()?.clone(),
+                rhs.derivative(dependent)?.get_term_or_wrap().clone(),
             ),
             MathExpr::Subtract(lhs, rhs) => MathExpr::Subtract(
                 lhs.derivative(dependent)?.boxed(),
-                rhs.derivative(dependent)?.expect_term()?.clone(),
+                rhs.derivative(dependent)?.get_term_or_wrap().clone(),
             ),
         })
     }
@@ -48,7 +48,7 @@ impl Term {
                     Term::Multiply(
                         mul.clone(),
                         rhs.derivative(dependent)?
-                            .expect_term()?
+                            .get_term_or_wrap()
                             .clone()
                             .boxed(),
                         lhs.clone(),
@@ -58,7 +58,7 @@ impl Term {
                 Term::Multiply(
                     mul.clone(),
                     rhs.clone(),
-                    lhs.derivative(dependent)?.get_factor()?.clone(),
+                    lhs.derivative(dependent)?.get_factor_or_wrap().clone(),
                 ),
             ),
             Term::Divide(_, _) => todo!("division"),
@@ -84,7 +84,7 @@ impl Factor {
                     MulType::Implicit,
                     Term::Multiply(
                         MulType::Implicit,
-                        Term::Factor(exponent.get_factor()?.clone()).boxed(),
+                        Term::Factor(exponent.get_factor_or_wrap().clone()).boxed(),
                         Factor::Power {
                             base: base.clone(),
                             exponent: MathExpr::Subtract(
@@ -95,7 +95,7 @@ impl Factor {
                         },
                     )
                     .into(),
-                    base.derivative(dependent)?.get_factor()?.clone(),
+                    base.derivative(dependent)?.get_factor_or_wrap().clone(),
                 )
                 .into(),
                 Term::Multiply(
@@ -116,7 +116,7 @@ impl Factor {
                         },
                     )
                     .into(),
-                    exponent.derivative(dependent)?.get_factor()?.clone(),
+                    exponent.derivative(dependent)?.get_factor_or_wrap().clone(),
                 ),
             ),
 
@@ -149,7 +149,7 @@ mod test {
             .simplify();
         let expected_ast=parse(expected_to_ast, &context).await.expect("could not parse the expected ast");
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast,expected_ast)
+        assert_eq!(found_ast,expected_ast,"found/expected")
     }
 
     #[tokio::test]
@@ -164,9 +164,9 @@ mod test {
     #[tokio::test]
     async fn polynomial_1() {
         ast_test_derive(
-            "2(x^2)",
+            "3x^2+2x+1",
             &MathIdentifier::from_single_ident("x"),
-            "6x+2",
+            "3(2x)+2",
         )
         .await;
     }
