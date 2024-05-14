@@ -17,6 +17,56 @@ pub struct Matrix<T> {
     column_count: usize,
 }
 
+/// A vector.
+///
+/// This struct is a wrapper around a matrix that only has one row or column.
+///
+/// # Lifetime
+/// The vector wraps the matrix, and the lifetime of the vector must therefore
+/// be shorter than the lifetime of the matrix.
+pub enum Vector<'a, T> {
+    /// A row vector is a matrix with only one row.
+    Row(&'a Matrix<T>),
+    /// A column vector is a matrix with only one column.
+    Column(&'a Matrix<T>),
+}
+
+impl<'a, T> Vector<'a, T> {
+    /// Create a new vector that wraps a matrix.
+    ///
+    /// # Errors
+    /// Will return an `IncompatibleMatrixSizes::Vector` `EvalError` if the
+    /// matrix is not a row or column vector.
+    pub fn new(matrix: &'a Matrix<T>) -> Result<Self, EvalError> {
+        if matrix.is_row_vector() {
+            return Ok(Vector::Row(matrix));
+        } else if matrix.is_column_vector() {
+            return Ok(Vector::Column(matrix));
+        }
+        Err(EvalError::IncompatibleMatrixSizes {
+            source: IncompatibleMatrixSizes::Vector {
+                rows: matrix.row_count(),
+                columns: matrix.column_count(),
+            },
+        })
+    }
+
+    /// Get the amount of elements this vector has.
+    pub fn get_size(&self) -> usize {
+        match self {
+            Vector::Row(matrix) => matrix.column_count,
+            Vector::Column(matrix) => matrix.row_count,
+        }
+    }
+
+    /// Get the elements at an index in this vector.
+    pub fn get(&self, index: usize) -> &T {
+        match self {
+            Vector::Row(matrix) => matrix.get(0, index),
+            Vector::Column(matrix) => matrix.get(index, 0),
+        }
+    }
+}
 impl<T> Matrix<T> {
     /// Constructs a new `Matrix` instance from a vector containing the values
     ///
@@ -127,32 +177,12 @@ impl<T> Matrix<T> {
         self.column_count == 1
     }
 
-    /// Get the amount of elements this vector has.
+    /// Wrap this matrix in a [Vector].
     ///
-    /// ## Panics
-    /// Panics if this matrix is not a vector.
-    pub fn get_vector_size(&self) -> usize {
-        if self.is_row_vector() {
-            return self.column_count;
-        }
-        if self.is_column_vector() {
-            return self.row_count;
-        }
-        panic!("Not a vector.");
-    }
-
-    /// Get the elements at an index in this vector.
-    ///
-    /// ## Panics
-    /// Panics if this matrix is not a vector.
-    pub fn get_vector_element(&self, index: usize) -> &T {
-        if self.is_row_vector() {
-            return self.get(0, index);
-        }
-        if self.is_column_vector() {
-            return self.get(index, 0);
-        }
-        panic!("Not a vector.");
+    /// # Errors
+    /// Will error if this matrix is not a row or column vector.
+    pub fn as_vector(&self) -> Result<Vector<T>, EvalError> {
+        Vector::new(self)
     }
 }
 
@@ -205,37 +235,23 @@ impl Matrix<Value> {
         &self,
         other: &Matrix<Value>,
     ) -> Result<Value, EvalError> {
-        ///helper function that returns a [IncompatibleMatrixSizes::Vector]
-        /// error
-        fn vector_err(m: &Matrix<Value>) -> EvalError {
-            EvalError::IncompatibleMatrixSizes {
-                source: IncompatibleMatrixSizes::Vector {
-                    rows: m.row_count(),
-                    columns: m.column_count(),
-                },
-            }
-        }
+        let a = self.as_vector()?;
+        let b = other.as_vector()?;
 
-        if !self.is_vector() {
-            return Err(vector_err(self));
-        }
-        if !other.is_vector() {
-            return Err(vector_err(other));
-        }
-        if self.get_vector_size() != other.get_vector_size() {
+        if a.get_size() != b.get_size() {
             return Err(EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::SameSizeVectors {
-                    a: self.get_vector_size(),
-                    b: other.get_vector_size(),
+                    a: a.get_size(),
+                    b: b.get_size(),
                 },
             });
         }
 
         // Calculation
         let mut sum = Option::None;
-        for i in 0..self.get_vector_size() {
-            let a_i = self.get_vector_element(i);
-            let b_i = other.get_vector_element(i);
+        for i in 0..a.get_size() {
+            let a_i = a.get(i);
+            let b_i = b.get(i);
             let term = a_i.mul(&MulType::Implicit, b_i)?;
             sum = Some(match sum {
                 Some(sum) => (sum + term)?,
@@ -256,50 +272,29 @@ impl Matrix<Value> {
         &self,
         other: &Matrix<Value>,
     ) -> Result<Matrix<Value>, EvalError> {
-        ///helper function that returns a [IncompatibleMatrixSizes::Vector]
-        /// error
-        fn vector_err(m: &Matrix<Value>) -> EvalError {
-            EvalError::IncompatibleMatrixSizes {
-                source: IncompatibleMatrixSizes::Vector {
-                    rows: m.row_count(),
-                    columns: m.column_count(),
-                },
-            }
-        }
+        let a = self.as_vector()?;
+        let b = other.as_vector()?;
+
         ///helper function that returns a
         /// [IncompatibleMatrixSizes::CrossProduct] error
-        fn size_err(m: &Matrix<Value>) -> EvalError {
+        fn size_err(m: &Vector<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::CrossProduct {
-                    found_size: m.get_vector_size(),
+                    found_size: m.get_size(),
                 },
             }
         }
 
-        if !self.is_vector() {
-            return Err(vector_err(self));
+        if a.get_size() != 3 {
+            return Err(size_err(&a));
         }
-        if !other.is_vector() {
-            return Err(vector_err(other));
-        }
-        if self.get_vector_size() != 3 {
-            return Err(size_err(self));
-        }
-        if other.get_vector_size() != 3 {
-            return Err(size_err(other));
+        if b.get_size() != 3 {
+            return Err(size_err(&b));
         }
 
         // Calculation
-        let (x1, y1, z1) = (
-            self.get_vector_element(0),
-            self.get_vector_element(1),
-            self.get_vector_element(2),
-        );
-        let (x2, y2, z2) = (
-            other.get_vector_element(0),
-            other.get_vector_element(1),
-            other.get_vector_element(2),
-        );
+        let (x1, y1, z1) = (a.get(0), a.get(1), a.get(2));
+        let (x2, y2, z2) = (b.get(0), b.get(1), b.get(2));
         let mt = &MulType::Implicit;
         let values = vec![
             (y1.mul(mt, z2)? - z1.mul(mt, y2)?)?,
