@@ -225,4 +225,9 @@ mod test {
         ast_test_simplify("2-1", "1")
             .await;
     }
+    #[tokio::test]
+    async fn two_x_minus_two_x() {
+        ast_test_simplify("2x-2x", "0")
+            .await;
+    }
 }
