@@ -128,7 +128,7 @@ mod tests {
         sync::mpsc::{self},
     };
 
-    use crate::prelude::*;
+    use crate::{ast::helper::Compare, prelude::*};
 
     fn eval_test_from_ast(expected: f64, ast: Ast) {
         let context = MathContext::new();
@@ -149,7 +149,7 @@ mod tests {
             Value::Matrix(m) => panic!("Unexpected matrix {m:?}"),
         };
 
-        if (found - expected).abs() > f64::EPSILON {
+        if !found.equals(expected) {
             panic!("Found {} expected {}", found, expected);
         }
     }
