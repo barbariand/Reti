@@ -2,6 +2,9 @@
 use crate::prelude::*;
 
 use super::helper::NumberCompare;
+pub trait Simplify{
+    fn simplify(&self)->MathExpr;
+}
 impl Ast {
     ///simplify the ast
     pub fn simplify(&self) -> Ast {
@@ -15,9 +18,9 @@ impl Ast {
     }
 }
 
-impl MathExpr {
+impl Simplify for MathExpr {
     ///Tries to simplify this
-    pub(crate) fn simplify(&self) -> MathExpr {
+    fn simplify(&self) -> MathExpr {
         println!("simplifying MathExpr");
         match self {
             MathExpr::Term(t) => t.simplify(),
@@ -77,9 +80,8 @@ impl MathExpr {
     }
 }
 
-impl Term {
-    ///test
-    pub(crate) fn simplify(&self) -> MathExpr {
+impl Simplify for Term {
+    fn simplify(&self) -> MathExpr {
         println!("simplifying term");
         match self {
             Term::Factor(f) => f.simplify(),
@@ -125,10 +127,8 @@ impl Term {
     }
 }
 
-impl Factor {
-    #[allow(dead_code)]
-    ///simplifying factors
-    pub(crate) fn simplify(&self) -> MathExpr {
+impl Simplify for Factor {
+    fn simplify(&self) -> MathExpr {
         match self {
             Factor::Constant(_) => self.clone().into(),
             Factor::Parenthesis(p) => p.simplify(),

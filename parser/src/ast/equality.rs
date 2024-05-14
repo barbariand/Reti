@@ -1,5 +1,7 @@
 //!Tries to find out if they are the same
 use crate::prelude::*;
+
+use super::simplify::Simplify;
 ///tries to see if they are mathematically the same
 pub trait MathEquality{
     ///the user part of the trait
@@ -12,7 +14,10 @@ pub trait MathEquality{
 }
 impl MathEquality for Ast{
     fn equals(&self,other:&MathExpr)->bool {
-        todo!()
+        match self{
+            Ast::Expression(e) => e.equals(other),
+            Ast::Equality(_, _) => false,
+        }
     }
 }
 impl MathEquality for MathExpr{
@@ -27,11 +32,17 @@ impl MathEquality for MathExpr{
 }
 impl MathEquality for Term{
     fn equals(&self,other:&MathExpr)->bool {
-        todo!()
+        match (self.simplify(),other.simplify()){
+            (MathExpr::Term(a), MathExpr::Term(b)) => todo!(),
+            (a,b)=>a.equals(&b)
+        }
     }
 }
 impl MathEquality for Factor{
     fn equals(&self,other:&MathExpr)->bool {
-        todo!()
+        match (self.simplify(),other.simplify()){
+            (MathExpr::Term(Term::Factor(a)),MathExpr::Term(Term::Factor(b)))=>todo!(),
+            (a,b)=>a.equals(&b)
+        }
     }
 }
