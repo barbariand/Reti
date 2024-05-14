@@ -336,7 +336,7 @@ pub enum Factor {
     ///             radicand: Box::new(Factor::Constant(2.0).into()),
     ///         }
     ///         .into()
-    //     )
+    ///     )
     /// );
     /// ```
     Root {
