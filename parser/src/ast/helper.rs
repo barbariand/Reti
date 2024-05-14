@@ -80,7 +80,7 @@ impl FunctionCall {
     }
 }
 ///Helper trait for comparing f64
-pub(crate) trait Compare{
+pub(crate) trait NumberCompare{
     ///if it is zero
     fn is_zero(&self)->bool;
     ///if it is one
@@ -89,7 +89,7 @@ pub(crate) trait Compare{
     #[allow(dead_code)]
     fn equals(&self,other:Self)->bool;
 }
-impl Compare for f64{
+impl NumberCompare for f64{
     fn is_zero(&self)->bool{
         self.abs()<f64::EPSILON
     }

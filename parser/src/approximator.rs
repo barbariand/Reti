@@ -129,7 +129,7 @@ mod tests {
     };
     #[allow(unused_imports)]
     use pretty_assertions::assert_eq;
-    use crate::{ast::helper::Compare, prelude::*};
+    use crate::{ast::helper::NumberCompare, prelude::*};
 
     fn eval_test_from_ast(expected: f64, ast: Ast) {
         let context = MathContext::new();

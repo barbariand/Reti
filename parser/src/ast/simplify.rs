@@ -1,7 +1,7 @@
 //! the implementations of simplification
 use crate::prelude::*;
 
-use super::helper::Compare;
+use super::helper::NumberCompare;
 impl Ast {
     ///simplify the ast
     pub fn simplify(&self) -> Ast {
@@ -17,7 +17,7 @@ impl Ast {
 
 impl MathExpr {
     ///Tries to simplify this
-    fn simplify(&self) -> MathExpr {
+    pub(crate) fn simplify(&self) -> MathExpr {
         println!("simplifying MathExpr");
         match self {
             MathExpr::Term(t) => t.simplify(),
@@ -79,7 +79,7 @@ impl MathExpr {
 
 impl Term {
     ///test
-    fn simplify(&self) -> MathExpr {
+    pub(crate) fn simplify(&self) -> MathExpr {
         println!("simplifying term");
         match self {
             Term::Factor(f) => f.simplify(),
@@ -128,7 +128,7 @@ impl Term {
 impl Factor {
     #[allow(dead_code)]
     ///simplifying factors
-    fn simplify(&self) -> MathExpr {
+    pub(crate) fn simplify(&self) -> MathExpr {
         match self {
             Factor::Constant(_) => self.clone().into(),
             Factor::Parenthesis(p) => p.simplify(),
