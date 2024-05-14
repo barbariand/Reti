@@ -4,7 +4,7 @@ pub mod derivative;
 pub mod helper;
 pub mod into;
 pub mod simplify;
-pub mod tolatex;
+pub mod to_latex;
 ///The root of the AST that is non recursive
 #[derive(PartialEq, Debug)]
 pub enum Ast {
