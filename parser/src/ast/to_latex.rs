@@ -73,8 +73,8 @@ impl ToLaTeX for Factor {
             }
             Factor::Abs(val) => format!("|{}|", val.to_latex()),
             Factor::Matrix(m) => {
-                let mut str = String::new();
-                str.push_str("\\begin{bmatrix}");
+                let mut output = String::new();
+                output.push_str("\\begin{bmatrix}");
 
                 let content = (0..m.row_count())
                     .map(|row| {
@@ -86,9 +86,9 @@ impl ToLaTeX for Factor {
                     .collect::<Vec<_>>()
                     .join(" \\\\");
 
-                str.push_str(&content);
-                str.push_str("\\end{bmatrix}");
-                str
+                output.push_str(&content);
+                output.push_str("\\end{bmatrix}");
+                output
             }
         }
     }
@@ -98,6 +98,6 @@ impl ToLaTeX for MathIdentifier {
     fn to_latex(&self) -> String {
         self.tokens
             .iter()
-            .fold(String::new(),|mut acc,token| { acc.push_str(&token.to_string());acc})
+            .fold(String::new(),|mut output,token| { output.push_str(&token.to_string());output})
     }
 }
