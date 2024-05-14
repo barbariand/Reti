@@ -10,29 +10,11 @@ impl MathExpr {
     pub fn subtract_wrapped(a:MathExpr,b:MathExpr)->Self{
         Self::Subtract(a.boxed(), b.get_term_or_wrap())
     }
-    ///Returns a term or a eval error
-    pub fn expect_term(&self) -> Result<&Term, EvalError> {
-        match self {
-            MathExpr::Term(t) => Ok(t),
-            _ => Err(EvalError::ExpectedTerm {
-                found: self.clone(),
-            }),
-        }
-    }
     ///gets the term or wraps it in parenthesis
     pub fn get_term_or_wrap(&self) -> Term {
         match self {
             MathExpr::Term(t) => t.clone(),
             _ => Factor::Parenthesis(self.clone().boxed()).into(),
-        }
-    }
-    ///Returns a factor or a eval error
-    pub fn get_factor(&self) -> Result<&Factor, EvalError> {
-        match self {
-            MathExpr::Term(t) => t.get_factor(),
-            _ => Err(EvalError::ExpectedFactor {
-                found: self.clone(),
-            }),
         }
     }
     ///gets the factor or wraps it in parenthesis
@@ -50,15 +32,6 @@ impl MathExpr {
 }
 
 impl Term {
-    ///Returns a factor or a eval error
-    fn get_factor(&self) -> Result<&Factor, EvalError> {
-        match self {
-            Term::Factor(f) => Ok(f),
-            _ => Err(EvalError::ExpectedFactor {
-                found: self.clone().into(),
-            }),
-        }
-    }
     ///Boxes self
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)

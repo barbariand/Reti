@@ -127,6 +127,7 @@ mod tests {
         join,
         sync::mpsc::{self},
     };
+    #[allow(unused_imports)]
     use pretty_assertions::assert_eq;
     use crate::{ast::helper::Compare, prelude::*};
 

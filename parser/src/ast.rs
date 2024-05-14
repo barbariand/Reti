@@ -1,6 +1,6 @@
 //! AST for representing Latex
 use crate::prelude::*;
-pub mod derive;
+pub mod derivative;
 pub mod helper;
 pub mod into;
 pub mod simplify;

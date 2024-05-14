@@ -190,7 +190,7 @@ mod test {
             .simplify();
         let expected_ast=parse(expected_latex,&context).await.expect("failed to parse latex to ast");
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast,expected_ast)
+        assert_eq!(found_ast,expected_ast,"found/expected")
     }
     #[tokio::test]
     async fn one_minus_one() {
