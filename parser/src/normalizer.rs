@@ -84,7 +84,7 @@ mod tests {
     use std::hint::black_box;
 
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     async fn normalize(tokens: Vec<Token>) -> Vec<Token> {
         let (tx1, rx1): (TokenSender, TokenReceiver) = mpsc::channel(32);
         let (tx2, mut rx2): (TokenSender, TokenReceiver) = mpsc::channel(32);

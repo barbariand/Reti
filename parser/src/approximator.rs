@@ -127,7 +127,7 @@ mod tests {
         join,
         sync::mpsc::{self},
     };
-
+    use pretty_assertions::assert_eq;
     use crate::{ast::helper::Compare, prelude::*};
 
     fn eval_test_from_ast(expected: f64, ast: Ast) {

@@ -117,7 +117,7 @@ impl Lexer {
 mod tests {
 
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     async fn tokenize(text: &str) -> Vec<Token> {
         let (tx, mut rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
         let lexer = Lexer::new(tx);

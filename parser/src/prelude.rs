@@ -157,14 +157,12 @@ where
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-
+use pretty_assertions::assert_eq;
     async fn parse_test(text: &str, expected_ast: Ast) {
         let found_ast =
             parse(text, &MathContext::standard_math()).await.unwrap();
         // Compare and print with debug and formatting otherwise.
-        if expected_ast != found_ast {
-            panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
-        }
+        assert_eq!(found_ast,expected_ast)
     }
 
     #[tokio::test]

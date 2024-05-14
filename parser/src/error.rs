@@ -123,13 +123,13 @@ pub enum EvalError {
         ///The actual derive error
         source: DeriveError,
     },
-    #[snafu(display("Expected a term found {found:?}"))]
+    #[snafu(display("Expected a term found {found:#?}"))]
     ///Expected term
     ExpectedTerm {
         ///the found value
         found: MathExpr,
     },
-    #[snafu(display("Expected a factor found {found:?}"))]
+    #[snafu(display("Expected a factor found {found:#?}"))]
     ///expected a factor
     ExpectedFactor {
         ///the found value
