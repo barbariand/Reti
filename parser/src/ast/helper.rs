@@ -2,13 +2,28 @@
 use crate::prelude::*;
 
 impl MathExpr {
+    ///makes a new MathExpr where the term part is wrapped if needed
+    pub fn add_wrapped(a:MathExpr,b:MathExpr)->Self{
+        Self::Add(a.boxed(), b.get_term_or_wrap())
+    }
+    ///makes a new MathExpr where the term part is wrapped if needed
+    pub fn subtract_wrapped(a:MathExpr,b:MathExpr)->Self{
+        Self::Subtract(a.boxed(), b.get_term_or_wrap())
+    }
     ///Returns a term or a eval error
-    pub fn get_term(&self) -> Result<&Term, EvalError> {
+    pub fn expect_term(&self) -> Result<&Term, EvalError> {
         match self {
             MathExpr::Term(t) => Ok(t),
             _ => Err(EvalError::ExpectedTerm {
                 found: self.clone(),
             }),
+        }
+    }
+    ///gets the term or wraps it in parenthesis
+    pub fn get_term_or_wrap(&self) -> Term {
+        match self {
+            MathExpr::Term(t) => t.clone(),
+            _ => Factor::Parenthesis(self.clone().boxed()).into(),
         }
     }
     ///Returns a factor or a eval error
@@ -20,6 +35,14 @@ impl MathExpr {
             }),
         }
     }
+    ///gets the factor or wraps it in parenthesis
+    pub fn get_factor_or_wrap(&self) -> Factor {
+        match self {
+            MathExpr::Term(Term::Factor(f)) => f.clone(),
+            _ => Factor::Parenthesis(self.clone().boxed()),
+        }
+    }
+    
     ///Boxes self
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)
