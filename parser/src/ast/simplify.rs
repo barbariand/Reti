@@ -20,30 +20,56 @@ impl MathExpr {
         match self {
             MathExpr::Term(t) => t.simplify(),
             MathExpr::Add(lhs, rhs) => {
-                if let (
-                    MathExpr::Term(Term::Factor(Factor::Constant(a))),
-                    MathExpr::Term(Term::Factor(Factor::Constant(b))),
-                ) = (lhs.simplify(), rhs.simplify())
-                {
-                    return Factor::Constant(a + b).into();
+                let simple = (lhs.simplify(), rhs.simplify());
+                match simple {
+                    (
+                        MathExpr::Term(Term::Factor(Factor::Constant(a))),
+                        MathExpr::Term(Term::Factor(Factor::Constant(b))),
+                    ) => Factor::Constant(a + b).into(),
+                    (MathExpr::Term(Term::Factor(Factor::Constant(a))),_)=>{
+                        if a<f64::EPSILON{
+                            simple.1
+                        }else{
+                            Self::add_wrapped(simple.0, simple.1)
+                        }
+                    }
+                    (_,MathExpr::Term(Term::Factor(Factor::Constant(b))))=>{
+                        if b<f64::EPSILON{
+                            simple.0
+                        }else{
+                            Self::add_wrapped(simple.0, simple.1)
+                        }
+                    }
+                    _ => {
+                        Self::add_wrapped(simple.0, simple.1)
+                    }
                 }
-                self.clone()
             }
             MathExpr::Subtract(lhs, rhs) => {
-                println!(
-                    "sub\nlhs:{:?} \n rhs:{:?}",
-                    lhs.simplify(),
-                    rhs.simplify()
-                );
-                if let (
-                    MathExpr::Term(Term::Factor(Factor::Constant(a))),
-                    MathExpr::Term(Term::Factor(Factor::Constant(b))),
-                ) = (lhs.simplify(), rhs.simplify())
-                {
-                    println!("subbed:{}",a-b);
-                    return Factor::Constant(a - b).into();
+                let simple = (lhs.simplify(), rhs.simplify());
+                match simple {
+                    (
+                        MathExpr::Term(Term::Factor(Factor::Constant(a))),
+                        MathExpr::Term(Term::Factor(Factor::Constant(b))),
+                    ) => Factor::Constant(a - b).into(),
+                    (MathExpr::Term(Term::Factor(Factor::Constant(a))),_)=>{
+                        if a<f64::EPSILON{
+                            simple.1
+                        }else{
+                            Self::subtract_wrapped(simple.0, simple.1)
+                        }
+                    }
+                    (_,MathExpr::Term(Term::Factor(Factor::Constant(b))))=>{
+                        if b<f64::EPSILON{
+                            simple.0
+                        }else{
+                            Self::subtract_wrapped(simple.0, simple.1)
+                        }
+                    }
+                    _ => {
+                        Self::subtract_wrapped(simple.0, simple.1)
+                    }
                 }
-                self.clone()
             }
         }
     }
@@ -108,13 +134,16 @@ impl Factor {
             Factor::FunctionCall(_) => self.clone().into(),
             Factor::Power { base, exponent } => {
                 println!("simplifying power");
+                let simple_base = base.simplify();
                 let exponent_simple = exponent.simplify();
+
                 if let MathExpr::Term(Term::Factor(Factor::Constant(c))) =
                     exponent_simple
                 {
+                    println!("constat power: {c}");
                     if (c - 1.0).abs() < f64::EPSILON {
                         //exponent is 1
-                        return base.simplify().clone();
+                        return simple_base;
                     } else if c < f64::EPSILON {
                         return Factor::Constant(0.0).into();
                     }
@@ -122,22 +151,27 @@ impl Factor {
 
                 Factor::Power {
                     base: {
-                        let simple = base.simplify();
-                        if let MathExpr::Term(Term::Factor(Factor::Constant(c)))=simple{
-                            if (c-1.0).abs()<f64::EPSILON{
-                                return Factor::Constant(1.0).into()
-                            }else {
+                        if let MathExpr::Term(Term::Factor(Factor::Constant(
+                            c,
+                        ))) = simple_base
+                        {
+                            if (c - 1.0).abs() < f64::EPSILON {
+                                return Factor::Constant(1.0).into();
+                            } else {
                                 Factor::Constant(c).into()
                             }
-                        }else {
-                            Factor::Parenthesis(simple.boxed()).into()
+                        } else {
+                            Factor::Parenthesis(simple_base.boxed()).into()
                         }
                     },
                     exponent: exponent_simple.boxed(),
                 }
                 .into()
             }
-            Factor::Root { degree:_, radicand:_ } => todo!(),
+            Factor::Root {
+                degree: _,
+                radicand: _,
+            } => todo!(),
             Factor::Fraction(_, _) => todo!(),
             Factor::Abs(_) => todo!(),
             Factor::Matrix(_) => todo!(),
@@ -145,7 +179,7 @@ impl Factor {
     }
 }
 #[cfg(test)]
-mod test{
+mod test {
     use crate::prelude::*;
     async fn ast_test_simplify(text: &str, expected_ast: Ast) {
         let found_ast = parse(text, &MathContext::standard_math())
@@ -179,8 +213,11 @@ mod test{
     }
     #[tokio::test]
     async fn one_times_parenthasis() {
-        ast_test_simplify("0*(1+1+1+1+1*2)", Ast::Expression(Factor::Constant(0.0).into()))
-            .await;
+        ast_test_simplify(
+            "0*(1+1+1+1+1*2)",
+            Ast::Expression(Factor::Constant(0.0).into()),
+        )
+        .await;
     }
     #[tokio::test]
     async fn two_minus_one() {
