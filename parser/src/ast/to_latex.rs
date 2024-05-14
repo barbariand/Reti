@@ -1,9 +1,13 @@
 //! convert the ast to latex
 
 use crate::prelude::*;
-
-impl MathExpr {
-    pub fn to_latex(&self) -> String {
+///Converting the AST to latex
+pub trait ToLaTeX {
+    ///The function to convert it back to latex
+    fn to_latex(&self)->String;
+}
+impl ToLaTeX for MathExpr {
+    fn to_latex(&self) -> String {
         match self {
             MathExpr::Term(term) => term.to_latex(),
             MathExpr::Add(a, b) => format!("{}+{}", a.to_latex(), b.to_latex()),
@@ -14,8 +18,8 @@ impl MathExpr {
     }
 }
 
-impl Term {
-    pub fn to_latex(&self) -> String {
+impl ToLaTeX for Term {
+    fn to_latex(&self) -> String {
         match self {
             Term::Factor(factor) => factor.to_latex(),
             Term::Multiply(mul_type, a, b) => {
@@ -34,8 +38,8 @@ impl Term {
     }
 }
 
-impl Factor {
-    pub fn to_latex(&self) -> String {
+impl ToLaTeX for Factor {
+    fn to_latex(&self) -> String {
         match self {
             Factor::Constant(c) => format!("{}", c),
             Factor::Parenthesis(expr) => {
@@ -90,11 +94,10 @@ impl Factor {
     }
 }
 
-impl MathIdentifier {
-    pub fn to_latex(&self) -> String {
+impl ToLaTeX for MathIdentifier {
+    fn to_latex(&self) -> String {
         self.tokens
             .iter()
-            .map(|token| format!("{}", token))
-            .collect()
+            .fold(String::new(),|mut acc,token| { acc.push_str(&token.to_string());acc})
     }
 }
