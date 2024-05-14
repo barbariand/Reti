@@ -134,22 +134,22 @@ impl Factor {
 #[cfg(test)]
 mod test {
     use crate::prelude::*;
+    use pretty_assertions::assert_eq;
     async fn ast_test_derive(
         text: &str,
         dependent: &MathIdentifier,
-        expected_ast: Ast,
+        expected_to_ast:&str,
     ) {
-        let found_ast = parse(text, &MathContext::standard_math())
+        let context=MathContext::standard_math();
+        let found_ast = parse(text,&context )
             .await
             .expect("failed to parse AST")
             .derivative(dependent)
-            .expect("Failed")
+            .expect("Failed_ ")
             .simplify();
-
+        let expected_ast=parse(expected_to_ast, &context).await.expect("could not parse the expected ast");
         // Compare and print with debug and formatting otherwise.
-        if expected_ast != found_ast {
-            panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
-        }
+        assert_eq!(found_ast,expected_ast)
     }
 
     #[tokio::test]
@@ -157,7 +157,16 @@ mod test {
         ast_test_derive(
             "x^2",
             &MathIdentifier::from_single_ident("x"),
-            Ast::Expression(Term::Multiply(MulType::Implicit, Factor::Constant(2.0).into(), Factor::Variable(MathIdentifier::from_single_ident("x"))).into()),
+            "2x",
+        )
+        .await;
+    }
+    #[tokio::test]
+    async fn polynomial_1() {
+        ast_test_derive(
+            "2(x^2)",
+            &MathIdentifier::from_single_ident("x"),
+            "6x+2",
         )
         .await;
     }
