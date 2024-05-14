@@ -249,7 +249,7 @@ mod test {
 
     #[allow(unused_imports)]
     use crate::prelude::*;
-
+    
     #[test]
     pub fn merging_functions() {
         let mut c = MathContext::new();
