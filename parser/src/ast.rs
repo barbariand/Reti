@@ -25,7 +25,8 @@ pub enum MathExpr {
     /// Addition between a MathExpr and a Term.
     ///  ## Examples
     ///  ```
-    /// # use parser#[allow(dead_code)]::prelude::MathContext;
+    /// # use parser::ast::*;
+    /// # use parser::prelude::*;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
@@ -245,16 +246,16 @@ pub enum Factor {
     /// ```
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::MathFunction;
+    /// # use parser::prelude::*;
+    /// # use parser::context::IntoMathFunction;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # use std::sync::Arc;
     /// # use parser::value::Value;
     /// # let mut context=MathContext::standard_math();
-    /// # context.functions.insert(
-    /// # MathIdentifier::new(
-    /// # vec![Token::Identifier("f".to_owned())]),
-    /// # Into::<IntoMathFunction>::into((|_x:f64|{2.0},None)).into_math_function()
+    /// # context.add_function(
+    /// # 
+    /// # vec![Token::Identifier("f".to_owned())],
+    /// # (|_x:f64|{2.0},None)
     /// # );
     /// // parsing f(x)
     /// // where f needs to be defined for it to be interpreted as a function call
@@ -327,7 +328,7 @@ pub enum Factor {
     ///             radicand: Box::new(Factor::Constant(2.0).into()),
     ///         }
     ///         .into()
-    //     )
+    ///     )
     /// );
     /// ```
     Root {
@@ -484,4 +485,3 @@ pub struct FunctionCall {
     ///The input to the function
     pub arguments: Vec<MathExpr>,
 }
-

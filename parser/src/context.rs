@@ -146,7 +146,7 @@ impl MathContext {
     }
 
     ///Adding a function when it is IntoMathFunction
-    pub(crate) fn add_function(
+    pub fn add_function(
         &mut self,
         identifier: Vec<Token>,
         func: impl IntoMathFunction,
@@ -212,7 +212,7 @@ impl MathContext {
 ///
 /// Note that if this is only implemented for Fn(f64)->f64 not Fn(&f64)->f64
 /// because a limitation in rusts compiler as they are seen as conflicting
-pub(crate) trait IntoMathFunction {
+pub trait IntoMathFunction {
     ///To convert to math function
     fn into_math_function(self) -> MathFunction;
 }
