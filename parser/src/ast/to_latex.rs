@@ -6,11 +6,11 @@ pub trait ToLaTeX {
     ///The function to convert it back to latex
     fn to_latex(&self) -> String;
 }
-impl ToLaTeX for Ast{
+impl ToLaTeX for Ast {
     fn to_latex(&self) -> String {
-        match self{
+        match self {
             Ast::Expression(e) => e.to_latex(),
-            Ast::Equality(a, b) => format!("{}={}",a.to_latex(),b.to_latex()),
+            Ast::Equality(a, b) => format!("{}={}", a.to_latex(), b.to_latex()),
         }
     }
 }
@@ -31,10 +31,18 @@ impl ToLaTeX for Term {
         match self {
             Term::Factor(factor) => factor.to_latex(),
             Term::Multiply(mul_type, a, b) => {
+                let mut mul_type = mul_type;
+                if mul_type == &MulType::Implicit {
+                    mul_type = &MulType::Cdot;
+                    // TODO detect when implicit multiplication is possible,
+                    // eg mul(1, 2) and mul(x2, 3y) cannot be implicit, because
+                    // 12 and x23y is incorrect, but mul(2, x) can be implicit
+                    // since it would be 2x.
+                }
                 let mul_token = match mul_type {
                     MulType::Asterisk => "*",
-                    MulType::Cdot => "\\cdot",
-                    MulType::Times => "\\times",
+                    MulType::Cdot => "\\cdot ",
+                    MulType::Times => "\\times ",
                     MulType::Implicit => "",
                 };
                 format!("{}{}{}", a.to_latex(), mul_token, b.to_latex())
