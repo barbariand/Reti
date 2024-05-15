@@ -501,7 +501,7 @@ mod tests {
             .expect("failed to parse AST");
 
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast,expected_ast);
+        assert_eq!(found_ast, expected_ast);
     }
 
     #[tokio::test]

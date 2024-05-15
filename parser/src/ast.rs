@@ -1,11 +1,12 @@
 //! AST for representing Latex
 use crate::prelude::*;
+
 pub mod derivative;
+pub mod equality;
 pub mod helper;
 pub mod into;
 pub mod simplify;
 pub mod to_latex;
-pub mod equality;
 ///The root of the AST that is non recursive
 #[derive(PartialEq, Debug)]
 pub enum Ast {

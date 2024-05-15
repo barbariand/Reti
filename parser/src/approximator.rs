@@ -123,13 +123,13 @@ impl Approximator {
 #[cfg(test)]
 mod tests {
 
+    use crate::{ast::helper::NumberCompare, prelude::*};
+    #[allow(unused_imports)]
+    use pretty_assertions::assert_eq;
     use tokio::{
         join,
         sync::mpsc::{self},
     };
-    #[allow(unused_imports)]
-    use pretty_assertions::assert_eq;
-    use crate::{ast::helper::NumberCompare, prelude::*};
 
     fn eval_test_from_ast(expected: f64, ast: Ast) {
         let context = MathContext::new();
@@ -150,7 +150,7 @@ mod tests {
             Value::Matrix(m) => panic!("Unexpected matrix {m:?}"),
         };
 
-        if !found.equals(expected) {
+        if !found.equals(&expected) {
             panic!("Found {} expected {}", found, expected);
         }
     }

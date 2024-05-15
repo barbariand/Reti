@@ -84,7 +84,8 @@ impl Factor {
                     MulType::Implicit,
                     Term::Multiply(
                         MulType::Implicit,
-                        Term::Factor(exponent.get_factor_or_wrap().clone()).boxed(),
+                        Term::Factor(exponent.get_factor_or_wrap().clone())
+                            .boxed(),
                         Factor::Power {
                             base: base.clone(),
                             exponent: MathExpr::Subtract(
@@ -116,7 +117,10 @@ impl Factor {
                         },
                     )
                     .into(),
-                    exponent.derivative(dependent)?.get_factor_or_wrap().clone(),
+                    exponent
+                        .derivative(dependent)?
+                        .get_factor_or_wrap()
+                        .clone(),
                 ),
             ),
 
@@ -138,28 +142,26 @@ mod test {
     async fn ast_test_derive(
         text: &str,
         dependent: &MathIdentifier,
-        expected_to_ast:&str,
+        expected_to_ast: &str,
     ) {
-        let context=MathContext::standard_math();
-        let found_ast = parse(text,&context )
+        let context = MathContext::standard_math();
+        let found_ast = parse(text, &context)
             .await
             .expect("failed to parse AST")
             .derivative(dependent)
             .expect("Failed_ ")
             .simplify();
-        let expected_ast=parse(expected_to_ast, &context).await.expect("could not parse the expected ast");
+        let expected_ast = parse(expected_to_ast, &context)
+            .await
+            .expect("could not parse the expected ast");
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast,expected_ast,"found/expected")
+        assert_eq!(found_ast, expected_ast, "found/expected")
     }
 
     #[tokio::test]
     async fn x_squared_derivative() {
-        ast_test_derive(
-            "x^2",
-            &MathIdentifier::from_single_ident("x"),
-            "2x",
-        )
-        .await;
+        ast_test_derive("x^2", &MathIdentifier::from_single_ident("x"), "2x")
+            .await;
     }
     #[tokio::test]
     async fn polynomial_1() {

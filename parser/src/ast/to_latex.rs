@@ -4,7 +4,7 @@ use crate::prelude::*;
 ///Converting the AST to latex
 pub trait ToLaTeX {
     ///The function to convert it back to latex
-    fn to_latex(&self)->String;
+    fn to_latex(&self) -> String;
 }
 impl ToLaTeX for MathExpr {
     fn to_latex(&self) -> String {
@@ -96,8 +96,9 @@ impl ToLaTeX for Factor {
 
 impl ToLaTeX for MathIdentifier {
     fn to_latex(&self) -> String {
-        self.tokens
-            .iter()
-            .fold(String::new(),|mut output,token| { output.push_str(&token.to_string());output})
+        self.tokens.iter().fold(String::new(), |mut output, token| {
+            output.push_str(&token.to_string());
+            output
+        })
     }
 }
