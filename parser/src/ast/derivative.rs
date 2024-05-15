@@ -155,7 +155,7 @@ mod test {
             .await
             .expect("could not parse the expected ast");
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast, expected_ast, "found/expected")
+        assert_eq!(found_ast, expected_ast, "\n\nfound / expected")
     }
 
     #[tokio::test]
