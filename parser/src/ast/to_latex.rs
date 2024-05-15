@@ -6,6 +6,14 @@ pub trait ToLaTeX {
     ///The function to convert it back to latex
     fn to_latex(&self) -> String;
 }
+impl ToLaTeX for Ast{
+    fn to_latex(&self) -> String {
+        match self{
+            Ast::Expression(e) => e.to_latex(),
+            Ast::Equality(a, b) => format!("{}={}",a.to_latex(),b.to_latex()),
+        }
+    }
+}
 impl ToLaTeX for MathExpr {
     fn to_latex(&self) -> String {
         match self {

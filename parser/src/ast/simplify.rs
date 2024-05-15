@@ -40,15 +40,17 @@ impl Simplify for MathExpr {
                         MathExpr::Term(Term::Factor(Factor::Constant(b))),
                     ) => Simple::add(*a, *b),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
-                        if a < &f64::EPSILON {
-                            simple.get_first().clone()
+                        println!("first");
+                        if a.is_zero(){
+                            simple.get_second().clone()
                         } else {
                             simple.add_wrapped()
                         }
                     }
                     (_, MathExpr::Term(Term::Factor(Factor::Constant(b)))) => {
-                        if b < &f64::EPSILON {
-                            simple.get_second()
+                        println!("second");
+                        if b.is_zero() {
+                            simple.get_first()
                         } else {
                             simple.add_wrapped()
                         }
@@ -174,14 +176,13 @@ impl Simplify for Factor {
 }
 #[cfg(test)]
 mod test {
-    use crate::prelude::*;
+    use crate::{ast::to_latex::ToLaTeX, prelude::*};
     use pretty_assertions::assert_eq;
     async fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
             .await
-            .expect("failed to parse AST")
-            .simplify();
+            .expect("failed to parse AST").simplify();
         let expected_ast = parse(expected_latex, &context)
             .await
             .expect("failed to parse latex to ast");
@@ -215,5 +216,9 @@ mod test {
     #[tokio::test]
     async fn two_x_minus_two_x() {
         ast_test_simplify("2x-2x", "0").await;
+    }
+    #[tokio::test]
+    async fn test() {
+        ast_test_simplify("2x^{2-1}1+\\ln(2)x^{2}0", "2x").await;
     }
 }
