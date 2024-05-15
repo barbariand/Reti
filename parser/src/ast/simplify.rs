@@ -41,7 +41,7 @@ impl Simplify for MathExpr {
                     ) => Simple::add(*a, *b),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
                         println!("first");
-                        if a.is_zero(){
+                        if a.is_zero() {
                             simple.get_second().clone()
                         } else {
                             simple.add_wrapped()
@@ -168,7 +168,14 @@ impl Simplify for Factor {
                 degree: _,
                 radicand: _,
             } => todo!(),
-            Factor::Fraction(_, _) => todo!(),
+            Factor::Fraction(a, b) => {
+                // TODO simplify fraction, aka factor a and b and cancel common
+                // factors, remove fraction of b==1, etc.
+                return Simple::fraction(
+                    a.simple().math_expr().clone().boxed(),
+                    b.simple().math_expr().clone().boxed(),
+                );
+            }
             Factor::Abs(_) => todo!(),
             Factor::Matrix(_) => todo!(),
         }
@@ -176,13 +183,14 @@ impl Simplify for Factor {
 }
 #[cfg(test)]
 mod test {
-    use crate::{ast::to_latex::ToLaTeX, prelude::*};
+    use crate::prelude::*;
     use pretty_assertions::assert_eq;
     async fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
             .await
-            .expect("failed to parse AST").simplify();
+            .expect("failed to parse AST")
+            .simplify();
         let expected_ast = parse(expected_latex, &context)
             .await
             .expect("failed to parse latex to ast");
