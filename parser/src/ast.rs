@@ -7,6 +7,7 @@ pub mod helper;
 pub mod into;
 pub mod simplify;
 pub mod to_latex;
+pub mod factorize;
 ///The root of the AST that is non recursive
 #[derive(PartialEq, Debug)]
 pub enum Ast {
