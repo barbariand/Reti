@@ -31,6 +31,14 @@ impl ToLaTeX for Term {
         match self {
             Term::Factor(factor) => factor.to_latex(),
             Term::Multiply(mul_type, a, b) => {
+                let mut mul_type = mul_type;
+                if mul_type == &MulType::Implicit {
+                    mul_type = &MulType::Cdot;
+                    // TODO detect when implicit multiplication is possible,
+                    // eg mul(1, 2) and mul(x2, 3y) cannot be implicit, because
+                    // 12 and x23y is incorrect, but mul(2, x) can be implicit
+                    // since it would be 2x.
+                }
                 let mul_token = match mul_type {
                     MulType::Asterisk => "*",
                     MulType::Cdot => "\\cdot ",

@@ -180,7 +180,14 @@ impl Simplify for Factor {
                 degree: _,
                 radicand: _,
             } => todo!(),
-            Factor::Fraction(_, _) => todo!(),
+            Factor::Fraction(a, b) => {
+                // TODO simplify fraction, aka factor a and b and cancel common
+                // factors, remove fraction of b==1, etc.
+                return Simple::fraction(
+                    a.simple().math_expr().clone().boxed(),
+                    b.simple().math_expr().clone().boxed(),
+                );
+            }
             Factor::Abs(_) => todo!(),
             Factor::Matrix(_) => todo!(),
         }

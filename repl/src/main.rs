@@ -77,6 +77,25 @@ impl Repl {
                     error!("{}", e);
                     ControlFlow::Continue(())
                 })?;
+
+                /*
+                let deriv =
+                    ast.derivative(&MathIdentifier::from_single_ident("x"));
+
+                match deriv {
+                    Ok(val) => {
+                        println!("before simplify: {}", val.to_latex());
+                        println!("\n{}", val.simplify().to_latex());
+                    }
+                    Err(err) => {
+                        println!("{:?}", err);
+                    }
+                }
+                if true {
+                    return Ok(());
+                };
+                */
+
                 let s = self.eval(ast).map_err(|e| {
                     error!("could not evaluate {:?}", e);
                     ControlFlow::Continue(())

@@ -61,10 +61,50 @@ impl Term {
                     lhs.derivative(dependent)?.get_factor_or_wrap().clone(),
                 ),
             ),
-            Term::Divide(_, _) => todo!("division"),
+            Term::Divide(f, g) => {
+                let f = (*f.clone()).into();
+                let g = g.clone().into();
+                quotient_rule(&f, &g, dependent)?
+            }
         })
     }
 }
+
+/// The quotient rule is used to get the derivative of
+/// divisions (Factor::Fraction and Term::Divide in the AST).
+/// Where arguments f and g are f/g.
+fn quotient_rule(
+    f: &MathExpr,
+    g: &MathExpr,
+    dependent: &MathIdentifier,
+) -> Result<MathExpr, EvalError> {
+    // f'(x)g(x)
+    let a = Term::Multiply(
+        MulType::Implicit,
+        f.derivative(dependent)?.get_term_or_wrap().boxed(),
+        g.get_factor_or_wrap(),
+    );
+
+    // f(x)g'(x)
+    let b = Term::Multiply(
+        MulType::Implicit,
+        f.get_term_or_wrap().boxed(),
+        g.derivative(dependent)?.get_factor_or_wrap(),
+    );
+
+    // f'(x)g(x) - f(x)g'(x) = a - b;
+    let top = MathExpr::Subtract(a.into(), b);
+
+    // (g(x))^2
+    let bottom: MathExpr = Factor::Power {
+        base: g.get_factor_or_wrap().boxed(),
+        exponent: 2f64.into(),
+    }
+    .into();
+
+    Ok(Factor::Fraction(top.boxed(), bottom.boxed()).into())
+}
+
 impl Factor {
     ///doing derivation for the Factor
     pub fn derivative(
@@ -128,7 +168,7 @@ impl Factor {
                 degree: _,
                 radicand: _,
             } => todo!("root"),
-            Factor::Fraction(_, _) => todo!("fraction"),
+            Factor::Fraction(f, g) => quotient_rule(&*f, &*g, dependent)?,
             Factor::Abs(_math) => todo!("ABS"),
             Factor::Matrix(_) => todo!("matrix"),
         })

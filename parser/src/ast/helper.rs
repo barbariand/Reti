@@ -274,4 +274,8 @@ impl Simple {
     pub fn function(f: FunctionCall) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
     }
+    ///Puts a fraction into a Simple
+    pub fn fraction(a: Box<MathExpr>, b: Box<MathExpr>) -> Simple {
+        Simple(MathExpr::Term(Term::Factor(Factor::Fraction(a, b))))
+    }
 }
