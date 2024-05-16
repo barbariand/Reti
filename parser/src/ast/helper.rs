@@ -1,8 +1,10 @@
 //! helper functions
 
+use std::ops::Deref;
+
 use crate::prelude::*;
 
-use super::simplify::Simplify;
+use super::{equality::PrivateMathEquality, simplify::Simplify};
 
 impl MathExpr {
     ///makes a new MathExpr where the term part is wrapped if needed
@@ -140,78 +142,51 @@ impl NumberCompare for f64 {
 }
 ///This type if for comparing Simples and returning Simples, this makes sure
 /// that only correct simples can be constructed
-pub struct SimpleCompare {
-    ///the first sent in, order where multiple is allways preserved
-    first: Simple,
-    ///the second///the first sent in, order where multiple is allways
-    /// preserved sent in, order where multiple is allways preserved
-    second: Simple,
+pub trait SimpleCompare {
+    fn to_math_expr(&self)->(&MathExpr,&MathExpr);
+    fn add_wrapped(self)->Simple;
+    fn sub_wrapped(self)->Simple;
+    fn mul_wrapped(self,m:MulType)->Simple;
+    fn div_wrapped(self)->Simple;
+    fn pow_wrapped(self)->Simple;
+    fn ast_equals(self)->Ast;
+    fn ast_expr(self)->Ast;
+    fn symmetrical(&self)->bool;
 }
-impl SimpleCompare {
-    ///first as ref
-    pub fn first(&self) -> &Simple {
-        &self.first
+impl SimpleCompare for (Simple,Simple) {
+    fn to_math_expr(&self)->(&MathExpr,&MathExpr){
+        (&*self.0,&*self.1)
     }
-    ///seconds as ref
-    pub fn second(&self) -> &Simple {
-        &self.second
+    fn add_wrapped(self)->Simple {
+        Simple(MathExpr::add_wrapped(self.0.0, self.1.0))
     }
-    ///first as owned dropping the second item
-    pub fn get_first(self) -> Simple {
-        self.first
+
+    fn sub_wrapped(self)->Simple {
+        Simple(MathExpr::subtract_wrapped(self.0.0, self.1.0))
     }
-    ///second as owned dropping the first item
-    pub fn get_second(self) -> Simple {
-        self.second
+
+    fn mul_wrapped(self,m:MulType)->Simple {
+        Simple(MathExpr::Term(Term::mul_wrapped(m, self.0.0, self.1.0)))
     }
-    ///gets as &MathExprs so you can compare against them
-    pub fn math_exprs(&self) -> (&MathExpr, &MathExpr) {
-        (self.first.math_expr(), self.second.math_expr())
+
+    fn div_wrapped(self)->Simple {
+        Simple(MathExpr::Term(Term::div_wrapped(self.0.0, self.1.0)))
     }
-    ///Constructs a Simple with addition
-    pub fn add_wrapped(&self) -> Simple {
-        Simple(MathExpr::add_wrapped(
-            self.first.0.clone(),
-            self.second.0.clone(),
-        ))
+
+    fn pow_wrapped(self)->Simple {
+        Simple(MathExpr::Term(Term::Factor(Factor::Power{base: self.0.0.get_factor_or_wrap().boxed(),exponent: self.1.0.boxed()})))
     }
-    ///Constructs a Simple with subtraction
-    pub fn subtract_wrapped(&self) -> Simple {
-        Simple(MathExpr::subtract_wrapped(
-            self.first.0.clone(),
-            self.second.0.clone(),
-        ))
+
+    fn ast_equals(self)->Ast {
+        todo!()
     }
-    ///Constructs a Simple with multiplication
-    pub fn multiply_wrapped(&self, t: MulType) -> Simple {
-        Simple(MathExpr::Term(Term::mul_wrapped(
-            t,
-            self.first.0.clone(),
-            self.second.0.clone(),
-        )))
+
+    fn ast_expr(self)->Ast {
+        todo!()
     }
-    ///Constructs a Simple with division
-    pub fn divide_wrapped(&self) -> Simple {
-        Simple(MathExpr::Term(Term::div_wrapped(
-            self.first.0.clone(),
-            self.second.0.clone(),
-        )))
-    }
-    ///Constructs a SimpleCompare
-    pub fn new(first: Simple, second: Simple) -> Self {
-        Self { first, second }
-    }
-    ///Constructs a Ast::Equality with first being lhs and second being rhs
-    pub fn equals(&self) -> Ast {
-        Ast::Equality(self.first.0.clone(), self.second.0.clone())
-    }
-    ///Constructs a Simple with power, ensuring that the first is the base and
-    /// the second is the exponent
-    pub fn pow_wrapped(&self) -> Simple {
-        Simple(MathExpr::Term(Term::Factor(Factor::Power {
-            base: self.first.0.clone().get_factor_or_wrap().boxed(),
-            exponent: self.second.0.clone().boxed(),
-        })))
+    
+    fn symmetrical(&self)->bool {
+        self.0.equals(&self.1)
     }
 }
 
@@ -219,6 +194,13 @@ impl SimpleCompare {
 /// MathExpr is in the simplest form
 #[derive(Clone)]
 pub struct Simple(MathExpr);
+impl Deref for Simple {
+    type Target=MathExpr;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 impl Simple {
     ///Constructs a Simple from a MathExpr
     pub fn new(math_expr: MathExpr) -> Simple {

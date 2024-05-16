@@ -21,7 +21,7 @@ impl Ast {
         match self {
             Ast::Expression(e) => e.simple().expression(),
             Ast::Equality(a, b) => {
-                SimpleCompare::new(a.simple(), b.simple()).equals()
+                (a.simple(), b.simple()).ast_equals()
             }
         }
     }
@@ -33,8 +33,8 @@ impl Simplify for MathExpr {
         match self {
             MathExpr::Term(t) => t.simple(),
             MathExpr::Add(lhs, rhs) => {
-                let simple = SimpleCompare::new(lhs.simple(), rhs.simple());
-                match simple.math_exprs() {
+                let simple=(lhs.simple(),rhs.simple());
+                match simple.to_math_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(a))),
                         MathExpr::Term(Term::Factor(Factor::Constant(b))),
@@ -42,7 +42,7 @@ impl Simplify for MathExpr {
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
                         println!("first");
                         if a.is_zero() {
-                            simple.get_second().clone()
+                            simple.1
                         } else {
                             simple.add_wrapped()
                         }
@@ -50,7 +50,7 @@ impl Simplify for MathExpr {
                     (_, MathExpr::Term(Term::Factor(Factor::Constant(b)))) => {
                         println!("second");
                         if b.is_zero() {
-                            simple.get_first()
+                            simple.0
                         } else {
                             simple.add_wrapped()
                         }
@@ -59,32 +59,30 @@ impl Simplify for MathExpr {
                 }
             }
             MathExpr::Subtract(lhs, rhs) => {
-                let lhs=lhs.simple();
-                let rhs=rhs.simple();
-                if lhs.equals(&rhs){
+                let simple = (lhs.simple(),rhs.simple());
+                if simple.symmetrical(){
                     return Simple::constant(0.0)
                 }
-                let simple = SimpleCompare::new(lhs, rhs);
-                match simple.math_exprs() {
+                match simple.to_math_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(a))),
                         MathExpr::Term(Term::Factor(Factor::Constant(b))),
                     ) => Simple::sub(*a, *b),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
                         if a < &f64::EPSILON {
-                            simple.get_first()
+                            simple.0
                         } else {
-                            simple.subtract_wrapped()
+                            simple.sub_wrapped()
                         }
                     }
                     (_, MathExpr::Term(Term::Factor(Factor::Constant(b)))) => {
                         if b < &f64::EPSILON {
-                            simple.get_second()
+                            simple.1
                         } else {
-                            simple.subtract_wrapped()
+                            simple.sub_wrapped()
                         }
                     }
-                    _ => simple.subtract_wrapped(),
+                    _ => simple.sub_wrapped(),
                 }
             }
         }
@@ -96,10 +94,8 @@ impl Simplify for Term {
         match self {
             Term::Factor(f) => f.simple(),
             Term::Multiply(m, lhs, rhs) => {
-                let lhs=lhs.simple();
-                let rhs=rhs.simple();
-                let simple = SimpleCompare::new(lhs, rhs);
-                match simple.math_exprs() {
+                let simple=(lhs.simple(),rhs.simple());
+                match simple.to_math_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(lhs))),
                         MathExpr::Term(Term::Factor(Factor::Constant(rhs))),
@@ -109,11 +105,11 @@ impl Simplify for Term {
                         MathExpr::Term(Term::Factor(Factor::Constant(rhs))),
                     ) => {
                         if rhs.is_one() {
-                            simple.get_first()
+                            simple.0
                         } else if rhs.is_zero() {
                             Simple::constant(0.0)
                         } else {
-                            simple.multiply_wrapped(m.clone())
+                            simple.mul_wrapped(m.clone())
                         }
                     },
                     (MathExpr::Term(Term::Factor(Factor::Parenthesis(p))),rhs)=>{
@@ -127,14 +123,14 @@ impl Simplify for Term {
                         _,
                     ) => {
                         if lhs.is_one() {
-                            simple.get_second()
+                            simple.1
                         } else if lhs.is_zero() {
                             Simple::constant(0.0)
                         } else {
-                            simple.multiply_wrapped(m.clone())
+                            simple.mul_wrapped(m.clone())
                         }
                     }
-                    _ => simple.multiply_wrapped(m.clone()),
+                    _ => simple.mul_wrapped(m.clone()),
                 }
             }
             Term::Divide(_, _) => todo!("divide"),
@@ -150,9 +146,8 @@ impl Simplify for Factor {
             Factor::Variable(m) => Simple::variable(m),
             Factor::FunctionCall(f) => Simple::function(f),
             Factor::Power { base, exponent } => {
-                let simple =
-                    SimpleCompare::new(base.simple(), exponent.simple());
-                match simple.math_exprs() {
+                let simple=(base.simple(),exponent.simple());
+                match simple.to_math_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(base))),
                         MathExpr::Term(Term::Factor(Factor::Constant(
@@ -166,7 +161,7 @@ impl Simplify for Factor {
                         ))),
                     ) => {
                         if exponent.is_one() {
-                            simple.get_first()
+                            simple.0
                         } else if exponent.is_zero() {
                             Simple::constant(1.0)
                         } else {
@@ -183,7 +178,13 @@ impl Simplify for Factor {
             Factor::Fraction(a, b) => {
                 // TODO simplify fraction, aka factor a and b and cancel common
                 // factors, remove fraction of b==1, etc.
-                SimpleCompare::new(a.simple(), b.simple()).divide_wrapped()
+                
+                let simple=(a.simple(),b.simple());
+                if simple.symmetrical(){
+                    Simple::constant(1.0)
+                }else {
+                    simple.div_wrapped()
+                }
             }
             Factor::Abs(_) => todo!(),
             Factor::Matrix(_) => todo!(),

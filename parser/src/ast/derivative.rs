@@ -168,7 +168,7 @@ impl Factor {
                 degree: _,
                 radicand: _,
             } => todo!("root"),
-            Factor::Fraction(f, g) => quotient_rule(&*f, &*g, dependent)?,
+            Factor::Fraction(f, g) => quotient_rule(f, g, dependent)?,
             Factor::Abs(_math) => todo!("ABS"),
             Factor::Matrix(_) => todo!("matrix"),
         })
