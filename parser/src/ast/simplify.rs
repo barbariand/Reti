@@ -2,7 +2,10 @@
 
 use crate::prelude::*;
 
-use super::{equality::PrivateMathEquality, helper::{NumberCompare, Simple, SimpleCompare}};
+use super::{
+    equality::PrivateMathEquality,
+    helper::{NumberCompare, Simple, SimpleCompare},
+};
 
 impl Simplify for Simple {
     fn simple(self) -> Simple {
@@ -20,9 +23,7 @@ impl Ast {
     pub fn simplify(self) -> Self {
         match self {
             Ast::Expression(e) => e.simple().expression(),
-            Ast::Equality(a, b) => {
-                (a.simple(), b.simple()).ast_equals()
-            }
+            Ast::Equality(a, b) => (a.simple(), b.simple()).ast_equals(),
         }
     }
 }
@@ -33,7 +34,7 @@ impl Simplify for MathExpr {
         match self {
             MathExpr::Term(t) => t.simple(),
             MathExpr::Add(lhs, rhs) => {
-                let simple=(lhs.simple(),rhs.simple());
+                let simple = (lhs.simple(), rhs.simple());
                 match simple.to_math_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(a))),
@@ -59,9 +60,9 @@ impl Simplify for MathExpr {
                 }
             }
             MathExpr::Subtract(lhs, rhs) => {
-                let simple = (lhs.simple(),rhs.simple());
-                if simple.symmetrical(){
-                    return Simple::constant(0.0)
+                let simple = (lhs.simple(), rhs.simple());
+                if simple.symmetrical() {
+                    return Simple::constant(0.0);
                 }
                 match simple.to_math_expr() {
                     (
@@ -94,7 +95,7 @@ impl Simplify for Term {
         match self {
             Term::Factor(f) => f.simple(),
             Term::Multiply(m, lhs, rhs) => {
-                let simple=(lhs.simple(),rhs.simple());
+                let simple = (lhs.simple(), rhs.simple());
                 match simple.to_math_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(lhs))),
@@ -111,11 +112,17 @@ impl Simplify for Term {
                         } else {
                             simple.mul_wrapped(m.clone())
                         }
-                    },
-                    (MathExpr::Term(Term::Factor(Factor::Parenthesis(p))),rhs)=>{
+                    }
+                    (
+                        MathExpr::Term(Term::Factor(Factor::Parenthesis(p))),
+                        rhs,
+                    ) => {
                         todo!()
                     }
-                    (lhs,MathExpr::Term(Term::Factor(Factor::Parenthesis(p))))=>{
+                    (
+                        lhs,
+                        MathExpr::Term(Term::Factor(Factor::Parenthesis(p))),
+                    ) => {
                         todo!()
                     }
                     (
@@ -133,7 +140,13 @@ impl Simplify for Term {
                     _ => simple.mul_wrapped(m.clone()),
                 }
             }
-            Term::Divide(_, _) => todo!("divide"),
+            Term::Divide(a, b) => {
+                // TODO simplify fraction, aka factor a and b and cancel common
+                // factors, remove fraction of b==1, etc.
+
+                let simple = (a.simple(), b.simple());
+                simplify_fraction_or_div(simple)
+            }
         }
     }
 }
@@ -146,7 +159,7 @@ impl Simplify for Factor {
             Factor::Variable(m) => Simple::variable(m),
             Factor::FunctionCall(f) => Simple::function(f),
             Factor::Power { base, exponent } => {
-                let simple=(base.simple(),exponent.simple());
+                let simple = (base.simple(), exponent.simple());
                 match simple.to_math_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(base))),
@@ -178,20 +191,22 @@ impl Simplify for Factor {
             Factor::Fraction(a, b) => {
                 // TODO simplify fraction, aka factor a and b and cancel common
                 // factors, remove fraction of b==1, etc.
-                
-                let simple=(a.simple(),b.simple());
-                if simple.symmetrical(){
-                    Simple::constant(1.0)
-                }else {
-                    simple.div_wrapped()
-                }
+
+                let simple = (a.simple(), b.simple());
+                simplify_fraction_or_div(simple)
             }
             Factor::Abs(_) => todo!(),
             Factor::Matrix(_) => todo!(),
         }
     }
 }
-
+fn simplify_fraction_or_div(simple: (Simple, Simple)) -> Simple {
+    if simple.symmetrical() {
+        Simple::constant(1.0)
+    } else {
+        simple.div_wrapped()
+    }
+}
 
 #[cfg(test)]
 mod test {

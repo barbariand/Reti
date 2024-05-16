@@ -8,7 +8,7 @@ pub trait Factorize {
     ///Simplifies as best as it can
     fn factorize(self) -> Simple;
 }
-impl Factorize for MathExpr{
+impl Factorize for MathExpr {
     fn factorize(self) -> Simple {
         todo!()
     }

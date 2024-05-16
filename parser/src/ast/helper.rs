@@ -143,49 +143,52 @@ impl NumberCompare for f64 {
 ///This type if for comparing Simples and returning Simples, this makes sure
 /// that only correct simples can be constructed
 pub trait SimpleCompare {
-    fn to_math_expr(&self)->(&MathExpr,&MathExpr);
-    fn add_wrapped(self)->Simple;
-    fn sub_wrapped(self)->Simple;
-    fn mul_wrapped(self,m:MulType)->Simple;
-    fn div_wrapped(self)->Simple;
-    fn pow_wrapped(self)->Simple;
-    fn ast_equals(self)->Ast;
-    fn ast_expr(self)->Ast;
-    fn symmetrical(&self)->bool;
+    fn to_math_expr(&self) -> (&MathExpr, &MathExpr);
+    fn add_wrapped(self) -> Simple;
+    fn sub_wrapped(self) -> Simple;
+    fn mul_wrapped(self, m: MulType) -> Simple;
+    fn div_wrapped(self) -> Simple;
+    fn pow_wrapped(self) -> Simple;
+    fn ast_equals(self) -> Ast;
+    fn ast_expr(self) -> Ast;
+    fn symmetrical(&self) -> bool;
 }
-impl SimpleCompare for (Simple,Simple) {
-    fn to_math_expr(&self)->(&MathExpr,&MathExpr){
-        (&*self.0,&*self.1)
+impl SimpleCompare for (Simple, Simple) {
+    fn to_math_expr(&self) -> (&MathExpr, &MathExpr) {
+        (&*self.0, &*self.1)
     }
-    fn add_wrapped(self)->Simple {
-        Simple(MathExpr::add_wrapped(self.0.0, self.1.0))
-    }
-
-    fn sub_wrapped(self)->Simple {
-        Simple(MathExpr::subtract_wrapped(self.0.0, self.1.0))
+    fn add_wrapped(self) -> Simple {
+        Simple(MathExpr::add_wrapped(self.0 .0, self.1 .0))
     }
 
-    fn mul_wrapped(self,m:MulType)->Simple {
-        Simple(MathExpr::Term(Term::mul_wrapped(m, self.0.0, self.1.0)))
+    fn sub_wrapped(self) -> Simple {
+        Simple(MathExpr::subtract_wrapped(self.0 .0, self.1 .0))
     }
 
-    fn div_wrapped(self)->Simple {
-        Simple(MathExpr::Term(Term::div_wrapped(self.0.0, self.1.0)))
+    fn mul_wrapped(self, m: MulType) -> Simple {
+        Simple(MathExpr::Term(Term::mul_wrapped(m, self.0 .0, self.1 .0)))
     }
 
-    fn pow_wrapped(self)->Simple {
-        Simple(MathExpr::Term(Term::Factor(Factor::Power{base: self.0.0.get_factor_or_wrap().boxed(),exponent: self.1.0.boxed()})))
+    fn div_wrapped(self) -> Simple {
+        Simple(MathExpr::Term(Term::div_wrapped(self.0 .0, self.1 .0)))
     }
 
-    fn ast_equals(self)->Ast {
+    fn pow_wrapped(self) -> Simple {
+        Simple(MathExpr::Term(Term::Factor(Factor::Power {
+            base: self.0 .0.get_factor_or_wrap().boxed(),
+            exponent: self.1 .0.boxed(),
+        })))
+    }
+
+    fn ast_equals(self) -> Ast {
         todo!()
     }
 
-    fn ast_expr(self)->Ast {
+    fn ast_expr(self) -> Ast {
         todo!()
     }
-    
-    fn symmetrical(&self)->bool {
+
+    fn symmetrical(&self) -> bool {
         self.0.equals(&self.1)
     }
 }
@@ -195,7 +198,7 @@ impl SimpleCompare for (Simple,Simple) {
 #[derive(Clone)]
 pub struct Simple(MathExpr);
 impl Deref for Simple {
-    type Target=MathExpr;
+    type Target = MathExpr;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -256,5 +259,4 @@ impl Simple {
     pub fn function(f: FunctionCall) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
     }
-    
 }
