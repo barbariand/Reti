@@ -183,16 +183,15 @@ impl Simplify for Factor {
             Factor::Fraction(a, b) => {
                 // TODO simplify fraction, aka factor a and b and cancel common
                 // factors, remove fraction of b==1, etc.
-                return Simple::fraction(
-                    a.simple().math_expr().clone().boxed(),
-                    b.simple().math_expr().clone().boxed(),
-                );
+                SimpleCompare::new(a.simple(), b.simple()).divide_wrapped()
             }
             Factor::Abs(_) => todo!(),
             Factor::Matrix(_) => todo!(),
         }
     }
 }
+
+
 #[cfg(test)]
 mod test {
     use crate::prelude::*;
