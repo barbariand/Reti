@@ -150,12 +150,13 @@ mod test {
             .expect("failed to parse AST")
             .derivative(dependent)
             .expect("Failed ");
-        println!("{}",found_ast.to_latex());
-            let found_simple=found_ast.simplify();
+
+        let found_simple = found_ast.simplify();
+        println!("found simple {}", found_simple.to_latex());
         let expected_ast = parse(expected_to_ast, &context)
             .await
             .expect("could not parse the expected ast");
-        let expected_simple=expected_ast.simplify();
+        let expected_simple = expected_ast.simplify();
         // Compare and print with debug and formatting otherwise.
         assert_eq!(found_simple, expected_simple, "\n\nfound / expected")
     }
@@ -171,6 +172,15 @@ mod test {
             "3x^2+2x+1",
             &MathIdentifier::from_single_ident("x"),
             "3(2x)+2",
+        )
+        .await;
+    }
+    #[tokio::test]
+    async fn test() {
+        ast_test_derive(
+            "(3x^2 + 2x) \\cdot e^{x^3}",
+            &MathIdentifier::from_single_ident("x"),
+            "0.0",
         )
         .await;
     }
