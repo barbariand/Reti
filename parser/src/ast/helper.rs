@@ -1,4 +1,5 @@
 //! helper functions
+
 use crate::prelude::*;
 
 use super::simplify::Simplify;
@@ -26,6 +27,20 @@ impl MathExpr {
             _ => Factor::Parenthesis(self.clone().boxed()),
         }
     }
+    ///Gets a factor if it is a factor otherwise None
+    pub fn factor(&self) -> Option<&Factor> {
+        match self {
+            MathExpr::Term(Term::Factor(f)) => Some(f),
+            _ => None,
+        }
+    }
+    /// gets a term if it is a term otherwise None
+    pub fn term(&self) -> Option<&Term> {
+        match self {
+            MathExpr::Term(t) => Some(t),
+            _ => None,
+        }
+    }
 
     ///Boxes self
     pub fn boxed(self) -> Box<Self> {
@@ -49,6 +64,13 @@ impl Term {
     ///does division but wraps if need be
     fn div_wrapped(a: MathExpr, b: MathExpr) -> Self {
         Self::Divide(a.get_term_or_wrap().boxed(), b.get_factor_or_wrap())
+    }
+    ///Gets a factor if it is a factor otherwise None
+    pub fn factor(&self) -> Option<&Factor> {
+        match self {
+            Term::Factor(f) => Some(f),
+            _ => None,
+        }
     }
 }
 
@@ -192,6 +214,7 @@ impl SimpleCompare {
         })))
     }
 }
+
 ///Simple is a wrapper struct only allowed to be constructed when the contained
 /// MathExpr is in the simplest form
 #[derive(Clone)]
