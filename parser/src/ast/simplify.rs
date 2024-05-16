@@ -2,7 +2,7 @@
 
 use crate::prelude::*;
 
-use super::helper::{NumberCompare, Simple, SimpleCompare};
+use super::{equality::PrivateMathEquality, helper::{NumberCompare, Simple, SimpleCompare}};
 
 impl Simplify for Simple {
     fn simple(self) -> Simple {
@@ -41,7 +41,7 @@ impl Simplify for MathExpr {
                     ) => Simple::add(*a, *b),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
                         println!("first");
-                        if a.is_zero(){
+                        if a.is_zero() {
                             simple.get_second().clone()
                         } else {
                             simple.add_wrapped()
@@ -59,7 +59,12 @@ impl Simplify for MathExpr {
                 }
             }
             MathExpr::Subtract(lhs, rhs) => {
-                let simple = SimpleCompare::new(lhs.simple(), rhs.simple());
+                let lhs=lhs.simple();
+                let rhs=rhs.simple();
+                if lhs.equals(&rhs){
+                    return Simple::constant(0.0)
+                }
+                let simple = SimpleCompare::new(lhs, rhs);
                 match simple.math_exprs() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(a))),
@@ -91,8 +96,9 @@ impl Simplify for Term {
         match self {
             Term::Factor(f) => f.simple(),
             Term::Multiply(m, lhs, rhs) => {
-                let simple = SimpleCompare::new(lhs.simple(), rhs.simple());
-
+                let lhs=lhs.simple();
+                let rhs=rhs.simple();
+                let simple = SimpleCompare::new(lhs, rhs);
                 match simple.math_exprs() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(lhs))),
@@ -109,6 +115,12 @@ impl Simplify for Term {
                         } else {
                             simple.multiply_wrapped(m.clone())
                         }
+                    },
+                    (MathExpr::Term(Term::Factor(Factor::Parenthesis(p))),rhs)=>{
+                        todo!()
+                    }
+                    (lhs,MathExpr::Term(Term::Factor(Factor::Parenthesis(p))))=>{
+                        todo!()
                     }
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(lhs))),
@@ -176,13 +188,14 @@ impl Simplify for Factor {
 }
 #[cfg(test)]
 mod test {
-    use crate::{ast::to_latex::ToLaTeX, prelude::*};
+    use crate::prelude::*;
     use pretty_assertions::assert_eq;
     async fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
             .await
-            .expect("failed to parse AST").simplify();
+            .expect("failed to parse AST")
+            .simplify();
         let expected_ast = parse(expected_latex, &context)
             .await
             .expect("failed to parse latex to ast");

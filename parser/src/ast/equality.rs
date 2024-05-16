@@ -42,8 +42,14 @@ impl PrivateMathEquality for MathExpr {
     fn equals(&self, other: &MathExpr) -> bool {
         match (self,other){
             (MathExpr::Term(_), MathExpr::Term(_)) => unreachable!("The Simple structs implementations should ensure that this is working"),
-            (MathExpr::Add(_, _), MathExpr::Add(_, _)) => todo!(),
-            (MathExpr::Subtract(_, _), MathExpr::Subtract(_, _)) => todo!(),
+            (MathExpr::Add(lhs_1, rhs_1), MathExpr::Add(lhs_2, rhs_2)) =>
+            (lhs_1.equals(lhs_2)&&rhs_1.equals(rhs_2))||
+            (lhs_1.term().map_or(false,|f|f.equals(rhs_2))&&
+            lhs_2.term().map_or(false, |f|f.equals(rhs_1))),
+            (MathExpr::Subtract(lhs_1, rhs_1), MathExpr::Subtract(lhs_2, rhs_2)) =>
+            (lhs_1.equals(lhs_2)&&rhs_1.equals(rhs_2))||
+            (lhs_1.term().map_or(false,|f|f.equals(rhs_2))&&
+            lhs_2.term().map_or(false, |f|f.equals(rhs_1))),
             _=>false
         }
     }
@@ -52,7 +58,25 @@ impl PrivateMathEquality for Term {
     fn equals(&self, other: &Term) -> bool {
         match (self,other){
             (Term::Factor(_), Term::Factor(_)) => unreachable!("The Simple structs implementations should ensure that this is working"),
-            (Term::Multiply(_, _, _), Term::Multiply(_, _, _)) => todo!(),
+            (Term::Multiply(_, lhs_1, rhs_1), Term::Multiply(_, lhs_2, rhs_2)) => {
+            if let(Term::Factor(lhs_1),Term::Factor(lhs_2))=(lhs_1.as_ref(),lhs_2.as_ref()){
+                #[allow(unused_variables)]//remove this when we do matrix equality needs to be checked her because MulType
+                return match (lhs_1,rhs_1,lhs_2,rhs_2){
+                    (Factor::Matrix(lhs1),Factor::Matrix(rhs1),Factor::Matrix(lhs2),Factor::Matrix(rhs2))=>todo!(),
+                    (Factor::Matrix(lhs1),rhs1,Factor::Matrix(lhs2),_)=>todo!(),
+                    (Factor::Matrix(lhs1),rhs1,lhs2,Factor::Matrix(rhs2))=>todo!(),
+                    (_,Factor::Matrix(rhs1),Factor::Matrix(lhs2),_)=>todo!(),
+                    (_,Factor::Matrix(rhs1),_,Factor::Matrix(rhs2))=>todo!(),
+                    _=>(lhs_1.equals(lhs_2)&&rhs_1.equals(rhs_2))||
+            (lhs_1.equals(rhs_2)&&
+            lhs_2.equals(rhs_1))
+                }
+            }
+            (lhs_1.equals(lhs_2)&&rhs_1.equals(rhs_2))||
+            (lhs_1.factor().map_or(false,|f|f.equals(rhs_2))&&
+            lhs_2.factor().map_or(false, |f|f.equals(rhs_1)))
+            
+        }
             (Term::Divide(_, _), Term::Divide(_, _)) => todo!(),
             _=>false
         }
@@ -65,30 +89,48 @@ impl PrivateMathEquality for Factor {
             (Factor::Parenthesis(p_1), Factor::Parenthesis(p_2)) => {
                 p_1.equals(p_2)
             }
-            (Factor::Variable(_), Factor::Variable(_)) => todo!(),
-            (Factor::FunctionCall(_), Factor::FunctionCall(_)) => todo!(),
+            (Factor::Variable(v_1), Factor::Variable(v_2)) => v_1 == v_2,
+            (Factor::FunctionCall(f_1), Factor::FunctionCall(f_2)) => {
+                f_1 == f_2
+            }
             (
                 Factor::Power {
-                    base: _,
-                    exponent: _,
+                    base: b_1,
+                    exponent: e_1,
                 },
                 Factor::Power {
-                    base: _,
-                    exponent: _,
+                    base: b_2,
+                    exponent: e_2,
                 },
-            ) => todo!(),
+            ) => b_1.equals(b_2) && e_1.equals(e_2),
             (
                 Factor::Root {
-                    degree: _,
-                    radicand: _,
+                    degree: d_1,
+                    radicand: r_1,
                 },
                 Factor::Root {
-                    degree: _,
-                    radicand: _,
+                    degree: d_2,
+                    radicand: r_2,
                 },
-            ) => todo!(),
-            (Factor::Fraction(_, _), Factor::Fraction(_, _)) => todo!(),
-            (Factor::Abs(_), Factor::Abs(_)) => todo!(),
+            ) => {
+                let res = match (d_1, d_2) {
+                    (None, None) => true,
+                    (None, Some(d_2)) => {
+                        Simple::constant(2.0).equals(&d_2.clone().simple())
+                    }
+                    (Some(d_1), None) => {
+                        Simple::constant(2.0).equals(&d_1.clone().simple())
+                    }
+                    (Some(d_1), Some(d_2)) => {
+                        d_1.clone().simple().equals(&d_2.clone().simple())
+                    }
+                };
+                res && r_1.equals(r_2)
+            }
+            (Factor::Fraction(t_1, n_1), Factor::Fraction(t_2, n_2)) => {
+                t_1.equals(t_2) && n_1.equals(n_2)
+            }
+            (Factor::Abs(a_1), Factor::Abs(a_2)) => a_1.equals(a_2),
             (Factor::Matrix(_), Factor::Matrix(_)) => todo!(),
             _ => false,
         }
