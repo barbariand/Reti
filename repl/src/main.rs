@@ -79,6 +79,7 @@ impl Repl {
                 })?;
 
                 /*
+                use parser::ast::to_latex::ToLaTeX;
                 let deriv =
                     ast.derivative(&MathIdentifier::from_single_ident("x"));
 
