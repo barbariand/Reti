@@ -164,10 +164,33 @@ impl Factor {
                 ),
             ),
 
-            Factor::Root {
-                degree: _,
-                radicand: _,
-            } => todo!("root"),
+            Factor::Root { degree, radicand } => {
+                let root = Factor::Root {
+                    degree: degree.clone(),
+                    radicand: radicand.clone(),
+                };
+
+                let radicand_deriv = Term::Multiply(
+                    MulType::Implicit,
+                    Factor::Fraction(
+                        root.into(),
+                        Term::Multiply(
+                            MulType::Implicit,
+                            degree
+                                .clone()
+                                .map(|d| d.get_term_or_wrap())
+                                .unwrap_or(2_f64.into())
+                                .boxed(),
+                            radicand.get_factor_or_wrap(),
+                        )
+                        .into(),
+                    )
+                    .into(),
+                    radicand.derivative(dependent)?.get_factor_or_wrap(),
+                );
+                let degree_deriv = 0_f64.into(); // TODO
+                MathExpr::Add(radicand_deriv.into(), degree_deriv)
+            }
             Factor::Fraction(f, g) => quotient_rule(f, g, dependent)?,
             Factor::Abs(_math) => todo!("ABS"),
             Factor::Matrix(_) => todo!("matrix"),
