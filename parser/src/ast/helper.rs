@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 use crate::prelude::*;
 
-use super::{equality::PrivateMathEquality, simplify::Simplify};
+use super::{equality::MathEquality, simplify::Simplify};
 
 impl MathExpr {
     ///makes a new MathExpr where the term part is wrapped if needed
@@ -151,7 +151,7 @@ pub trait SimpleCompare {
     fn pow_wrapped(self) -> Simple;
     fn ast_equals(self) -> Ast;
     fn ast_expr(self) -> Ast;
-    fn symmetrical(&self) -> bool;
+    fn equivalent(&self) -> bool;
 }
 impl SimpleCompare for (Simple, Simple) {
     fn to_math_expr(&self) -> (&MathExpr, &MathExpr) {
@@ -188,8 +188,8 @@ impl SimpleCompare for (Simple, Simple) {
         todo!()
     }
 
-    fn symmetrical(&self) -> bool {
-        self.0.equals(&self.1)
+    fn equivalent(&self) -> bool {
+        self.1.equivalent(&self.0)
     }
 }
 
@@ -197,13 +197,6 @@ impl SimpleCompare for (Simple, Simple) {
 /// MathExpr is in the simplest form
 #[derive(Clone)]
 pub struct Simple(MathExpr);
-impl Deref for Simple {
-    type Target = MathExpr;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 impl Simple {
     ///Constructs a Simple from a MathExpr
     pub fn new(math_expr: MathExpr) -> Simple {
@@ -244,8 +237,8 @@ impl Simple {
         Simple(Factor::Constant(lhs * rhs).into())
     }
     ///divide 2 f64s and makes a Simple Constant
-    pub fn divide(lhs: f64, rhs: f64) -> Self {
-        Simple(Factor::Constant(lhs / rhs).into())
+    pub fn divide(numerator: f64, denominator: f64) -> Self {
+        Simple(Factor::Constant(numerator / denominator).into())
     }
     ///makes a Factor::Constant() containing the given constant
     pub fn constant(constant: f64) -> Simple {
@@ -258,5 +251,18 @@ impl Simple {
     ///Puts a functionCall into a Simple
     pub fn function(f: FunctionCall) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
+    }
+}
+impl AsRef<MathExpr> for Simple {
+    fn as_ref(&self) -> &MathExpr {
+        &self.0
+    }
+}
+
+impl Deref for Simple {
+    type Target = MathExpr;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

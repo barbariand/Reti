@@ -8,14 +8,14 @@ use super::{
 ///the implementation part
 pub trait MathEquality: PrivateMathEquality {
     ///the user part of the trait
-    fn eq(&self, other: impl Into<MathExpr>) -> bool {
-        let other_new: MathExpr = other.into();
-        self.private_equals(&other_new)
+    fn equivalent(&self, other: impl AsRef<MathExpr>) -> bool {
+        let other_new = other.as_ref();
+        self.private_equals(other_new)
     }
 }
 impl MathEquality for Simple {}
 ///tries to see if they are mathematically the same
-pub trait PrivateMathEquality: Simplify + Clone {
+trait PrivateMathEquality: Simplify + Clone {
     ///The implementation part
     fn private_equals(&self, other: &MathExpr) -> bool {
         self.clone().simple().equals(&other.clone().simple())
@@ -75,7 +75,6 @@ impl PrivateMathEquality for Term {
             (lhs_1.equals(lhs_2)&&rhs_1.equals(rhs_2))||
             (lhs_1.factor().map_or(false,|f|f.equals(rhs_2))&&
             lhs_2.factor().map_or(false, |f|f.equals(rhs_1)))
-            
         }
             (Term::Divide(_, _), Term::Divide(_, _)) => todo!(),
             _=>false

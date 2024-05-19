@@ -2,10 +2,7 @@
 
 use crate::prelude::*;
 
-use super::{
-    equality::PrivateMathEquality,
-    helper::{NumberCompare, Simple, SimpleCompare},
-};
+use super::helper::{NumberCompare, Simple, SimpleCompare};
 
 impl Simplify for Simple {
     fn simple(self) -> Simple {
@@ -61,7 +58,7 @@ impl Simplify for MathExpr {
             }
             MathExpr::Subtract(lhs, rhs) => {
                 let simple = (lhs.simple(), rhs.simple());
-                if simple.symmetrical() {
+                if simple.equivalent() {
                     return Simple::constant(0.0);
                 }
                 match simple.to_math_expr() {
@@ -140,12 +137,13 @@ impl Simplify for Term {
                     _ => simple.mul_wrapped(m.clone()),
                 }
             }
-            Term::Divide(a, b) => {
+            Term::Divide(numerator, denominator) => {
                 // TODO simplify fraction, aka factor a and b and cancel common
                 // factors, remove fraction of b==1, etc.
-
-                let simple = (a.simple(), b.simple());
-                simplify_fraction_or_div(simple)
+                simplify_fraction_or_div(
+                    numerator.simple(),
+                    denominator.simple(),
+                )
             }
         }
     }
@@ -188,23 +186,44 @@ impl Simplify for Factor {
                 degree: _,
                 radicand: _,
             } => todo!(),
-            Factor::Fraction(a, b) => {
-                // TODO simplify fraction, aka factor a and b and cancel common
-                // factors, remove fraction of b==1, etc.
-
-                let simple = (a.simple(), b.simple());
-                simplify_fraction_or_div(simple)
+            Factor::Fraction(numerator, denominator) => {
+                simplify_fraction_or_div(
+                    numerator.simple(),
+                    denominator.simple(),
+                )
             }
             Factor::Abs(_) => todo!(),
             Factor::Matrix(_) => todo!(),
         }
     }
 }
-fn simplify_fraction_or_div(simple: (Simple, Simple)) -> Simple {
-    if simple.symmetrical() {
+///Managing simplification off division and fraction
+///
+/// Because the division and factorization both use Simple objects it can be
+/// ensured that
+fn simplify_fraction_or_div(numerator: Simple, denominator: Simple) -> Simple {
+    // TODO simplify fraction, aka factor a and b and cancel common
+    // factors, remove fraction of b==1, etc.
+    let simple = (numerator, denominator);
+    if simple.equivalent() {
         Simple::constant(1.0)
     } else {
-        simple.div_wrapped()
+        match simple.to_math_expr() {
+            (
+                MathExpr::Term(Term::Factor(Factor::Constant(num))),
+                MathExpr::Term(Term::Factor(Factor::Constant(den))),
+            ) => Simple::divide(*num, *den),
+            (_, MathExpr::Term(Term::Factor(Factor::Constant(c)))) => {
+                if c.is_one() {
+                    simple.0
+                } else if c.is_zero() {
+                    Simple::constant(f64::NAN)
+                } else {
+                    simple.div_wrapped()
+                }
+            }
+            _ => simple.div_wrapped(),
+        }
     }
 }
 
