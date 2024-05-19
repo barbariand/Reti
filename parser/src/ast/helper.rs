@@ -143,14 +143,21 @@ impl NumberCompare for f64 {
 ///This type if for comparing Simples and returning Simples, this makes sure
 /// that only correct simples can be constructed
 pub trait SimpleCompare {
+    ///gets the math_exprs to compare
     fn to_math_expr(&self) -> (&MathExpr, &MathExpr);
+    ///adds the compared items and produces a Simple
     fn add_wrapped(self) -> Simple;
+    ///subtracts the compared items and produces a Simple
     fn sub_wrapped(self) -> Simple;
+    ///multiplies the compared items and produces a Simple
     fn mul_wrapped(self, m: MulType) -> Simple;
+    ///divides them and produces a Simple
     fn div_wrapped(self) -> Simple;
+    ///pows them and produces a Simple
     fn pow_wrapped(self) -> Simple;
+    ///Gives as Ast::equals
     fn ast_equals(self) -> Ast;
-    fn ast_expr(self) -> Ast;
+    ///checks if the contained are  the same
     fn equivalent(&self) -> bool;
 }
 impl SimpleCompare for (Simple, Simple) {
@@ -181,12 +188,9 @@ impl SimpleCompare for (Simple, Simple) {
     }
 
     fn ast_equals(self) -> Ast {
-        todo!()
+        Ast::Equality(self.0.0, self.1.0)
     }
 
-    fn ast_expr(self) -> Ast {
-        todo!()
-    }
 
     fn equivalent(&self) -> bool {
         self.1.equivalent(&self.0)
