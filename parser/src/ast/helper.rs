@@ -137,7 +137,7 @@ impl NumberCompare for f64 {
     }
 
     fn equals(&self, other: &Self) -> bool {
-        (self - other) < f64::EPSILON
+        (self - other).abs() < f64::EPSILON
     }
 }
 ///This type if for comparing Simples and returning Simples, this makes sure
