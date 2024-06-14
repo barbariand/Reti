@@ -103,7 +103,7 @@ impl Repl {
                 */
 
                 let s = self.eval(ast).map_err(|e| {
-                    error!("could not evaluate {:?}", e);
+                    error!("could not evaluate ast {:?}", e);
                     ControlFlow::Continue(())
                 })?;
                 println!("{}", s);
@@ -200,21 +200,21 @@ fn ast_equality_to_string(
     if let MathExpr::Term(Term::Multiply(
         parser::ast::MulType::Implicit,
         var,
-        Factor::Parenthesis(possible_args),
+        factor,
     )) = lhs
     {
-        if let Term::Factor(Factor::Variable(var)) = &*var {
-            match &*possible_args {
-                MathExpr::Term(Term::Factor(Factor::Variable(arg))) => {
+        if let Term::Factor(Factor::Variable(function_name)) = &*var {
+            match factor {
+                Factor::Variable(arg) => {
                     let variable_name = arg.clone();
 
                     cont.add_function(
-                        var.tokens.clone(),
+                        function_name.tokens.clone(),
                         MathFunction::new_foreign(rhs, vec![variable_name]),
                     );
                     "added function:".to_owned()
                 }
-                MathExpr::Term(Term::Factor(Factor::Matrix(matrix))) => {
+                Factor::Matrix(matrix) => {
                     if matrix.is_vector() {
                         let vec = matrix.get_all_vector_elements();
                         let args: Option<Vec<MathIdentifier>> = vec
@@ -228,7 +228,7 @@ fn ast_equality_to_string(
                             })
                             .collect();
                         cont.add_function(
-                            var.tokens.clone(),
+                            function_name.tokens.clone(),
                             MathFunction::new_foreign(
                                 rhs,
                                 args.expect(

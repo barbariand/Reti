@@ -160,10 +160,7 @@ impl Simplify for Factor {
             Factor::Variable(m) => {
                 return cont
                     .variables
-                    .get(&m)
-                    .ok_or(EvalError::NotDefined)?
-                    .clone()
-                    .simple(cont)
+                    .get(&m).map(|v|v.clone().simple(cont)).unwrap_or(Ok(Simple::variable(m)))
             }
             Factor::FunctionCall(func_call) => {
                 let func = cont
