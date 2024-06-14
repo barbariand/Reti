@@ -1,5 +1,7 @@
 //! Simple single-threaded Approximator for AST
 
+use crate::ast::{helper::Simple, simplify::Simplify};
+
 use super::prelude::*;
 
 /// A simple single-threaded evaluator for an AST.
@@ -27,14 +29,14 @@ impl Approximator {
     /// # Errors
     /// [EvalError]
     /// This can error if it can not be completed or it is wrong
-    pub fn eval_expr(&self, expr: &MathExpr) -> Result<Value, EvalError> {
-        match expr {
-            MathExpr::Term(term) => self.eval_term(term),
+    pub fn eval_expr(&self, expr: Simple) -> Result<Value, EvalError> {
+        match expr.expr() {
+            MathExpr::Term(term) => self.eval_term(term.simple(&self.context)?),
             MathExpr::Add(a, b) => {
-                self.eval_expr(a.as_ref())? + self.eval_term(b)?
+                self.eval_expr(a.simple(&self.context)?)? + self.eval_term(b.simple(&self.context)?)?
             }
             MathExpr::Subtract(a, b) => {
-                self.eval_expr(a.as_ref())? - self.eval_term(b)?
+                self.eval_expr(a.simple(&self.context)?)? - self.eval_term(b.simple(&self.context)?)?
             }
         }
     }
@@ -43,14 +45,14 @@ impl Approximator {
     /// # Errors
     /// [EvalError]
     /// This can error if it can not complete
-    fn eval_term(&self, term: &Term) -> Result<Value, EvalError> {
-        match term {
-            Term::Factor(factor) => self.eval_factor(factor),
+    fn eval_term(&self, term: Simple) -> Result<Value, EvalError> {
+        match term.expr().get_term_or_wrap() {
+            Term::Factor(factor) => self.eval_factor(factor.simple(&self.context)?),
             Term::Multiply(mul_type, a, b) => self
-                .eval_term(a.as_ref())?
-                .mul(mul_type, &self.eval_factor(b)?),
+                .eval_term(a.simple(&self.context)?)?
+                .mul(&mul_type, &self.eval_factor(b.simple(&self.context)?)?),
             Term::Divide(a, b) => {
-                self.eval_term(a.as_ref())? / self.eval_factor(b)?
+                self.eval_term(a.simple(&self.context)?)? / self.eval_factor(b.simple(&self.context)?)?
             }
         }
     }
@@ -62,59 +64,70 @@ impl Approximator {
     ///
     /// # Panics
     ///  this implementation currently panics when it can not under
-    fn eval_factor(&self, factor: &Factor) -> Result<Value, EvalError> {
-        Ok(match factor {
-            Factor::Constant(c) => Value::Scalar(*c),
-            Factor::Parenthesis(expr) => self.eval_expr(expr.as_ref())?,
-            Factor::Variable(x) => self
+    fn eval_factor(&self, factor: Simple) -> Result<Value, EvalError> {
+        Ok(match factor.get_factor_or_wrap() {
+            Factor::Constant(c) => Value::Scalar(c),
+            Factor::Parenthesis(expr) => self.eval_expr(expr.simple(&self.context)?)?,
+
+
+            Factor::Variable(x) => self.eval_expr(self
                 .context
                 .variables
-                .get(x)
-                .ok_or(EvalError::NotDefined)?
-                .clone(),
-            Factor::FunctionCall(call) => {
-                match self.context.functions.get(&call.function_name) {
+                .get(&x)
+                .map(|v|v.clone().simple(&self.context))
+                .ok_or(EvalError::NotDefined)??
+                )?,
+            Factor::FunctionCall(func_call) => {
+                match self.context.functions.get(&func_call.function_name) {
                     Some(func) => {
-                        let args: Result<Vec<Value>, EvalError> = call
+                        match func{
+                            MathFunction::Native(n) => {
+                                let args: Result<Vec<Value>, EvalError> = func_call
                             .arguments
                             .iter()
-                            .map(|expr| self.eval_expr(expr))
+                            .map(|expr| self.eval_expr(expr.clone().simple(&self.context)?))
                             .collect();
-                        func.eval(args?, &self.context)?
+                            n.run(args?)?
+                        },
+                            MathFunction::Foreign(_) => 
+                            {
+                                unreachable!("this should never be reatched")
+                            }
+                        }
                     }
                     None => panic!(
                         "Parser incorrectly identified function {:?}",
-                        call
+                        func_call
                     ),
                 }
             }
             Factor::Power { base, exponent } => {
-                let base_val = self.eval_factor(base.as_ref())?.scalar()?;
-                let exp_val = self.eval_expr(exponent.as_ref())?.scalar()?;
+                let base_val = self.eval_factor(base.simple(&self.context)?)?.scalar()?;
+                let exp_val = self.eval_expr(exponent.simple(&self.context)?)?.scalar()?;
                 Value::Scalar(base_val.powf(exp_val))
             }
             Factor::Root { degree, radicand } => Value::Scalar(
-                match degree.as_ref().map(|expr| self.eval_expr(expr.as_ref()))
+                match degree.as_ref().map(|expr| self.eval_expr(expr.clone().simple(&self.context)?))
                 {
-                    None => self.eval_expr(radicand.as_ref())?.scalar()?.sqrt(),
+                    None => self.eval_expr(radicand.simple(&self.context)?)?.scalar()?.sqrt(),
                     Some(degree) => {
                         let radicand_val =
-                            self.eval_expr(radicand.as_ref())?.scalar()?;
+                            self.eval_expr(radicand.simple(&self.context)?)?.scalar()?;
                         let degree_val = degree?.scalar()?;
                         radicand_val.powf(1.0 / degree_val)
                     }
                 },
             ),
             Factor::Fraction(a, b) => {
-                let a_val = self.eval_expr(a.as_ref())?;
-                let b_val = self.eval_expr(b.as_ref())?;
+                let a_val = self.eval_expr(a.simple(&self.context)?)?;
+                let b_val = self.eval_expr(b.simple(&self.context)?)?;
                 (a_val / b_val)?
             }
             Factor::Abs(val) => {
-                Value::Scalar(self.eval_expr(val.as_ref())?.scalar()?.abs())
+                Value::Scalar(self.eval_expr(val.simple(&self.context)?)?.scalar()?.abs())
             }
             Factor::Matrix(matrix) => {
-                Value::Matrix(matrix.map(|expr| self.eval_expr(expr))?)
+                Value::Matrix(matrix.map(|expr| self.eval_expr(expr.clone().simple(&self.context)?))?)
             }
         })
     }
@@ -123,7 +136,7 @@ impl Approximator {
 #[cfg(test)]
 mod tests {
 
-    use crate::{ast::helper::NumberCompare, prelude::*};
+    use crate::{ast::{helper::NumberCompare, simplify::Simplify}, prelude::*};
     #[allow(unused_imports)]
     use pretty_assertions::assert_eq;
     use tokio::{
@@ -140,7 +153,7 @@ mod tests {
             Ast::Equality(_, _) => panic!("Cannot evaluate statement."),
         };
 
-        let value = match approximator.eval_expr(&expr) {
+        let value = match approximator.eval_expr(expr.simple(&approximator.context).unwrap()) {
             Ok(val) => val,
             Err(err) => panic!("{err:?}"),
         };

@@ -6,6 +6,7 @@ pub mod ast;
 pub mod context;
 
 pub mod error;
+pub mod functions;
 pub mod lexer;
 pub mod matrix;
 pub mod normalizer;

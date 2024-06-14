@@ -4,7 +4,7 @@ use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
-    ast::{Factor, MathExpr, MathIdentifier, Term},
+    ast::{simplify::Simplify, Factor, MathExpr, MathIdentifier, Term},
     prelude::*,
 };
 use rustyline::{
@@ -13,7 +13,7 @@ use rustyline::{
 use tracing::{debug, error, info, trace_span};
 use tracing_subscriber::filter::LevelFilter;
 
-use parser::context::MathFunction;
+use parser::functions::MathFunction;
 #[tokio::main]
 pub async fn main() {
     let project_dirs = ProjectDirs::from("", "", "Reti");
@@ -40,6 +40,7 @@ impl Prompt {
 }
 struct Repl {
     ast_mode: bool,
+    simple_ast_mode:bool,
     approximator: Approximator,
     rl: Editor<(), FileHistory>,
 }
@@ -47,6 +48,7 @@ impl Repl {
     fn new(ast_start: bool) -> Repl {
         let context = MathContext::standard_math();
         Repl {
+            simple_ast_mode:false,
             ast_mode: ast_start,
             approximator: Approximator::new(context),
             rl: DefaultEditor::new().expect("could not use as a terminal"), /* TODO manage this
@@ -143,6 +145,14 @@ impl Repl {
             }
             return Err(ControlFlow::Continue(()));
         }
+        if lowercase=="simple"{
+            self.simple_ast_mode=!self.simple_ast_mode;
+            match self.simple_ast_mode{
+                true => info!("Simple ast mode enabled"),
+                false => info!("Simple ast mode disabled"),
+            }
+            return Err(ControlFlow::Continue(()));
+        }
         Ok(())
     }
     async fn parse(&mut self, line: &str) -> Result<Ast, AstError> {
@@ -155,7 +165,11 @@ impl Repl {
 
         match ast {
             Ast::Expression(expr) => {
-                let result = self.approximator.eval_expr(&expr);
+                let simple=expr.simple(self.approximator.context())?;
+                if self.simple_ast_mode{
+                    println!("{:#?}",simple)
+                }
+                let result = self.approximator.eval_expr(simple);
                 Ok(value_res_to_string(result))
             }
             Ast::Equality(lhs, rhs) => Ok(self.ast_equality(lhs, rhs)),
@@ -179,7 +193,7 @@ impl Repl {
                 // is
                 self.approximator.context_mut().functions.insert(
                     var.clone(),
-                    math_function(vec![variable_name], rhs),
+                    MathFunction::new_foreign(rhs,vec![variable_name]),
                 );
                 "added function:".to_owned()
             } else {
@@ -188,20 +202,13 @@ impl Repl {
         } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) =
             lhs
         {
-            let res = self.approximator.eval_expr(&rhs);
-            match res {
-                Ok(res) => {
+           
                     self.approximator
                         .context_mut()
                         .variables
-                        .insert(ident, res);
+                        .insert(ident, rhs);
                     "added variable".to_owned()
-                }
-                Err(e) => {
-                    error!("Could not evaluate {:?}", e);
-                    format!("Could not evaluate {:?}", e)
-                }
-            }
+           
         } else {
             todo!("Could not understand equals.");
         }
@@ -217,22 +224,4 @@ fn value_res_to_string(result: Result<Value, EvalError>) -> String {
         }
     }
 }
-/// Make a MathFunction assigning the identifiers to the Values
-fn math_function(
-    variables: Vec<MathIdentifier>,
-    rhs: MathExpr,
-) -> MathFunction {
-    let n = variables.len();
-    MathFunction::new(
-        Arc::new(move |values: Vec<Value>, outer_context: &MathContext| {
-            let mut context = outer_context.clone();
-            for (var, value) in variables.iter().cloned().zip(values) {
-                context.variables.insert(var, value);
-            }
-            let aproximator = Approximator::new(context);
-            aproximator.eval_expr(&rhs)
-        }),
-        n,
-        None,
-    )
-}
+

@@ -214,12 +214,12 @@ mod test {
             .derivative(dependent)
             .expect("Failed ");
 
-        let found_simple = found_ast.simplify();
+        let found_simple = found_ast.simplify(&context).unwrap();
         println!("found simple {}", found_simple.to_latex());
         let expected_ast = parse(expected_to_ast, &context)
             .await
             .expect("could not parse the expected ast");
-        let expected_simple = expected_ast.simplify();
+        let expected_simple = expected_ast.simplify(&context).unwrap();
         // Compare and print with debug and formatting otherwise.
         assert_eq!(found_simple, expected_simple, "\n\nfound / expected")
     }
