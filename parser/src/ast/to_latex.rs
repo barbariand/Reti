@@ -1,11 +1,13 @@
 //! convert the ast to latex
 
 use crate::prelude::*;
+
 ///Converting the AST to latex
 pub trait ToLaTeX {
     ///The function to convert it back to latex
     fn to_latex(&self) -> String;
 }
+
 impl ToLaTeX for Ast {
     fn to_latex(&self) -> String {
         match self {

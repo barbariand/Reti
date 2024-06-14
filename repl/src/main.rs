@@ -1,10 +1,13 @@
-use std::{ops::ControlFlow, sync::Arc};
+use std::ops::ControlFlow;
 
 use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
-    ast::{simplify::Simplify, Factor, MathExpr, MathIdentifier, Term},
+    ast::{
+        helper::Simple, simplify::Simplify, Factor, MathExpr, MathIdentifier,
+        Term,
+    },
     prelude::*,
 };
 use rustyline::{
@@ -40,7 +43,7 @@ impl Prompt {
 }
 struct Repl {
     ast_mode: bool,
-    simple_ast_mode:bool,
+    simple_ast_mode: bool,
     approximator: Approximator,
     rl: Editor<(), FileHistory>,
 }
@@ -48,7 +51,7 @@ impl Repl {
     fn new(ast_start: bool) -> Repl {
         let context = MathContext::standard_math();
         Repl {
-            simple_ast_mode:false,
+            simple_ast_mode: false,
             ast_mode: ast_start,
             approximator: Approximator::new(context),
             rl: DefaultEditor::new().expect("could not use as a terminal"), /* TODO manage this
@@ -145,9 +148,9 @@ impl Repl {
             }
             return Err(ControlFlow::Continue(()));
         }
-        if lowercase=="simple"{
-            self.simple_ast_mode=!self.simple_ast_mode;
-            match self.simple_ast_mode{
+        if lowercase == "simple" {
+            self.simple_ast_mode = !self.simple_ast_mode;
+            match self.simple_ast_mode {
                 true => info!("Simple ast mode enabled"),
                 false => info!("Simple ast mode disabled"),
             }
@@ -165,56 +168,93 @@ impl Repl {
 
         match ast {
             Ast::Expression(expr) => {
-                let simple=expr.simple(self.approximator.context())?;
-                if self.simple_ast_mode{
-                    println!("{:#?}",simple)
+                let simple_expr = expr.simple(self.approximator.context())?;
+                if self.simple_ast_mode {
+                    println!("{:#?}", simple_expr)
                 }
-                let result = self.approximator.eval_expr(simple);
-                Ok(value_res_to_string(result))
+                Ok(value_res_to_string(
+                    self.approximator.eval_expr(simple_expr),
+                ))
             }
-            Ast::Equality(lhs, rhs) => Ok(self.ast_equality(lhs, rhs)),
-        }
-    }
-    fn ast_equality(&mut self, lhs: MathExpr, rhs: MathExpr) -> String {
-        if let MathExpr::Term(Term::Multiply(
-            parser::ast::MulType::Implicit,
-            var,
-            Factor::Parenthesis(possible_args),
-        )) = lhs
-        {
-            if let (
-                Term::Factor(Factor::Variable(var)),
-                MathExpr::Term(Term::Factor(Factor::Variable(args))),
-            ) = (&*var, &*possible_args)
-            {
-                let variable_name = args.clone();
-                // FIXME: this is not perfect but i think we might need to live
-                // with it otherwise we just don't know what it
-                // is
-                self.approximator.context_mut().functions.insert(
-                    var.clone(),
-                    MathFunction::new_foreign(rhs,vec![variable_name]),
-                );
-                "added function:".to_owned()
-            } else {
-                todo!("Could not understand equals.");
+            Ast::Equality(lhs, rhs) => {
+                let rhs = rhs.simple(self.approximator.context())?;
+                if self.simple_ast_mode {
+                    println!("{:#?}={:#?}", lhs, rhs);
+                }
+                Ok(ast_equality_to_string(
+                    self.approximator.context_mut(),
+                    lhs,
+                    rhs,
+                ))
             }
-        } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) =
-            lhs
-        {
-           
-                    self.approximator
-                        .context_mut()
-                        .variables
-                        .insert(ident, rhs);
-                    "added variable".to_owned()
-           
-        } else {
-            todo!("Could not understand equals.");
         }
     }
 }
 
+fn ast_equality_to_string(
+    cont: &mut MathContext,
+    lhs: MathExpr,
+    rhs: Simple,
+) -> String {
+    let rhs = rhs.expr();
+    if let MathExpr::Term(Term::Multiply(
+        parser::ast::MulType::Implicit,
+        var,
+        Factor::Parenthesis(possible_args),
+    )) = lhs
+    {
+        if let Term::Factor(Factor::Variable(var)) = &*var {
+            match &*possible_args {
+                MathExpr::Term(Term::Factor(Factor::Variable(arg))) => {
+                    let variable_name = arg.clone();
+
+                    cont.add_function(
+                        var.tokens.clone(),
+                        MathFunction::new_foreign(rhs, vec![variable_name]),
+                    );
+                    "added function:".to_owned()
+                }
+                MathExpr::Term(Term::Factor(Factor::Matrix(matrix))) => {
+                    if matrix.is_vector() {
+                        let vec = matrix.get_all_vector_elements();
+                        let args: Option<Vec<MathIdentifier>> = vec
+                            .iter()
+                            .cloned()
+                            .map(|v| match v {
+                                MathExpr::Term(Term::Factor(
+                                    Factor::Variable(var),
+                                )) => Some(var),
+                                _ => None,
+                            })
+                            .collect();
+                        cont.add_function(
+                            var.tokens.clone(),
+                            MathFunction::new_foreign(
+                                rhs,
+                                args.expect(
+                                    "The values uses was not identifiers only",
+                                ),
+                            ),
+                        );
+                        "added function:".to_owned()
+                    } else {
+                        todo!("Could not understand equals. is it a 2d matrix as input?")
+                    }
+                }
+                _ => {
+                    todo!("Could not understand equals")
+                }
+            }
+        } else {
+            todo!("Could not understand equals.");
+        }
+    } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) = lhs {
+        cont.variables.insert(ident, rhs);
+        "added variable".to_owned()
+    } else {
+        todo!("Could not understand equals.");
+    }
+}
 fn value_res_to_string(result: Result<Value, EvalError>) -> String {
     match result {
         Ok(v) => format!("> {}", v),
@@ -224,4 +264,3 @@ fn value_res_to_string(result: Result<Value, EvalError>) -> String {
         }
     }
 }
-

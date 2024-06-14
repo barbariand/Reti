@@ -188,7 +188,7 @@ impl SimpleCompare for (Simple, Simple) {
     }
 
     fn ast_equals(self) -> Ast {
-        Ast::Equality(self.0 .0, self.1 .0)
+        Ast::Equality(self.0 .0, self.1.0)
     }
 
     fn equivalent(&self, cont: &MathContext) -> bool {
@@ -198,7 +198,7 @@ impl SimpleCompare for (Simple, Simple) {
 
 ///Simple is a wrapper struct only allowed to be constructed when the contained
 /// MathExpr is in the simplest form
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Simple(MathExpr);
 impl Simple {
     ///Constructs a Simple from a MathExpr
@@ -209,8 +209,8 @@ impl Simple {
         math_expr.simple(cont)
     }
     ///Constructs a Ast::Expression from the contained MathExpr
-    pub fn expression(&self) -> Ast {
-        Ast::Expression(self.0.clone())
+    pub fn expression(self) -> Ast {
+        Ast::Expression(self.0)
     }
     ///gets a ref to inner item
     pub fn math_expr(&self) -> &MathExpr {
@@ -263,6 +263,7 @@ impl Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
     }
 }
+
 impl AsRef<MathExpr> for Simple {
     fn as_ref(&self) -> &MathExpr {
         &self.0

@@ -154,6 +154,16 @@ impl<T> Matrix<T> {
         }
         panic!("Not a vector.");
     }
+    /// Get all elements of it as a vector
+    ///
+    /// ## Panics
+    /// Panics if this matrix is not a vector.
+    pub fn get_all_vector_elements(&self) -> &Vec<T> {
+        if self.is_vector() {
+            return &self.values;
+        }
+        panic!("Not a vector")
+    }
 }
 
 impl<T: Clone> Matrix<T> {

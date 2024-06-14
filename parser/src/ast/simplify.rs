@@ -17,7 +17,7 @@ pub trait Simplify {
 
 impl Ast {
     ///simplifies the ast as best possible
-    pub fn simplify(self, cont: &MathContext) -> Result<Self, EvalError> {
+    pub fn simplify(self, cont: &MathContext) -> Result<Ast, EvalError> {
         Ok(match self {
             Ast::Expression(e) => e.simple(cont)?.expression(),
             Ast::Equality(a, b) => {
@@ -192,7 +192,7 @@ impl Simplify for Factor {
                                             context.variables.insert(ident.clone(), expr.clone());
                                             context}))?;
                                 new_cont.merge(cont);
-                                return f.expr.clone().simple(&new_cont)
+                                return f.expr.clone().simple(&new_cont);
                             }
                         }
                     }
