@@ -1,19 +1,23 @@
-use std::{ops::ControlFlow, sync::Arc};
+use std::ops::ControlFlow;
 
-use clap::{command, crate_authors, crate_name, Parser as ClapParser};
+use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
-    ast::{Factor, MathExpr, MathIdentifier, Term},
+    ast::{
+        helper::Simple, simplify::Simplify, Factor, MathExpr, MathIdentifier,
+        Term,
+    },
     prelude::*,
 };
 use rustyline::{
     error::ReadlineError, history::FileHistory, DefaultEditor, Editor,
 };
+use tokio::time::Instant;
 use tracing::{debug, error, info, trace_span};
 use tracing_subscriber::filter::LevelFilter;
 
-use parser::context::MathFunction;
+use parser::functions::MathFunction;
 #[tokio::main]
 pub async fn main() {
     let project_dirs = ProjectDirs::from("", "", "Reti");
@@ -40,13 +44,17 @@ impl Prompt {
 }
 struct Repl {
     ast_mode: bool,
+    simple_ast_mode: bool,
     approximator: Approximator,
     rl: Editor<(), FileHistory>,
+    time_it:bool,
 }
 impl Repl {
     fn new(ast_start: bool) -> Repl {
         let context = MathContext::standard_math();
         Repl {
+            simple_ast_mode: false,
+            time_it:false,
             ast_mode: ast_start,
             approximator: Approximator::new(context),
             rl: DefaultEditor::new().expect("could not use as a terminal"), /* TODO manage this
@@ -73,14 +81,41 @@ impl Repl {
         match readline {
             Ok(line) => {
                 self.read(&line).await?;
+                let start_parse=Instant::now();
                 let ast = self.parse(&line).await.map_err(|e| {
                     error!("{}", e);
                     ControlFlow::Continue(())
                 })?;
+                let end_parse=Instant::now();
+
+                /*
+                use parser::ast::to_latex::ToLaTeX;
+                let deriv =
+                    ast.derivative(&MathIdentifier::from_single_ident("x"));
+
+                match deriv {
+                    Ok(val) => {
+                        println!("before simplify: {}", val.to_latex());
+                        println!("\n{}", val.simplify().to_latex());
+                    }
+                    Err(err) => {
+                        println!("{:?}", err);
+                    }
+                }
+                if true {
+                    return Ok(());
+                };
+                */
+                let start_eval=Instant::now();
                 let s = self.eval(ast).map_err(|e| {
-                    error!("could not evaluate {:?}", e);
+                    error!("could not evaluate ast {:?}", e);
                     ControlFlow::Continue(())
                 })?;
+                let end_eval=Instant::now();
+                if self.time_it{
+                    println!("Parsing took:{}ms",(start_parse-end_parse).as_millis());
+                    println!("Evaluating took:{}ms",(start_eval-end_eval).as_millis());
+                }
                 println!("{}", s);
             }
             Err(ReadlineError::Interrupted) => {
@@ -99,6 +134,7 @@ impl Repl {
         Ok(())
     }
     async fn read(&mut self, line: &String) -> Result<(), ControlFlow<()>> {
+        
         let span = trace_span!("preparing statement");
         let _enter = span.enter();
         debug!(line);
@@ -123,6 +159,22 @@ impl Repl {
             }
             return Err(ControlFlow::Continue(()));
         }
+        if lowercase == "simple" {
+            self.simple_ast_mode = !self.simple_ast_mode;
+            match self.simple_ast_mode {
+                true => info!("Simple ast mode enabled"),
+                false => info!("Simple ast mode disabled"),
+            }
+            return Err(ControlFlow::Continue(()));
+        }
+        if lowercase == "time" {
+            self.time_it = !self.time_it;
+            match self.time_it {
+                true => info!("Timing mode enabled"),
+                false => info!("Timing mode disabled"),
+            }
+            return Err(ControlFlow::Continue(()));
+        }
         Ok(())
     }
     async fn parse(&mut self, line: &str) -> Result<Ast, AstError> {
@@ -135,59 +187,101 @@ impl Repl {
 
         match ast {
             Ast::Expression(expr) => {
-                let result = self.approximator.eval_expr(&expr);
-                Ok(value_res_to_string(result))
-            }
-            Ast::Equality(lhs, rhs) => Ok(self.ast_equality(lhs, rhs)),
-        }
-    }
-    fn ast_equality(&mut self, lhs: MathExpr, rhs: MathExpr) -> String {
-        if let MathExpr::Term(Term::Multiply(
-            parser::ast::MulType::Implicit,
-            var,
-            Factor::Parenthesis(possible_args),
-        )) = lhs
-        {
-            if let (
-                Term::Factor(Factor::Variable(var)),
-                MathExpr::Term(Term::Factor(Factor::Variable(args))),
-            ) = (&*var, &*possible_args)
-            {
-                let variable_name = args.clone();
-                // FIXME: this is not perfect but i think we might need to live
-                // with it otherwise we just dont know what it
-                // is
-                self.approximator.context_mut().functions.insert(
-                    var.clone(),
-                    math_function(vec![variable_name], rhs),
-                );
-                "added function:".to_owned()
-            } else {
-                todo!("Could not understand equals.");
-            }
-        } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) =
-            lhs
-        {
-            let res = self.approximator.eval_expr(&rhs);
-            match res {
-                Ok(res) => {
-                    self.approximator
-                        .context_mut()
-                        .variables
-                        .insert(ident, res);
-                    "added variable".to_owned()
+                let simple_expr = expr.simple(self.approximator.context())?;
+                if self.simple_ast_mode {
+                    println!("{:#?}", simple_expr)
                 }
-                Err(e) => {
-                    error!("Could not evaluate {:?}", e);
-                    format!("Could not evaluate {:?}", e)
-                }
+                Ok(value_res_to_string(
+                    self.approximator.eval_expr(simple_expr),
+                ))
             }
-        } else {
-            todo!("Could not understand equals.");
+            Ast::Equality(lhs, rhs) => {
+                let rhs = rhs.simple(self.approximator.context())?;
+                if self.simple_ast_mode {
+                    println!("{:#?}={:#?}", lhs, rhs);
+                }
+                ast_equality_to_string(
+                    self.approximator.context_mut(),
+                    lhs,
+                    rhs,
+                )
+            }
         }
     }
 }
 
+fn ast_equality_to_string(
+    cont: &mut MathContext,
+    lhs: MathExpr,
+    rhs: Simple,
+) -> Result<String,EvalError> {
+    let rhs = rhs.expr();
+    if let MathExpr::Term(Term::Multiply(
+        parser::ast::MulType::Implicit,
+        var,
+        factor,
+    )) = lhs
+    {
+        if let Term::Factor(Factor::Variable(function_name)) = &*var {
+            match factor {
+                Factor::Parenthesis(f)=>{
+                    if let MathExpr::Term(Term::Factor(Factor::Variable(arg))) =*f {
+                        let variable_name = arg.clone();
+                    cont.add_function(
+                        function_name.tokens.clone(),
+                        MathFunction::new_foreign(rhs, vec![variable_name]),
+                    );
+                    Ok("added function:".to_owned())
+                }
+                else{
+                    todo!("you cant have anything but a variable in a function definition")
+                }
+            }
+                Factor::Matrix(matrix) => {
+                    if matrix.is_vector() {
+                        let vec = matrix.get_all_vector_elements();
+                        let args: Option<Vec<MathIdentifier>> = vec
+                            .iter()
+                            .cloned()
+                            .map(|v| match v {
+                                MathExpr::Term(Term::Factor(
+                                    Factor::Variable(var),
+                                )) => Some(var),
+                                _ => None,
+                            })
+                            .collect();
+                        cont.add_function(
+                            function_name.tokens.clone(),
+                            MathFunction::new_foreign(
+                                rhs,
+                                args.expect(
+                                    "The values uses was not identifiers only",
+                                ),
+                            ),
+                        );
+                        Ok("added function:".to_owned())
+                    } else {
+                        todo!("Could not understand equals. is it a 2d matrix as input?")
+                    }
+                }
+                e => {
+                    todo!("Could not understand equals: got factor:{:#?}",e)
+                }
+            }
+        } else {
+            todo!("Could not understand equals. got:{:#?}",MathExpr::Term(Term::Multiply(
+        parser::ast::MulType::Implicit,
+        var,
+        factor,
+    )));
+        }
+    } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) = lhs {
+        cont.variables.insert(ident, rhs);
+        Ok("added variable".to_owned())
+    } else {
+        todo!("Could not understand equals. got:{:#?}",lhs);
+    }
+}
 fn value_res_to_string(result: Result<Value, EvalError>) -> String {
     match result {
         Ok(v) => format!("> {}", v),
@@ -196,22 +290,4 @@ fn value_res_to_string(result: Result<Value, EvalError>) -> String {
             format!("Could not evaluate {:?}", e)
         }
     }
-}
-/// Make a MathFunction assigning the identifiers to the Values
-fn math_function(
-    variables: Vec<MathIdentifier>,
-    rhs: MathExpr,
-) -> MathFunction {
-    let n = variables.len();
-    MathFunction::new(
-        Arc::new(move |values: Vec<Value>, outer_context: MathContext| {
-            let mut context = outer_context.clone();
-            for (var, value) in variables.iter().cloned().zip(values) {
-                context.variables.insert(var, value);
-            }
-            let aprox = Approximator::new(context);
-            aprox.eval_expr(&rhs)
-        }),
-        n,
-    )
 }

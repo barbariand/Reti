@@ -184,6 +184,16 @@ impl<T> Matrix<T> {
     pub fn as_vector(&self) -> Result<Vector<T>, EvalError> {
         Vector::new(self)
     }
+    /// Get all elements of it as a vector
+    ///
+    /// ## Panics
+    /// Panics if this matrix is not a vector.
+    pub fn get_all_vector_elements(&self) -> &Vec<T> {
+        if self.is_vector() {
+            return &self.values;
+        }
+        panic!("Not a vector")
+    }
 }
 
 impl<T: Clone> Matrix<T> {
@@ -486,6 +496,19 @@ impl<T> Matrix<T> {
         let val: Result<_, _> = self.values.iter().map(func).collect();
         Ok(Matrix::new(val?, self.row_count, self.column_count))
     }
+    /// Maps a function over all elements of the matrix without cloning.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `Err` of type `EvalError` if the provided function `func`
+    /// returns an error for any of the matrix elements.
+    pub fn map_owned<F, Res>(self, func: F) -> Result<Matrix<Res>, EvalError>
+    where
+        F: Fn(T) -> Result<Res, EvalError>,
+    {
+        let val: Result<_, _> = self.values.into_iter().map(func).collect();
+        Ok(Matrix::new(val?, self.row_count, self.column_count))
+    }
     /// Performs element-wise operations with another matrix using a provided
     /// function.
     ///
@@ -670,7 +693,7 @@ impl Mul<f64> for &Matrix<Value> {
 mod tests {
     use super::Matrix;
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     #[test]
     fn matrix_scalar_value_addition() {
         let a = Matrix::new_default(2, 3, Value::Scalar(1.0));

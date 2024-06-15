@@ -107,12 +107,21 @@ pub enum EvalError {
         r#type: MulType,
     },
     ///Invalid amount of arguments
+    #[snafu(display(
+        "Invalid amount of arguments, expected lengths of {}, but found the length {}",expected.display(),found
+    ))]
     ArgumentLengthMismatch {
         ///The possible amounts of arguments it can have because of
         /// overloading
         expected: Vec<usize>,
         ///the found amount of arguments
         found: usize,
+    },
+    #[snafu(transparent)]
+    ///Cant derive this expression
+    DeriveError {
+        ///The actual derive error
+        source: DeriveError,
     },
 }
 /// The error for when it required another size of the matrix
@@ -162,5 +171,15 @@ pub enum IncompatibleMatrixSizes {
         a: usize,
         ///Second Vector dimensions
         b: usize,
+    },
+}
+#[derive(Debug, Snafu)]
+///All the ways we cant derive
+pub enum DeriveError {
+    ///So it don't complain
+    #[snafu(whatever, display("The types are not compatible: {message}"))]
+    All {
+        ///the message
+        message: String,
     },
 }

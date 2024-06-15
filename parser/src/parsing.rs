@@ -493,36 +493,15 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use tokio::{
-        join,
-        sync::mpsc::{self},
-    };
-
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let (lexer_in, lexer_out): (TokenSender, TokenReceiver) =
-            mpsc::channel(32);
-        let (normalizer_in, normalizer_out): (TokenSender, TokenReceiver) =
-            mpsc::channel(32);
-
-        let context = MathContext::standard_math();
-
-        let lexer = Lexer::new(lexer_in);
-        let normalizer = Normalizer::new(lexer_out, normalizer_in);
-        let parser = Parser::new(normalizer_out, context.clone());
-
-        let future1 = lexer.tokenize(text);
-        let future2 = normalizer.normalize();
-        let future3 = parser.parse();
-
-        let (_, _, ast) = join!(future1, future2, future3);
-        let found_ast = ast.unwrap();
+        let found_ast = parse(text, &MathContext::standard_math())
+            .await
+            .expect("failed to parse AST");
 
         // Compare and print with debug and formatting otherwise.
-        if expected_ast != found_ast {
-            panic!("Expected: {:#?}\nFound: {:#?}", expected_ast, found_ast);
-        }
+        assert_eq!(found_ast, expected_ast);
     }
 
     #[tokio::test]

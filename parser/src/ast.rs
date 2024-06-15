@@ -1,6 +1,13 @@
 //! AST for representing Latex
 use crate::prelude::*;
 
+pub mod derivative;
+pub mod equality;
+pub mod factorize_gcd;
+pub mod helper;
+pub mod into;
+pub mod simplify;
+pub mod to_latex;
 ///The root of the AST that is non recursive
 #[derive(PartialEq, Debug)]
 pub enum Ast {
@@ -22,7 +29,7 @@ pub enum MathExpr {
     ///  ## Examples
     ///  ```
     /// # use parser::ast::*;
-    /// # use parser::prelude::MathContext;
+    /// # use parser::prelude::*;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
@@ -59,37 +66,6 @@ pub enum MathExpr {
 
     /// ```
     Subtract(Box<MathExpr>, Term),
-}
-impl From<Term> for MathExpr {
-    fn from(value: Term) -> Self {
-        MathExpr::Term(value)
-    }
-}
-
-impl From<Factor> for MathExpr {
-    fn from(value: Factor) -> Self {
-        MathExpr::Term(Term::Factor(value))
-    }
-}
-impl From<f64> for MathExpr {
-    fn from(value: f64) -> Self {
-        MathExpr::Term(Term::from(value))
-    }
-}
-impl From<f64> for Box<MathExpr> {
-    fn from(value: f64) -> Self {
-        Box::new(value.into())
-    }
-}
-impl From<FunctionCall> for MathExpr {
-    fn from(value: FunctionCall) -> Self {
-        MathExpr::Term(Term::from(value))
-    }
-}
-impl From<MathIdentifier> for MathExpr {
-    fn from(value: MathIdentifier) -> Self {
-        MathExpr::Term(Term::from(value))
-    }
 }
 
 /// The type of multiplication.
@@ -182,27 +158,6 @@ pub enum Term {
     /// ```
     Divide(Box<Term>, Factor),
 }
-
-impl From<Factor> for Term {
-    fn from(value: Factor) -> Self {
-        Self::Factor(value)
-    }
-}
-impl From<f64> for Term {
-    fn from(value: f64) -> Self {
-        Term::Factor(Factor::Constant(value))
-    }
-}
-impl From<MathIdentifier> for Term {
-    fn from(value: MathIdentifier) -> Self {
-        Term::Factor(Factor::Variable(value))
-    }
-}
-impl From<FunctionCall> for Term {
-    fn from(value: FunctionCall) -> Self {
-        Term::Factor(Factor::FunctionCall(value))
-    }
-}
 /// A factor that consists of a single value.
 ///
 /// Factors are in some sense the bottom of the Abstract Syntax Tree, and
@@ -294,13 +249,16 @@ pub enum Factor {
     /// ```
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::MathFunction;
+    /// # use parser::prelude::*;
+    /// # use parser::context::IntoMathFunction;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # use std::sync::Arc;
     /// # use parser::value::Value;
     /// # let mut context=MathContext::standard_math();
-    /// # context.functions.insert(MathIdentifier::new(vec![Token::Identifier("f".to_owned())]), MathFunction::new(Arc::new(|_,_|Ok(Value::Scalar(2.0))),1));
+    /// # context.add_function(
+    /// # vec![Token::Identifier("f".to_owned())],
+    /// # (|_x:f64|{2.0},None)
+    /// # );
     /// // parsing f(x)
     /// // where f needs to be defined for it to be interpreted as a function call
     ///
@@ -508,21 +466,6 @@ pub enum Factor {
     /// ```
     Matrix(Matrix<MathExpr>),
 }
-impl From<f64> for Factor {
-    fn from(value: f64) -> Self {
-        Factor::Constant(value)
-    }
-}
-impl From<MathIdentifier> for Factor {
-    fn from(value: MathIdentifier) -> Self {
-        Factor::Variable(value)
-    }
-}
-impl From<FunctionCall> for Factor {
-    fn from(value: FunctionCall) -> Self {
-        Factor::FunctionCall(value)
-    }
-}
 
 /// A mathematical identifier, for example variable or function names.
 ///
@@ -534,20 +477,6 @@ pub struct MathIdentifier {
     pub tokens: Vec<Token>,
 }
 
-impl MathIdentifier {
-    ///Creates a new MathIdentifier fom a vec to identify a variable and
-    /// function
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens }
-    }
-    ///Creates a new MathIdentifier from a single Token to identify a variable
-    /// and a function
-    pub fn new_from_one(token: Token) -> Self {
-        Self {
-            tokens: vec![token],
-        }
-    }
-}
 /// an identified function
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
@@ -555,17 +484,4 @@ pub struct FunctionCall {
     pub function_name: MathIdentifier,
     ///The input to the function
     pub arguments: Vec<MathExpr>,
-}
-
-impl FunctionCall {
-    ///a helper method
-    pub fn new(
-        function_name: MathIdentifier,
-        arguments: Vec<MathExpr>,
-    ) -> Self {
-        Self {
-            function_name,
-            arguments,
-        }
-    }
 }
