@@ -6,12 +6,11 @@ pub type InnerMathFunction =
 ///The inner type alias for the derivative function
 pub type InnerDeriveFunction =
     Arc<dyn Fn(Vec<MathExpr>) -> Result<MathExpr, EvalError> + Send + Sync>;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::prelude::*;
 
 #[derive(Clone)]
-#[allow(dead_code)]
 /// A native function that is implemented in rust
 pub struct NativeFunction {
     ///The function to run
@@ -20,6 +19,11 @@ pub struct NativeFunction {
     arguments: usize,
     ///the derivation
     derivative: Option<InnerDeriveFunction>,
+}
+impl Debug for NativeFunction{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f,"{{NativeFunction}}, args:{}",self.arguments)
+    }
 }
 impl NativeFunction {
     ///New native function
@@ -40,7 +44,7 @@ impl NativeFunction {
     }
 }
 ///A user defined function
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct ForeignFunction {
     ///the expression that is the foreign function
     pub expr: MathExpr,
@@ -48,7 +52,7 @@ pub struct ForeignFunction {
     pub input: Vec<MathIdentifier>,
 }
 /// A MathFunction that can be run
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub enum MathFunction {
     ///A native function that is implemented in rust
     Native(NativeFunction),

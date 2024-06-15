@@ -233,7 +233,7 @@ impl Simplify for Factor {
                 )
             }
             Factor::Abs(_) => todo!(),
-            Factor::Matrix(_) => todo!(),
+            Factor::Matrix(m) => Simple::matrix(m,cont)?,
         })
     }
 }

@@ -193,7 +193,7 @@ impl Factor {
             }
             Factor::Fraction(f, g) => quotient_rule(f, g, dependent)?,
             Factor::Abs(_math) => todo!("ABS"),
-            Factor::Matrix(_) => todo!("matrix"),
+            Factor::Matrix(_) => todo!("matrix derivation not defined"),
         })
     }
 }

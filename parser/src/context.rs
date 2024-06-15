@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use crate::prelude::*;
 
 ///The MathContext, holding all the functions and variables
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct MathContext {
     ///The variables
     pub variables: HashMap<MathIdentifier, MathExpr>,

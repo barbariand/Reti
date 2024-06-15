@@ -262,6 +262,10 @@ impl Simple {
     pub fn function(f: FunctionCall) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
     }
+    ///simplifies a matrix
+    pub fn matrix(m:Matrix<MathExpr>,cont:&MathContext)->Result<Simple, EvalError>{
+        Ok(Simple(Factor::Matrix(m.map_owned(|v|Ok(v.simple(cont)?.expr()))?).into()))
+    }
 }
 
 impl AsRef<MathExpr> for Simple {
