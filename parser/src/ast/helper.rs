@@ -158,7 +158,7 @@ pub trait SimpleCompare {
     ///Gives as Ast::equals
     fn ast_equals(self) -> Ast;
     ///checks if the contained are  the same
-    fn equivalent(&self) -> bool;
+    fn equivalent(&self, cont: &MathContext) -> bool;
 }
 impl SimpleCompare for (Simple, Simple) {
     fn to_math_expr(&self) -> (&MathExpr, &MathExpr) {
@@ -188,31 +188,37 @@ impl SimpleCompare for (Simple, Simple) {
     }
 
     fn ast_equals(self) -> Ast {
-        Ast::Equality(self.0.0, self.1.0)
+        Ast::Equality(self.0 .0, self.1.0)
     }
 
-
-    fn equivalent(&self) -> bool {
-        self.1.equivalent(&self.0)
+    fn equivalent(&self, cont: &MathContext) -> bool {
+        self.1.equivalent(&self.0, cont)
     }
 }
 
 ///Simple is a wrapper struct only allowed to be constructed when the contained
 /// MathExpr is in the simplest form
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Simple(MathExpr);
 impl Simple {
     ///Constructs a Simple from a MathExpr
-    pub fn new(math_expr: MathExpr) -> Simple {
-        math_expr.simple()
+    pub fn new(
+        math_expr: MathExpr,
+        cont: &MathContext,
+    ) -> Result<Simple, EvalError> {
+        math_expr.simple(cont)
     }
     ///Constructs a Ast::Expression from the contained MathExpr
-    pub fn expression(&self) -> Ast {
-        Ast::Expression(self.0.clone())
+    pub fn expression(self) -> Ast {
+        Ast::Expression(self.0)
     }
     ///gets a ref to inner item
     pub fn math_expr(&self) -> &MathExpr {
         &self.0
+    }
+    ///gets a ref to inner item
+    pub fn expr(self) -> MathExpr {
+        self.0
     }
     ///gets as a Term if it is one
     pub fn get_term(&self) -> Option<Term> {
@@ -256,7 +262,12 @@ impl Simple {
     pub fn function(f: FunctionCall) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
     }
+    ///simplifies a matrix
+    pub fn matrix(m:Matrix<MathExpr>,cont:&MathContext)->Result<Simple, EvalError>{
+        Ok(Simple(Factor::Matrix(m.map_owned(|v|Ok(v.simple(cont)?.expr()))?).into()))
+    }
 }
+
 impl AsRef<MathExpr> for Simple {
     fn as_ref(&self) -> &MathExpr {
         &self.0

@@ -1,108 +1,15 @@
 //! # Context
 //! this module is for helping with keeping track of variables and functions
 //! for that it uses MathContext where you can add any function or variable  
-use std::{collections::HashMap, sync::Arc};
-///The inner type alias for the function to execute to find the value
-type InnerMathFunction = Arc<
-    dyn Fn(Vec<Value>, &MathContext) -> Result<Value, EvalError> + Send + Sync,
->;
-///The inner type alias for the derivative function
-type InnerDeriveFunction =
-    Arc<dyn Fn(Vec<MathExpr>) -> Result<MathExpr, EvalError> + Send + Sync>;
-use crate::prelude::*;
-/// A MathFunction that can be run
-#[derive(Clone)]
-pub struct MathFunction {
-    ///The function to run
-    approximate: InnerMathFunction,
-    ///the amount of acceptable arguments
-    arguments: usize,
-    ///the function to get the derivative
-    /// not used yet
-    #[allow(dead_code)]
-    derivative: Option<InnerDeriveFunction>,
-}
+use std::collections::HashMap;
 
-impl MathFunction {
-    ///Helper new
-    pub fn new(
-        func: InnerMathFunction,
-        arguments: usize,
-        derivative: Option<InnerDeriveFunction>,
-    ) -> Self {
-        Self {
-            approximate: func,
-            arguments,
-            derivative,
-        }
-    }
-    ///Helper new for fn pointers
-    pub fn from_fn_pointer(
-        func: fn(Vec<Value>, &MathContext) -> Result<Value, EvalError>,
-        arguments: usize,
-        derivative: Option<InnerDeriveFunction>,
-    ) -> Self {
-        Self {
-            approximate: Arc::new(func),
-            arguments,
-            derivative,
-        }
-    }
-    ///Helper new for fn pointers with f64s
-    pub fn from_fn_pointer_expecting_scalars<
-        F: Fn(Vec<f64>) -> f64 + Send + Sync + 'static,
-    >(
-        func: F,
-        arguments: usize,
-        derivative: Option<InnerDeriveFunction>,
-    ) -> Self {
-        Self {
-            approximate: Arc::new(move |v: Vec<Value>, _: &MathContext| {
-                let v_new: Result<Vec<f64>, EvalError> =
-                    v.into_iter().map(|val| val.scalar()).collect();
-                Ok(Value::Scalar(func(v_new?)))
-            }),
-            arguments,
-            derivative,
-        }
-    }
-    ///Helper function for creating a new when expecting single
-    pub fn from_fn_pointer_expecting_single_scalar<
-        F: Fn(f64) -> f64 + Send + Sync + 'static,
-    >(
-        func: F,
-        arguments: usize,
-        derivative: Option<InnerDeriveFunction>,
-    ) -> Self {
-        Self {
-            approximate: Arc::new(move |v: Vec<Value>, _: &MathContext| {
-                let s = v[0].scalar()?;
-                Ok(Value::Scalar(func(s)))
-            }),
-            arguments,
-            derivative,
-        }
-    }
-    /// run the function with given arguments
-    pub fn eval(
-        &self,
-        vec: Vec<Value>,
-        cont: &MathContext,
-    ) -> Result<Value, EvalError> {
-        if vec.len() != self.arguments {
-            return Err(EvalError::ArgumentLengthMismatch {
-                expected: vec![self.arguments],
-                found: vec.len(),
-            });
-        }
-        (self.approximate)(vec, cont)
-    }
-}
+use crate::prelude::*;
+
 ///The MathContext, holding all the functions and variables
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct MathContext {
     ///The variables
-    pub variables: HashMap<MathIdentifier, Value>,
+    pub variables: HashMap<MathIdentifier, MathExpr>,
     /// The functions defined in this math context
     pub functions: HashMap<MathIdentifier, MathFunction>,
 }
@@ -142,7 +49,7 @@ impl MathContext {
     }
 
     ///Adding a variable
-    fn add_var(&mut self, identifier: Vec<Token>, value: Value) {
+    fn add_var(&mut self, identifier: Vec<Token>, value: MathExpr) {
         self.variables
             .insert(MathIdentifier { tokens: identifier }, value);
     }
@@ -175,11 +82,11 @@ impl MathContext {
         // Constants
         context.add_var(
             vec![Token::Backslash, Token::Identifier("pi".to_string())],
-            Value::Scalar(std::f64::consts::PI),
+            Factor::Constant(std::f64::consts::PI).into(),
         );
         context.add_var(
             vec![Token::Identifier("e".to_string())],
-            Value::Scalar(std::f64::consts::E),
+            Factor::Constant(std::f64::consts::E).into(),
         );
 
         // TODO add proper functions system so we can define the definition
@@ -207,39 +114,6 @@ impl MathContext {
         );
 
         context
-    }
-}
-/// The trait for easier managing of functions by automatically implementing it
-/// for common functions of f64 and other types
-///
-/// Note that if this is only implemented for Fn(f64)->f64 not Fn(&f64)->f64
-/// because a limitation in rusts compiler as they are seen as conflicting
-pub trait IntoMathFunction {
-    ///To convert to math function
-    fn into_math_function(self) -> MathFunction;
-}
-impl<F> IntoMathFunction for (F, usize, Option<InnerDeriveFunction>)
-where
-    F: Fn(Vec<Value>, &MathContext) -> Result<Value, EvalError>
-        + Send
-        + Sync
-        + 'static,
-{
-    fn into_math_function(self) -> MathFunction {
-        MathFunction::new(Arc::new(self.0), self.1, self.2)
-    }
-}
-impl IntoMathFunction for MathFunction {
-    fn into_math_function(self) -> MathFunction {
-        self
-    }
-}
-impl<F: Fn(f64) -> f64> IntoMathFunction for (F, Option<InnerDeriveFunction>)
-where
-    F: Send + Sync + 'static,
-{
-    fn into_math_function(self) -> MathFunction {
-        MathFunction::from_fn_pointer_expecting_single_scalar(self.0, 1, self.1)
     }
 }
 
@@ -274,14 +148,16 @@ mod test {
         let mut c1 = MathContext::new();
         c1.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            (|_, _: &MathContext| whatever!("testing"), 1, None),
+            (|_| whatever!("testing"), 1, None),
         );
         c1.merge(&c2);
-        assert!((c1.functions[&MathIdentifier::new(vec![
+        let f = &c1.functions[&MathIdentifier::new(vec![
             Token::Backslash,
-            Token::Identifier("nothing".to_owned())
-        ])]
-            .approximate)(vec![Value::Scalar(1.1)], &c1)
-        .is_err());
+            Token::Identifier("nothing".to_owned()),
+        ])];
+        assert!(match f {
+            MathFunction::Native(n) => n.run(vec![Value::Scalar(1.1)]).is_err(),
+            MathFunction::Foreign(_) => false,
+        });
     }
 }

@@ -4,7 +4,7 @@ use directories::{BaseDirs, ProjectDirs};
 use tracing::level_filters::LevelFilter;
 use tracing_appender::{non_blocking::WorkerGuard, rolling::Rotation};
 use tracing_subscriber::{
-    layer::SubscriberExt, util::SubscriberInitExt, Layer,
+    layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer
 };
 
 pub trait LogsDirectory {
@@ -36,8 +36,13 @@ pub fn init_logger(
     level: LevelFilter,
     file_name_prefix: impl Into<String>,
 ) -> Option<WorkerGuard> {
-    let stdout = tracing_subscriber::fmt::layer().with_filter(level);
+let env_filter = EnvFilter::default()
+        .add_directive(level.into())
+        .add_directive("rustyline=off".parse().unwrap())
+        .add_directive("tokio=off".parse().unwrap());
 
+    let stdout = tracing_subscriber::fmt::layer()
+        .with_filter(env_filter).with_filter(level);
     let mut log_file_writer = None;
     let mut guard = None;
     if let Some(project_dirs) = project_dirs {
