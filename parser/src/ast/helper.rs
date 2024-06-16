@@ -83,28 +83,6 @@ impl Factor {
     }
 }
 
-impl MathIdentifier {
-    ///Creates a new MathIdentifier fom a vec to identify a variable and
-    /// function
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens }
-    }
-    ///Creates a new MathIdentifier from a single Token to identify a variable
-    /// and a function
-    pub fn new_from_one(token: Token) -> Self {
-        Self {
-            tokens: vec![token],
-        }
-    }
-    ///# Warning
-    /// does no conversion or latex translation
-    pub fn from_single_ident(s: &str) -> Self {
-        Self {
-            tokens: vec![Token::Identifier(s.to_owned())],
-        }
-    }
-}
-
 impl FunctionCall {
     ///a helper method
     pub fn new(
@@ -188,7 +166,7 @@ impl SimpleCompare for (Simple, Simple) {
     }
 
     fn ast_equals(self) -> Ast {
-        Ast::Equality(self.0 .0, self.1.0)
+        Ast::Equality(self.0 .0, self.1 .0)
     }
 
     fn equivalent(&self, cont: &MathContext) -> bool {
@@ -263,8 +241,13 @@ impl Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
     }
     ///simplifies a matrix
-    pub fn matrix(m:Matrix<MathExpr>,cont:&MathContext)->Result<Simple, EvalError>{
-        Ok(Simple(Factor::Matrix(m.map_owned(|v|Ok(v.simple(cont)?.expr()))?).into()))
+    pub fn matrix(
+        m: Matrix<MathExpr>,
+        cont: &MathContext,
+    ) -> Result<Simple, EvalError> {
+        Ok(Simple(
+            Factor::Matrix(m.map_owned(|v| Ok(v.simple(cont)?.expr()))?).into(),
+        ))
     }
 }
 

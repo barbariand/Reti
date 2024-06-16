@@ -3,10 +3,10 @@
 //! for that it uses MathContext where you can add any function or variable  
 use std::collections::HashMap;
 
-use crate::prelude::*;
+use crate::{identifier::GreekLetter, prelude::*};
 
 ///The MathContext, holding all the functions and variables
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct MathContext {
     ///The variables
     pub variables: HashMap<MathIdentifier, MathExpr>,
@@ -48,20 +48,21 @@ impl MathContext {
         self.functions.contains_key(ident)
     }
 
-    ///Adding a variable
-    fn add_var(&mut self, identifier: Vec<Token>, value: MathExpr) {
+    /// Adding a variable that is a single greek letter.
+    fn add_greek_var(&mut self, letter: GreekLetter, value: MathExpr) {
         self.variables
-            .insert(MathIdentifier { tokens: identifier }, value);
+            .insert(MathIdentifier::from_single_greek(letter), value);
+    }
+
+    fn add_ascii_var(&mut self, s: &str, value: MathExpr) {
+        self.variables
+            .insert(MathIdentifier::from_single_ident(s), value);
     }
 
     ///Adding a function when it is IntoMathFunction
-    pub fn add_function(
-        &mut self,
-        identifier: Vec<Token>,
-        func: impl IntoMathFunction,
-    ) {
+    pub fn add_function(&mut self, s: &str, func: impl IntoMathFunction) {
         self.functions.insert(
-            MathIdentifier { tokens: identifier },
+            MathIdentifier::from_single_ident(s),
             func.into_math_function(),
         );
     }
@@ -80,38 +81,24 @@ impl MathContext {
         let mut context = MathContext::new();
 
         // Constants
-        context.add_var(
-            vec![Token::Backslash, Token::Identifier("pi".to_string())],
+        context.add_greek_var(
+            GreekLetter::LowercasePi,
             Factor::Constant(std::f64::consts::PI).into(),
         );
-        context.add_var(
-            vec![Token::Identifier("e".to_string())],
-            Factor::Constant(std::f64::consts::E).into(),
-        );
+        context
+            .add_ascii_var("e", Factor::Constant(std::f64::consts::E).into());
 
         // TODO add proper functions system so we can define the definition
         //  and value sets to validate the amount of arguments, the types of
         // arguments  (scalar or matrix).
 
         // Trigonometric functions
-        context.add_function(
-            vec![Token::Backslash, Token::Identifier("sin".to_string())],
-            (f64::sin, None),
-        );
-        context.add_function(
-            vec![Token::Backslash, Token::Identifier("cos".to_string())],
-            (f64::cos, None),
-        );
-        context.add_function(
-            vec![Token::Backslash, Token::Identifier("tan".to_string())],
-            (f64::tan, None),
-        );
+        context.add_function("sin", (f64::sin, None));
+        context.add_function("cos", (f64::cos, None));
+        context.add_function("tan", (f64::tan, None));
 
         // Logarithm
-        context.add_function(
-            vec![Token::Backslash, Token::Identifier("ln".to_string())],
-            (f64::ln, None),
-        );
+        context.add_function("ln", (f64::ln, None));
 
         context
     }

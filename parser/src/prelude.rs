@@ -24,8 +24,9 @@ pub(crate) type TokenSender = Sender<Token>;
 
 #[allow(unused_imports)]
 pub(crate) use crate::{
-    ast::{Factor, FunctionCall, MathExpr, MathIdentifier, MulType, Term},
+    ast::{Factor, FunctionCall, MathExpr, MulType, Term},
     functions::IntoMathFunction,
+    identifier::MathIdentifier,
     lexer::Lexer,
     matrix::Matrix,
     normalizer::Normalizer,

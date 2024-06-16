@@ -7,6 +7,7 @@ pub mod context;
 
 pub mod error;
 pub mod functions;
+pub mod identifier;
 pub mod lexer;
 pub mod matrix;
 pub mod normalizer;

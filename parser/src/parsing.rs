@@ -217,9 +217,7 @@ impl Parser {
                 if ident.chars().count() != 1 {
                     panic!("Identifier was not splitted correctly.")
                 }
-                let math_identifier = MathIdentifier {
-                    tokens: vec![Token::Identifier(ident)],
-                };
+                let math_identifier = MathIdentifier::from_single_ident(&ident);
                 self.factor_identifier(math_identifier).await?
             }
             Token::Minus => Factor::Constant(-1.0),

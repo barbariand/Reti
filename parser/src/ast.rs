@@ -467,16 +467,6 @@ pub enum Factor {
     Matrix(Matrix<MathExpr>),
 }
 
-/// A mathematical identifier, for example variable or function names.
-///
-/// Examples of valid math identifiers: "x", "x_1", "F_g", "\overline{v}".
-#[derive(Eq, PartialEq, Debug, Hash, Clone)]
-pub struct MathIdentifier {
-    /// The tokens making up a identification
-    /// can be multiple as _ is understood as a token
-    pub tokens: Vec<Token>,
-}
-
 /// an identified function
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCall {
