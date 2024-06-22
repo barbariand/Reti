@@ -16,7 +16,7 @@ pub struct TokenReader {
 
 impl TokenReader {
     /// Creates a new TokenReader
-    pub fn new(tokens: TokenReceiver) -> Self {
+    pub const fn new(tokens: TokenReceiver) -> Self {
         TokenReader {
             tokens,
             next: VecDeque::new(),

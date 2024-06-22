@@ -5,7 +5,7 @@ use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
     ast::{
-        helper::Simple, simplify::Simplify, Factor, MathExpr, MathIdentifier,
+        simplify::Simplify, Factor, MathExpr, MathIdentifier,
         Term,
     },
     prelude::*,

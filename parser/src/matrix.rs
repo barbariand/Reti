@@ -37,7 +37,7 @@ impl<'a, T> Vector<'a, T> {
     /// # Errors
     /// Will return an `IncompatibleMatrixSizes::Vector` `EvalError` if the
     /// matrix is not a row or column vector.
-    pub fn new(matrix: &'a Matrix<T>) -> Result<Self, EvalError> {
+    pub const fn new(matrix: &'a Matrix<T>) -> Result<Self, EvalError> {
         if matrix.is_row_vector() {
             return Ok(Vector::Row(matrix));
         } else if matrix.is_column_vector() {
@@ -52,7 +52,7 @@ impl<'a, T> Vector<'a, T> {
     }
 
     /// Get the amount of elements this vector has.
-    pub fn get_size(&self) -> usize {
+    pub const fn get_size(&self) -> usize {
         match self {
             Vector::Row(matrix) => matrix.column_count,
             Vector::Column(matrix) => matrix.row_count,
@@ -152,28 +152,28 @@ impl<T> Matrix<T> {
     }
 
     /// Returns the total number of rows in the matrix.
-    pub fn row_count(&self) -> usize {
+    pub const fn row_count(&self) -> usize {
         self.row_count
     }
 
     /// Returns the total number of columns in the matrix.
-    pub fn column_count(&self) -> usize {
+    pub const fn column_count(&self) -> usize {
         self.column_count
     }
 
     /// Returns whether this matrix is a vector. (Could be a row vector
     /// or a column vector).
-    pub fn is_vector(&self) -> bool {
+    pub const fn is_vector(&self) -> bool {
         self.is_row_vector() || self.is_column_vector()
     }
 
     /// Returns whether this matrix is a row vector.
-    pub fn is_row_vector(&self) -> bool {
+    pub const fn is_row_vector(&self) -> bool {
         self.row_count == 1
     }
 
     /// Returns whether this matrix is a column vector.
-    pub fn is_column_vector(&self) -> bool {
+    pub const fn is_column_vector(&self) -> bool {
         self.column_count == 1
     }
 
@@ -181,7 +181,7 @@ impl<T> Matrix<T> {
     ///
     /// # Errors
     /// Will error if this matrix is not a row or column vector.
-    pub fn as_vector(&self) -> Result<Vector<T>, EvalError> {
+    pub const fn as_vector(&self) -> Result<Vector<T>, EvalError> {
         Vector::new(self)
     }
     /// Get all elements of it as a vector
@@ -287,7 +287,7 @@ impl Matrix<Value> {
 
         ///helper function that returns a
         /// [IncompatibleMatrixSizes::CrossProduct] error
-        fn size_err(m: &Vector<Value>) -> EvalError {
+        const fn size_err(m: &Vector<Value>) -> EvalError {
             EvalError::IncompatibleMatrixSizes {
                 source: IncompatibleMatrixSizes::CrossProduct {
                     found_size: m.get_size(),
