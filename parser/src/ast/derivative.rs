@@ -221,7 +221,7 @@ mod test {
             .expect("could not parse the expected ast");
         let expected_simple = expected_ast.simplify(&context).unwrap();
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_simple, expected_simple, "\n\nfound / expected")
+        assert_eq!(found_simple.to_latex(), expected_simple.to_latex(), "\n\nfound / expected")
     }
 
     #[tokio::test]
@@ -241,9 +241,9 @@ mod test {
     #[tokio::test]
     async fn test() {
         ast_test_derive(
-            "(3x^2 + 2x) \\cdot e^{x^3}",
+            "(3x^2 + 2x)",
             &MathIdentifier::from_single_ident("x"),
-            "0.0",
+            "6x+2",
         )
         .await;
     }

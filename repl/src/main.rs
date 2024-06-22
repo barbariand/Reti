@@ -86,7 +86,7 @@ impl Repl {
                     error!("{}", e);
                     ControlFlow::Continue(())
                 })?;
-                let end_parse=Instant::now();
+                let time_parse=start_parse.elapsed();
 
                 /*
                 use parser::ast::to_latex::ToLaTeX;
@@ -111,10 +111,10 @@ impl Repl {
                     error!("could not evaluate ast {:?}", e);
                     ControlFlow::Continue(())
                 })?;
-                let end_eval=Instant::now();
+                let time_eval=start_eval.elapsed();
                 if self.time_it{
-                    println!("Parsing took:{}ms",(start_parse-end_parse).as_millis());
-                    println!("Evaluating took:{}ms",(start_eval-end_eval).as_millis());
+                    println!("Parsing took:{}ns",time_parse.as_nanos());
+                    println!("Evaluating took:{}ns",time_eval.as_nanos());
                 }
                 println!("{}", s);
             }
@@ -196,9 +196,9 @@ impl Repl {
                 ))
             }
             Ast::Equality(lhs, rhs) => {
-                let rhs = rhs.simple(self.approximator.context())?;
+                let rhs_simple = rhs.clone().simple(self.approximator.context())?;
                 if self.simple_ast_mode {
-                    println!("{:#?}={:#?}", lhs, rhs);
+                    println!("{:#?}={:#?}", lhs, rhs_simple);
                 }
                 ast_equality_to_string(
                     self.approximator.context_mut(),
@@ -213,9 +213,8 @@ impl Repl {
 fn ast_equality_to_string(
     cont: &mut MathContext,
     lhs: MathExpr,
-    rhs: Simple,
+    rhs: MathExpr,
 ) -> Result<String,EvalError> {
-    let rhs = rhs.expr();
     if let MathExpr::Term(Term::Multiply(
         parser::ast::MulType::Implicit,
         var,
