@@ -114,9 +114,10 @@ impl ToLaTeX for Factor {
 
 impl ToLaTeX for MathIdentifier {
     fn to_latex(&self) -> String {
-        self.tokens.iter().fold(String::new(), |mut output, token| {
-            output.push_str(&token.to_string());
-            output
-        })
+        todo!();
+        // self.tokens.iter().fold(String::new(), |mut output, token| {
+        //     output.push_str(&token.to_string());
+        //     output
+        // })
     }
 }

@@ -1,7 +1,10 @@
 //!Parsing the TokenStream to an AST
 use tracing::{trace, trace_span};
 
-use crate::prelude::*;
+use crate::{
+    identifier::{MathLetter, MathString},
+    prelude::*,
+};
 use async_recursion::async_recursion;
 ///Parser for parsing the stream when it is done by the normalizer
 pub struct Parser {
@@ -288,13 +291,16 @@ impl Parser {
             }
             _ => {
                 // assume greek alphabet
-                let math_identifier = MathIdentifier {
-                    tokens: vec![
-                        Token::Backslash,
-                        Token::Identifier(command.to_string()),
-                    ],
-                };
-                self.factor_identifier(math_identifier).await?
+                let letter = MathLetter::from_latex(command);
+                if let Some(letter) = letter {
+                    let math_str = MathString::from_letters(vec![letter]);
+                    let math_identifier = MathIdentifier::Name(math_str);
+                    self.factor_identifier(math_identifier).await?
+                } else {
+                    return Err(ParseError::InvalidFactor {
+                        token: Token::Identifier(command.to_string()),
+                    });
+                }
             }
         })
     }
@@ -342,9 +348,11 @@ impl Parser {
                         ident
                     );
                 }
-                MathExpr::Term(Term::Factor(Factor::Variable(MathIdentifier {
-                    tokens: vec![Token::Identifier(ident)],
-                })))
+                MathExpr::Term(Term::Factor(Factor::Variable(
+                    MathIdentifier::Name(MathString::from_letters(vec![
+                        MathLetter::Ascii(ident.bytes().next().unwrap()),
+                    ])),
+                )))
             }
             Token::NumberLiteral(num) => {
                 if num.raw.len() != 1 {

@@ -17,7 +17,9 @@ pub enum MathIdentifier {
     /// `MathIdentifier::Name("x")` and `index` being
     /// `MathIdentifier::Name("1")`.
     Index {
+        /// The base part of the identifier.
         name: Box<MathIdentifier>,
+        /// The index identifier.
         index: Box<MathIdentifier>,
     },
     /// A modifier applied to a MathIdentifier, for example an accent like
@@ -60,165 +62,195 @@ impl MathIdentifier {
         ))
     }
 
+    /// Create a MathIdentifier from a single greek letter. For example
+    /// "\lambda".
     pub fn from_single_greek(letter: GreekLetter) -> Self {
         Self::Name(MathString::from_letters(vec![MathLetter::Greek(letter)]))
     }
 }
 
+/// A macro for creating an enum with LaTeX.
+///
+/// # Example
+/// ```
+/// enum_with_latex!(ModifierType {
+/// Overline => "overline",
+/// Hat => "hat",
+/// });
+/// ```
 #[macro_export]
-macro_rules! enum_with_name {
-    ($name:ident { $($variant:ident),* $(,)? }) => {
+macro_rules! enum_with_latex {
+    ($name:ident { $($variant:ident => $latex:expr),* $(,)? }) => {
+        /// Generated enum. TODO Cindy fix this.
         #[derive(Eq, PartialEq, Debug, Hash, Clone)]
         pub enum $name {
-            $($variant),*
+            $(
+                /// Generated enum variant.
+                /// LaTeX: $latex
+                $variant
+            ),*
         }
 
         impl $name {
-            fn name(&self) -> &str {
+            /// Get the LaTeX code for this enum variant.
+            pub fn latex_code(&self) -> &'static str {
                 match self {
-                    $(Self::$variant => stringify!($variant)),*
+                    $(Self::$variant => $latex),*
+                }
+            }
+
+            /// Get enum variant by LaTeX.
+            pub fn from_latex(latex: &str) -> Option<Self> {
+                match latex {
+                    $($latex => Some(Self::$variant)),*,
+                    _ => None,
                 }
             }
         }
     }
 }
 
-enum_with_name!(ModifierType {
-    Overline,
-    Hat,
-    Tilde,
-    Bar,
-    Breve,
-    Check,
-    Dot,
-    Ddot,
-    Vec,
-    Mathring,
-    Text,
-    Mathbb,
-    Mathcal,
+enum_with_latex!(ModifierType {
+    Overline => "overline",
+    Hat => "hat",
+    Tilde => "tilde",
+    Bar => "bar",
+    Breve => "breve",
+    Check => "check",
+    Dot => "dot",
+    Ddot => "ddot",
+    Vec => "vec",
+    Mathring => "mathring",
+    Text => "text",
+    Mathbb => "mathbb",
+    Mathcal => "mathcal",
 });
 
+/// A string of mathematical letters that may consist of greek letters and other
+/// math symbols.
 #[derive(Eq, PartialEq, Debug, Hash, Clone)]
 pub struct MathString {
     vec: Vec<MathLetter>,
 }
 
 impl MathString {
+    /// Create a MathString from letters.
     pub fn from_letters(vec: Vec<MathLetter>) -> Self {
         Self { vec }
     }
 }
 
+/// A mathematical letter. Either ascii (letter from the English alphabet), a
+/// greek letter, or another mathematical symbol.
 #[derive(Eq, PartialEq, Debug, Hash, Clone)]
 pub enum MathLetter {
+    /// A letter in the English alphabet, for example "a", "x".
+    ///
+    /// Represented by the ascii code.
     Ascii(u8),
+    /// A greek letter.
     Greek(GreekLetter),
+    /// A mathematical symbol.
     Other(OtherSymbol),
 }
 
-enum_with_name!(GreekLetter {
-    UppercaseGamma,
-    UppercaseDelta,
-    UppercaseTheta,
-    UppercaseLambda,
-    UppercaseXi,
-    UppercasePi,
-    UppercaseSigma,
-    UppercaseUpsilon,
-    UppercasePsi,
-    UppercaseOmega,
-    VarUppercaseGamma,
-    VarUppercaseDelta,
-    VarUppercaseTheta,
-    VarUppercaseLambda,
-    VarUppercaseXi,
-    VarUppercasePi,
-    VarUppercaseSigma,
-    VarUppercaseUpsilon,
-    VarUppercasePhi,
-    VarUppercasePsi,
-    VarUppercaseOmega,
-    LowercaseAlpha,
-    LowercaseBeta,
-    LowercaseGamma,
-    LowercaseDelta,
-    LowercaseEpsilon,
-    LowercaseZeta,
-    LowercaseEta,
-    LowercaseTheta,
-    LowercaseIota,
-    LowercaseKappa,
-    LowercaseLambda,
-    LowercaseMu,
-    LowercaseNu,
-    LowercaseXi,
-    LowercaseOmicron,
-    LowercasePi,
-    LowercaseRho,
-    LowercaseSigma,
-    LowercaseTau,
-    LowercaseUpsilon,
-    LowercasePhi,
-    LowercaseChi,
-    LowercasePsi,
-    LowercaseOmega,
-    VarLowercaseEpsilon,
-    VarLowercaseKappa,
-    VarLowercaseTheta,
-    VheLowercaseTasym,
-    VarLowercasePi,
-    VarLowercaseRho,
-    VarLowercaseSigma,
-    VarLowercasePhi,
+impl MathLetter {
+    /// Get a MathLetter from LaTeX code.
+    pub fn from_latex(latex: &str) -> Option<Self> {
+        if let Some(letter) = GreekLetter::from_latex(latex) {
+            return Some(Self::Greek(letter));
+        }
+        if let Some(symbol) = OtherSymbol::from_latex(latex) {
+            return Some(Self::Other(symbol));
+        }
+        None
+    }
+}
+
+enum_with_latex!(GreekLetter {
+    UppercaseGamma => "Gamma",
+    UppercaseDelta => "Delta",
+    UppercaseTheta => "Theta",
+    UppercaseLambda => "Lambda",
+    UppercaseXi => "Xi",
+    UppercasePi => "Pi",
+    UppercaseSigma => "Sigma",
+    UppercaseUpsilon => "Upsilon",
+    UppercasePsi => "Psi",
+    UppercaseOmega => "Omega",
+    VarUppercaseGamma => "varGamma",
+    VarUppercaseDelta => "varDelta",
+    VarUppercaseTheta => "varTheta",
+    VarUppercaseLambda => "varLambda",
+    VarUppercaseXi => "varXi",
+    VarUppercasePi => "varPi",
+    VarUppercaseSigma => "varSigma",
+    VarUppercaseUpsilon => "varUpsilon",
+    VarUppercasePhi => "varPhi",
+    VarUppercasePsi => "varPsi",
+    VarUppercaseOmega => "varOmega",
+    LowercaseAlpha => "alpha",
+    LowercaseBeta => "beta",
+    LowercaseGamma => "gamma",
+    LowercaseDelta => "delta",
+    LowercaseEpsilon => "epsilon",
+    LowercaseZeta => "zeta",
+    LowercaseEta => "eta",
+    LowercaseTheta => "theta",
+    LowercaseIota => "iota",
+    LowercaseKappa => "kappa",
+    LowercaseLambda => "lambda",
+    LowercaseMu => "mu",
+    LowercaseNu => "nu",
+    LowercaseXi => "xi",
+    LowercaseOmicron => "omicron",
+    LowercasePi => "pi",
+    LowercaseRho => "rho",
+    LowercaseSigma => "sigma",
+    LowercaseTau => "tau",
+    LowercaseUpsilon => "upsilon",
+    LowercasePhi => "phi",
+    LowercaseChi => "chi",
+    LowercasePsi => "psi",
+    LowercaseOmega => "omega",
+    VarLowercaseEpsilon => "varepsilon",
+    VarLowercaseKappa => "varkappa",
+    VarLowercaseTheta => "vartheta",
+    VarLowercaseTasym => "vartasym",
+    VarLowercasePi => "varpi",
+    VarLowercaseRho => "varrho",
+    VarLowercaseSigma => "varsigma",
+    VarLowercasePhi => "varphi",
 });
 
-impl GreekLetter {
-    pub fn latex_code(&self) -> String {
-        let mut name = self.name();
-        let var = name.starts_with("Var");
-        if var {
-            name = &name[3..];
-        }
-        let lowercase = match &name[0..9] {
-            "Lowecase" => true,
-            "Uppercase" => false,
-            _ => panic!("Wrong enum variant name."),
-        };
-        let mut res = name[10..].to_string();
-        if lowercase {
-            let mut chars = res.chars();
-            res = format!(
-                "{}{}",
-                chars.next().unwrap().to_ascii_lowercase(),
-                chars.as_str()
-            );
-        }
-        if var {
-            res = format!("var{}", res);
-        }
-
-        res
-    }
-}
-
-enum_with_name!(OtherSymbol { Sin, Cos, Tan, Ln });
-
-impl OtherSymbol {
-    pub fn latex_code(&self) -> String {
-        self.name().to_lowercase()
-    }
-}
+enum_with_latex!(OtherSymbol {
+    Sin => "sin",
+    Cos => "cos",
+    Tan => "tan",
+    Ln => "ln",
+});
 
 #[cfg(test)]
 mod tests {
     use crate::identifier::GreekLetter;
 
     #[test]
-    fn greek_letters_latex() {
+    fn greek_letters_to_latex() {
         assert_eq!(GreekLetter::LowercaseAlpha.latex_code(), "alpha");
         assert_eq!(GreekLetter::UppercasePi.latex_code(), "Pi");
         assert_eq!(GreekLetter::VarUppercaseDelta.latex_code(), "varDelta");
         assert_eq!(GreekLetter::VarLowercasePi.latex_code(), "varpi");
+    }
+
+    fn from_latex_test(latex: &'static str, letter: GreekLetter) {
+        assert_eq!(GreekLetter::from_latex(latex).unwrap(), letter);
+    }
+
+    #[test]
+    fn greek_letters_from_latex() {
+        from_latex_test("alpha", GreekLetter::LowercaseAlpha);
+        from_latex_test("Pi", GreekLetter::UppercasePi);
+        from_latex_test("varDelta", GreekLetter::VarUppercaseDelta);
+        from_latex_test("varpi", GreekLetter::VarLowercasePi);
     }
 }
