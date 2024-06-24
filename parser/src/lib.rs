@@ -1,5 +1,5 @@
 //! Reti is an in-development calculator that can evaluate LaTeX expressions.
-#![warn(missing_docs, clippy::missing_docs_in_private_items)]
+#![warn(missing_docs, clippy::missing_docs_in_private_items,clippy::missing_const_for_fn)]
 
 pub mod approximator;
 pub mod ast;

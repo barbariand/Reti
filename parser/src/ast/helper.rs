@@ -30,14 +30,14 @@ impl MathExpr {
         }
     }
     ///Gets a factor if it is a factor otherwise None
-    pub fn factor(&self) -> Option<&Factor> {
+    pub const fn factor(&self) -> Option<&Factor> {
         match self {
             MathExpr::Term(Term::Factor(f)) => Some(f),
             _ => None,
         }
     }
     /// gets a term if it is a term otherwise None
-    pub fn term(&self) -> Option<&Term> {
+    pub const fn term(&self) -> Option<&Term> {
         match self {
             MathExpr::Term(t) => Some(t),
             _ => None,
@@ -68,7 +68,7 @@ impl Term {
         Self::Divide(a.get_term_or_wrap().boxed(), b.get_factor_or_wrap())
     }
     ///Gets a factor if it is a factor otherwise None
-    pub fn factor(&self) -> Option<&Factor> {
+    pub const fn factor(&self) -> Option<&Factor> {
         match self {
             Term::Factor(f) => Some(f),
             _ => None,
@@ -85,7 +85,7 @@ impl Factor {
 
 impl FunctionCall {
     ///a helper method
-    pub fn new(
+    pub const fn new(
         function_name: MathIdentifier,
         arguments: Vec<MathExpr>,
     ) -> Self {
@@ -191,7 +191,7 @@ impl Simple {
         Ast::Expression(self.0)
     }
     ///gets a ref to inner item
-    pub fn math_expr(&self) -> &MathExpr {
+    pub const fn math_expr(&self) -> &MathExpr {
         &self.0
     }
     ///gets a ref to inner item
@@ -229,15 +229,15 @@ impl Simple {
         Simple(Factor::Constant(numerator / denominator).into())
     }
     ///makes a Factor::Constant() containing the given constant
-    pub fn constant(constant: f64) -> Simple {
+    pub const fn constant(constant: f64) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::Constant(constant))))
     }
     ///Puts a Variable into a Simple
-    pub fn variable(m: MathIdentifier) -> Simple {
+    pub const fn variable(m: MathIdentifier) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::Variable(m))))
     }
     ///Puts a functionCall into a Simple
-    pub fn function(f: FunctionCall) -> Simple {
+    pub const fn function(f: FunctionCall) -> Simple {
         Simple(MathExpr::Term(Term::Factor(Factor::FunctionCall(f))))
     }
     ///simplifies a matrix

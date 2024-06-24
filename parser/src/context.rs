@@ -93,12 +93,12 @@ impl MathContext {
         // arguments  (scalar or matrix).
 
         // Trigonometric functions
-        context.add_function("sin", (f64::sin, None));
-        context.add_function("cos", (f64::cos, None));
-        context.add_function("tan", (f64::tan, None));
+        context.add_function("sin", f64::sin);
+        context.add_function("cos", f64::cos);
+        context.add_function("tan", f64::tan);
 
         // Logarithm
-        context.add_function("ln", (f64::ln, None));
+        context.add_function("ln", f64::ln);
 
         context
     }
@@ -116,7 +116,7 @@ mod test {
         let mut c = MathContext::new();
         c.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            (|v: f64| v, None),
+            |v: f64| v,
         );
         let mut c1 = MathContext::new();
         c1.merge(&c);
@@ -130,7 +130,7 @@ mod test {
         let mut c2 = MathContext::new();
         c2.add_function(
             vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            (|v: f64| v, None),
+            |v: f64| v,
         );
         let mut c1 = MathContext::new();
         c1.add_function(

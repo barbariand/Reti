@@ -110,7 +110,7 @@ impl Token {
         }
     }
     ///Takes a ref to the inner string of the ident
-    pub fn take_ident(&self) -> Option<&String> {
+    pub const fn take_ident(&self) -> Option<&String> {
         match self {
             Self::Identifier(v) => Some(v),
             _ => None,

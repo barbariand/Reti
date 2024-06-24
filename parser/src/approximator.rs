@@ -12,11 +12,11 @@ pub struct Approximator {
 
 impl Approximator {
     /// Makes a new Approximator
-    pub fn new(context: MathContext) -> Self {
+    pub const fn new(context: MathContext) -> Self {
         Self { context }
     }
     ///returns a reference to the [MathContext] used for evaluating functions
-    pub fn context(&self) -> &MathContext {
+    pub const fn context(&self) -> &MathContext {
         &self.context
     }
     ///returns a mutable reference to the [MathContext] used for evaluating
