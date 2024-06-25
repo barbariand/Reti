@@ -1,5 +1,5 @@
 //! the derive implementations
-use crate::prelude::*;
+use crate::{identifier::OtherSymbol, prelude::*};
 impl Ast {
     ///doing derivation for the AST
     pub fn derivative(
@@ -144,10 +144,7 @@ impl Factor {
                     Term::Multiply(
                         MulType::Implicit,
                         Factor::FunctionCall(FunctionCall::new(
-                            MathIdentifier::new(vec![
-                                Token::Backslash,
-                                Token::Identifier("ln".to_owned()),
-                            ]),
+                            MathIdentifier::from_single_symbol(OtherSymbol::Ln),
                             vec![*exponent.clone()],
                         ))
                         .into(),
@@ -221,7 +218,11 @@ mod test {
             .expect("could not parse the expected ast");
         let expected_simple = expected_ast.simplify(&context).unwrap();
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_simple.to_latex(), expected_simple.to_latex(), "\n\nfound / expected")
+        assert_eq!(
+            found_simple.to_latex(),
+            expected_simple.to_latex(),
+            "\n\nfound / expected"
+        )
     }
 
     #[tokio::test]

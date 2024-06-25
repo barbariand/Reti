@@ -67,6 +67,12 @@ impl MathIdentifier {
     pub fn from_single_greek(letter: GreekLetter) -> Self {
         Self::Name(MathString::from_letters(vec![MathLetter::Greek(letter)]))
     }
+
+    /// Create a MathIdentifier from a single symbol. For example
+    /// "\ln".
+    pub fn from_single_symbol(symbol: OtherSymbol) -> Self {
+        Self::Name(MathString::from_letters(vec![MathLetter::Other(symbol)]))
+    }
 }
 
 /// A macro for creating an enum with LaTeX.

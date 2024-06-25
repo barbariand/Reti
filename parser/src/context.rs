@@ -114,29 +114,18 @@ mod test {
     #[test]
     pub fn merging_functions() {
         let mut c = MathContext::new();
-        c.add_function(
-            vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |v: f64| v,
-        );
+        c.add_function("nothing", |v: f64| v);
         let mut c1 = MathContext::new();
         c1.merge(&c);
-        assert!(c1.is_defined_function(&MathIdentifier::new(vec![
-            Token::Backslash,
-            Token::Identifier("nothing".to_owned())
-        ])))
+        assert!(c1
+            .is_defined_function(&MathIdentifier::from_single_ident("nothing")))
     }
     #[test]
     pub fn overloading_functions() {
         let mut c2 = MathContext::new();
-        c2.add_function(
-            vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            |v: f64| v,
-        );
+        c2.add_function("nothing", |v: f64| v);
         let mut c1 = MathContext::new();
-        c1.add_function(
-            vec![Token::Backslash, Token::Identifier("nothing".to_owned())],
-            (|_| whatever!("testing"), 1, None),
-        );
+        c1.add_function("nothing", (|_| whatever!("testing"), 1, None));
         c1.merge(&c2);
         let f = &c1.functions[&MathIdentifier::new(vec![
             Token::Backslash,
