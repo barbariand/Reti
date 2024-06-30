@@ -123,6 +123,11 @@ impl MathString {
     pub fn from_letters(vec: Vec<MathLetter>) -> Self {
         Self { vec }
     }
+
+    /// Get the letters of this string.
+    pub fn letters(&self) -> &Vec<MathLetter> {
+        &self.vec
+    }
 }
 
 /// A mathematical letter. Either ascii (letter from the English alphabet), a
