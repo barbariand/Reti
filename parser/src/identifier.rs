@@ -30,25 +30,6 @@ pub enum MathIdentifier {
 }
 
 impl MathIdentifier {
-    /// Creates a new MathIdentifier fom a vec to identify a variable and
-    /// function
-    /// # Deprecated
-    /// MathIdentifiers are no longer represented by an array of tokens.
-    #[deprecated]
-    pub fn new(_tokens: Vec<Token>) -> Self {
-        panic!("Use of deprecated MathIdentifier::new.");
-    }
-    /// Creates a new MathIdentifier from a single Token to identify a variable
-    /// and a function.
-    /// # Deprecated
-    /// MathIdentifiers are no longer represented by tokens.
-    #[deprecated]
-    pub fn new_from_one(token: Token) -> Self {
-        if let Token::Identifier(s) = token {
-            return Self::from_single_ident(&s);
-        }
-        panic!();
-    }
     /// Create a MathIdentifier from a single string. For example "x".
     ///
     /// Note that this method does not parse LaTeX, so passing "x_1" as a string

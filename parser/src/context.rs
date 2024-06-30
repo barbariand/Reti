@@ -3,7 +3,10 @@
 //! for that it uses MathContext where you can add any function or variable  
 use std::collections::HashMap;
 
-use crate::{identifier::GreekLetter, prelude::*};
+use crate::{
+    identifier::{GreekLetter, OtherSymbol},
+    prelude::*,
+};
 
 ///The MathContext, holding all the functions and variables
 #[derive(Clone, Debug)]
@@ -59,10 +62,14 @@ impl MathContext {
             .insert(MathIdentifier::from_single_ident(s), value);
     }
 
-    ///Adding a function when it is IntoMathFunction
-    pub fn add_function(&mut self, s: &str, func: impl IntoMathFunction) {
+    /// Add a function identified by a symbol.
+    pub fn add_symbol_function(
+        &mut self,
+        symbol: OtherSymbol,
+        func: impl IntoMathFunction,
+    ) {
         self.functions.insert(
-            MathIdentifier::from_single_ident(s),
+            MathIdentifier::from_single_symbol(symbol),
             func.into_math_function(),
         );
     }
@@ -93,12 +100,12 @@ impl MathContext {
         // arguments  (scalar or matrix).
 
         // Trigonometric functions
-        context.add_function("sin", f64::sin);
-        context.add_function("cos", f64::cos);
-        context.add_function("tan", f64::tan);
+        context.add_symbol_function(OtherSymbol::Sin, f64::sin);
+        context.add_symbol_function(OtherSymbol::Cos, f64::cos);
+        context.add_symbol_function(OtherSymbol::Tan, f64::tan);
 
         // Logarithm
-        context.add_function("ln", f64::ln);
+        context.add_symbol_function(OtherSymbol::Ln, f64::ln);
 
         context
     }
@@ -108,29 +115,32 @@ impl MathContext {
 mod test {
     use snafu::whatever;
 
+    use crate::identifier::OtherSymbol;
     #[allow(unused_imports)]
     use crate::prelude::*;
 
     #[test]
     pub fn merging_functions() {
         let mut c = MathContext::new();
-        c.add_function("nothing", |v: f64| v);
+        c.add_symbol_function(OtherSymbol::Sin, |v: f64| v);
         let mut c1 = MathContext::new();
         c1.merge(&c);
-        assert!(c1
-            .is_defined_function(&MathIdentifier::from_single_ident("nothing")))
+        assert!(c1.is_defined_function(&MathIdentifier::from_single_symbol(
+            OtherSymbol::Sin
+        )))
     }
     #[test]
     pub fn overloading_functions() {
         let mut c2 = MathContext::new();
-        c2.add_function("nothing", |v: f64| v);
+        c2.add_symbol_function(OtherSymbol::Sin, |v: f64| v);
         let mut c1 = MathContext::new();
-        c1.add_function("nothing", (|_| whatever!("testing"), 1, None));
+        c1.add_symbol_function(
+            OtherSymbol::Sin,
+            (|_| whatever!("testing"), 1, None),
+        );
         c1.merge(&c2);
-        let f = &c1.functions[&MathIdentifier::new(vec![
-            Token::Backslash,
-            Token::Identifier("nothing".to_owned()),
-        ])];
+        let f = &c1.functions
+            [&MathIdentifier::from_single_symbol(OtherSymbol::Sin)];
         assert!(match f {
             MathFunction::Native(n) => n.run(vec![Value::Scalar(1.1)]).is_err(),
             MathFunction::Foreign(_) => false,
