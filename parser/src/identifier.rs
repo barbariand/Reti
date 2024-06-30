@@ -1,8 +1,6 @@
 //! A module describing mathematical identifiers used in variable and function
 //! names.
 
-use crate::prelude::Token;
-
 /// A mathematical identifier, for example variable or function names.
 ///
 /// Examples of valid math identifiers: "x", "x_1", "F_g", "\overline{v}".

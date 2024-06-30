@@ -167,10 +167,11 @@ impl Factor {
                     radicand: radicand.clone(),
                 };
 
+                // Derivative of radicand
                 let radicand_deriv = Term::Multiply(
                     MulType::Implicit,
                     Factor::Fraction(
-                        root.into(),
+                        root.clone().into(),
                         Term::Multiply(
                             MulType::Implicit,
                             degree
@@ -185,7 +186,27 @@ impl Factor {
                     .into(),
                     radicand.derivative(dependent)?.get_factor_or_wrap(),
                 );
-                let degree_deriv = 0_f64.into(); // TODO
+
+                // Derivative of degree, for exmaple in \sqrt[x]{2}.
+                let degree_deriv = Term::Multiply(
+                    MulType::Implicit,
+                    Term::Multiply(
+                        MulType::Implicit,
+                        root.clone().into(),
+                        Factor::FunctionCall(FunctionCall {
+                            function_name: MathIdentifier::from_single_symbol(
+                                OtherSymbol::Ln,
+                            ),
+                            arguments: vec![*radicand.clone()],
+                        }),
+                    )
+                    .boxed(),
+                    degree
+                        .clone()
+                        .unwrap_or(2_f64.into())
+                        .derivative(dependent)?
+                        .get_factor_or_wrap(),
+                );
                 MathExpr::Add(radicand_deriv.into(), degree_deriv)
             }
             Factor::Fraction(f, g) => quotient_rule(f, g, dependent)?,
