@@ -58,6 +58,7 @@ impl MathIdentifier {
 ///
 /// # Example
 /// ```
+/// # use parser::enum_with_latex;
 /// enum_with_latex!(ModifierType {
 /// Overline => "overline",
 /// Hat => "hat",

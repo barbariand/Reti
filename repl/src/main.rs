@@ -4,7 +4,7 @@ use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
-    ast::{helper::Simple, simplify::Simplify, Factor, MathExpr, Term},
+    ast::{simplify::Simplify, Factor, MathExpr, Term},
     identifier::MathIdentifier,
     prelude::*,
 };
@@ -84,7 +84,7 @@ impl Repl {
                     error!("{}", e);
                     ControlFlow::Continue(())
                 })?;
-                let time_parse=start_parse.elapsed();
+                let time_parse = start_parse.elapsed();
 
                 /*
                 use parser::ast::to_latex::ToLaTeX;
@@ -109,10 +109,10 @@ impl Repl {
                     error!("could not evaluate ast {:?}", e);
                     ControlFlow::Continue(())
                 })?;
-                let time_eval=start_eval.elapsed();
-                if self.time_it{
-                    println!("Parsing took:{}ns",time_parse.as_nanos());
-                    println!("Evaluating took:{}ns",time_eval.as_nanos());
+                let time_eval = start_eval.elapsed();
+                if self.time_it {
+                    println!("Parsing took:{}ns", time_parse.as_nanos());
+                    println!("Evaluating took:{}ns", time_eval.as_nanos());
                 }
                 println!("{}", s);
             }
@@ -193,7 +193,8 @@ impl Repl {
                 ))
             }
             Ast::Equality(lhs, rhs) => {
-                let rhs_simple = rhs.clone().simple(self.approximator.context())?;
+                let rhs_simple =
+                    rhs.clone().simple(self.approximator.context())?;
                 if self.simple_ast_mode {
                     println!("{:#?}={:#?}", lhs, rhs_simple);
                 }
@@ -226,7 +227,7 @@ fn ast_equality_to_string(
                     {
                         let variable_name = arg.clone();
                         cont.add_function(
-                            function_name.tokens.clone(),
+                            function_name.clone(),
                             MathFunction::new_foreign(rhs, vec![variable_name]),
                         );
                         Ok("added function:".to_owned())
@@ -248,7 +249,7 @@ fn ast_equality_to_string(
                             })
                             .collect();
                         cont.add_function(
-                            function_name.tokens.clone(),
+                            function_name.clone(),
                             MathFunction::new_foreign(
                                 rhs,
                                 args.expect(

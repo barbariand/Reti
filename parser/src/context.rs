@@ -74,6 +74,27 @@ impl MathContext {
         );
     }
 
+    /// Add a function identified by a string identifier.
+    pub fn add_ident_function(
+        &mut self,
+        ident: &str,
+        func: impl IntoMathFunction,
+    ) {
+        self.functions.insert(
+            MathIdentifier::from_single_ident(ident),
+            func.into_math_function(),
+        );
+    }
+
+    /// Add a function identified by a [MathIdentifier].
+    pub fn add_function(
+        &mut self,
+        ident: MathIdentifier,
+        func: impl IntoMathFunction,
+    ) {
+        self.functions.insert(ident, func.into_math_function());
+    }
+
     ///The standard math
     /// Variables:
     /// * pi
