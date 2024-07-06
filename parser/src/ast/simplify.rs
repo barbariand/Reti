@@ -300,7 +300,7 @@ impl Simplify for Factor {
             Factor::Root {
                 degree: _,
                 radicand: _,
-            } => todo!(),
+            } => Simple::new_unchecked(MathExpr::Term(Term::Factor(self))), /* TODO */
             Factor::Fraction(numerator, denominator) => {
                 simplify_fraction_or_div(
                     numerator.simple(cont)?,
@@ -308,7 +308,9 @@ impl Simplify for Factor {
                     cont,
                 )
             }
-            Factor::Abs(_) => todo!(),
+            Factor::Abs(_) => {
+                Simple::new_unchecked(MathExpr::Term(Term::Factor(self)))
+            } // TODO
             Factor::Matrix(m) => Simple::matrix(m, cont)?,
         })
     }
