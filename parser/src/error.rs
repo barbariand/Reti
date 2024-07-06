@@ -123,6 +123,9 @@ pub enum EvalError {
         ///The actual derive error
         source: DeriveError,
     },
+    /// Division by zero.
+    #[snafu(display("Cannot divide by zero"))]
+    DivideByZero,
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]

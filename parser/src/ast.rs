@@ -3,7 +3,7 @@ use crate::prelude::*;
 
 pub mod derivative;
 pub mod equality;
-pub mod factorize_gcd;
+pub mod factorize;
 pub mod helper;
 pub mod into;
 pub mod simplify;

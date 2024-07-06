@@ -186,6 +186,11 @@ impl Simple {
     ) -> Result<Simple, EvalError> {
         math_expr.simple(cont)
     }
+    /// Construct a Simple without actually checking
+    /// that it's simplified.
+    pub fn new_unchecked(expr: MathExpr) -> Self {
+        Simple(expr)
+    }
     ///Constructs a Ast::Expression from the contained MathExpr
     pub fn expression(self) -> Ast {
         Ast::Expression(self.0)

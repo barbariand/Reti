@@ -2,7 +2,10 @@
 
 use crate::prelude::*;
 
-use super::helper::{NumberCompare, Simple, SimpleCompare};
+use super::{
+    factorize::{FactorVec, Factorize},
+    helper::{NumberCompare, Simple, SimpleCompare},
+};
 
 impl Simplify for Simple {
     fn simple(self, _: &MathContext) -> Result<Simple, EvalError> {
@@ -89,66 +92,137 @@ impl Simplify for MathExpr {
     }
 }
 
+// Since Simple only works for MathExprs we can't implement it here.
+impl FactorVec {
+    /// Simplify each factor in this vector.
+    ///
+    /// Note that this method does not simplify the vec itself, but only maps
+    /// each factor to simple.
+    pub fn simplify_factors(
+        self,
+        cont: &MathContext,
+    ) -> Result<FactorVec, EvalError> {
+        Ok(FactorVec {
+            vec: self
+                .vec
+                .into_iter()
+                .map(|factor| {
+                    factor
+                        .simple(cont)
+                        .map(|simple| simple.get_factor_or_wrap())
+                })
+                .collect::<Result<Vec<Factor>, EvalError>>()?,
+        })
+    }
+
+    /// Simplify this vector of factors by merging constant terms, removing
+    /// ones, etc.
+    fn simple(self) -> FactorVec {
+        // TODO this method only works for real numbers (or things that
+        // commute). Matricies for example do not commute, so we cannot
+        // move them around like this method does.
+        if self.vec.len() == 0 {
+            panic!("Cannot simplify empty factors vector.");
+        }
+        println!("simple, before: {:?}", self.vec);
+        let mut result = Vec::with_capacity(self.vec.len());
+        let mut constant_term = 1.0;
+        for factor in self.vec {
+            if let Factor::Constant(c) = factor {
+                if c.is_one() {
+                    // Skip terms that are 1 since multiplying by 1 is
+                    // redundant.
+                    continue;
+                } else if c.is_zero() {
+                    // If we have a zero anywhere, then all of the factors will
+                    // be zero.
+                    result = vec![Factor::Constant(0.0)];
+                    break;
+                }
+                // Collect all constant terms into one term.
+                constant_term *= c;
+                continue;
+            }
+            // Push the rest of the factors.
+            result.push(factor);
+        }
+        if !constant_term.is_one() || result.is_empty() {
+            result.insert(0, Factor::Constant(constant_term));
+        }
+        println!("simple, after: {:?}", result);
+        FactorVec { vec: result }
+    }
+}
+
+impl Term {
+    /// Simplify the inner parts of the Term, but not the term itself.
+    pub fn simple_inner(self, cont: &MathContext) -> Result<Simple, EvalError> {
+        match self {
+            Term::Factor(f) => f.simple(cont),
+            Term::Multiply(m, lhs, rhs) => {
+                Ok((lhs.simple_inner(cont)?, rhs.simple(cont)?).mul_wrapped(m))
+            }
+            Term::Divide(num, den) => {
+                Ok((num.simple_inner(cont)?, den.simple(cont)?).div_wrapped())
+            }
+        }
+    }
+}
+
 impl Simplify for Term {
     fn simple(self, cont: &MathContext) -> Result<Simple, EvalError> {
-        Ok(match self {
-            Term::Factor(f) => return f.simple(cont),
-            Term::Multiply(m, lhs, rhs) => {
-                let simple = (lhs.simple(cont)?, rhs.simple(cont)?);
-                match simple.to_math_expr() {
-                    (
-                        MathExpr::Term(Term::Factor(Factor::Constant(lhs))),
-                        MathExpr::Term(Term::Factor(Factor::Constant(rhs))),
-                    ) => Simple::mul(*lhs, *rhs),
-                    (
-                        _,
-                        MathExpr::Term(Term::Factor(Factor::Constant(rhs))),
-                    ) => {
-                        if rhs.is_one() {
-                            simple.0
-                        } else if rhs.is_zero() {
-                            Simple::constant(0.0)
-                        } else {
-                            simple.mul_wrapped(m.clone())
-                        }
-                    }
-                    /* (
-                        MathExpr::Term(Term::Factor(Factor::Parenthesis(p))),
-                        rhs,
-                    ) => {
-                        todo!()
-                    }
-                    (
-                        lhs,
-                        MathExpr::Term(Term::Factor(Factor::Parenthesis(p))),
-                    ) => {
-                        todo!()
-                    } */
-                    (
-                        MathExpr::Term(Term::Factor(Factor::Constant(lhs))),
-                        _,
-                    ) => {
-                        if lhs.is_one() {
-                            simple.1
-                        } else if lhs.is_zero() {
-                            Simple::constant(0.0)
-                        } else {
-                            simple.mul_wrapped(m.clone())
-                        }
-                    }
-                    _ => simple.mul_wrapped(m.clone()),
+        let factors = self
+            .simple_inner(cont)?
+            .get_term()
+            .expect("Im a term")
+            .factorize();
+
+        let factors_num = factors.factors_num.simplify_factors(cont)?.simple();
+
+        let numerator = factors_num
+            .to_term_ast()
+            .expect("simplify_factors does not return empty factors");
+
+        let mut factors_den = factors.factors_den;
+        if factors_den.vec.len() == 1 {
+            if let Factor::Constant(c) = factors_den.vec[0] {
+                if c.is_one() {
+                    // The denominator is 1, we don't need to express this as a
+                    // fraction. Remove the denominator (make vec size 0).
+                    factors_den.vec.remove(0);
+                } else if c.is_zero() {
+                    return Err(EvalError::DivideByZero);
                 }
             }
-            Term::Divide(numerator, denominator) => {
-                // TODO simplify fraction, aka factor a and b and cancel common
-                // factors, remove fraction of b==1, etc.
-                simplify_fraction_or_div(
-                    numerator.simple(cont)?,
-                    denominator.simple(cont)?,
-                    cont,
-                )
+        }
+        if factors_den.vec.is_empty() {
+            // No denominator means we don't need to express this as a
+            // fraction.
+            return Ok(Simple::new_unchecked(MathExpr::Term(numerator)));
+        }
+
+        let factors_den = factors_den.simplify_factors(cont)?.simple();
+
+        if let Term::Factor(Factor::Constant(c)) = numerator {
+            if c.is_zero() {
+                // The numerator is 0, everything is zero.
+                return Factor::Constant(0.0).simple(cont);
             }
-        })
+        }
+
+        let denominator = factors_den
+            .to_term_ast()
+            .expect("simplify_factors does not return empty factors");
+
+        let denominator_factor = match denominator {
+            Term::Factor(f) => f,
+            _ => Factor::Parenthesis(MathExpr::Term(denominator).boxed()),
+        };
+
+        return Ok(Simple::new_unchecked(MathExpr::Term(Term::Divide(
+            numerator.boxed(),
+            denominator_factor,
+        ))));
     }
 }
 
@@ -160,7 +234,9 @@ impl Simplify for Factor {
             Factor::Variable(m) => {
                 return cont
                     .variables
-                    .get(&m).map(|v|v.clone().simple(cont)).unwrap_or(Ok(Simple::variable(m)))
+                    .get(&m)
+                    .map(|v| v.clone().simple(cont))
+                    .unwrap_or(Ok(Simple::variable(m)))
             }
             Factor::FunctionCall(func_call) => {
                 let func = cont
@@ -233,7 +309,7 @@ impl Simplify for Factor {
                 )
             }
             Factor::Abs(_) => todo!(),
-            Factor::Matrix(m) => Simple::matrix(m,cont)?,
+            Factor::Matrix(m) => Simple::matrix(m, cont)?,
         })
     }
 }
@@ -319,5 +395,13 @@ mod test {
     #[tokio::test]
     async fn test() {
         ast_test_simplify("2x^{2-1}1+\\ln(2)x^{2}0", "2x").await;
+    }
+    #[tokio::test]
+    async fn multiply_remove_parenthesis() {
+        ast_test_simplify("2(2x)", "4x").await;
+    }
+    #[tokio::test]
+    async fn multiply_remove_parenthesis_2() {
+        ast_test_simplify("3(2x)+2", "6x+2").await;
     }
 }
