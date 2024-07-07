@@ -2,7 +2,7 @@
 use tracing::{trace, trace_span};
 
 use crate::{
-    identifier::{MathLetter, MathString},
+    identifier::{MathLetter, MathString, ModifierType},
     prelude::*,
 };
 use async_recursion::async_recursion;
@@ -165,11 +165,9 @@ impl Parser {
         Ok(term)
     }
 
-    /// Parse a factor, and if the factor has an exponent attached to it, parse
-    /// the exponent too.
-    #[async_recursion]
-    async fn factor(&mut self) -> Result<Factor, ParseError> {
-        // Split identifiers into single characters
+    /// If the next character is an identifier, ensure that it only has length
+    /// one by splitting it.
+    async fn split_next_identifier(&mut self) {
         if let Token::Identifier(text) = self.reader.peek().await {
             if text.len() > 1 {
                 let mut tokens = Vec::new();
@@ -179,6 +177,14 @@ impl Parser {
                 self.reader.replace(0..=0, tokens).await;
             }
         }
+    }
+
+    /// Parse a factor, and if the factor has an exponent attached to it, parse
+    /// the exponent too.
+    #[async_recursion]
+    async fn factor(&mut self) -> Result<Factor, ParseError> {
+        // Split identifiers into single characters
+        self.split_next_identifier().await;
         // First read a factor, but then see if we have exponents after it.
         // Exponents need to be baked into the factor since exponents should
         // be evaluated before multiplications.
@@ -221,6 +227,8 @@ impl Parser {
                     panic!("Identifier was not splitted correctly.")
                 }
                 let math_identifier = MathIdentifier::from_single_ident(&ident);
+                let math_identifier =
+                    self.math_identifier_tail(math_identifier).await?;
                 self.factor_identifier(math_identifier).await?
             }
             Token::Minus => Factor::Constant(-1.0),
@@ -290,27 +298,95 @@ impl Parser {
                 }
             }
             _ => {
-                // assume greek alphabet
-                let letter = MathLetter::from_latex(command);
-                if let Some(letter) = letter {
-                    let math_str = MathString::from_letters(vec![letter]);
-                    let math_identifier = MathIdentifier::Name(math_str);
-                    self.factor_identifier(math_identifier).await?
-                } else {
-                    return Err(ParseError::InvalidFactor {
-                        token: Token::Identifier(command.to_string()),
-                    });
-                }
+                let ident = self.parse_math_identifier_command(command).await?;
+                self.factor_identifier(ident).await?
             }
         })
     }
-    ///identify if it is a defined function and then return it as such
+
+    /// Parse a math identifier. May be ran recursively to parse inner
+    /// identifiers.
+    #[async_recursion]
+    async fn parse_math_identifier(
+        &mut self,
+    ) -> Result<MathIdentifier, ParseError> {
+        self.split_next_identifier().await;
+        let math_identifier = match self.reader.read().await {
+            Token::Identifier(ident) => {
+                MathIdentifier::from_single_ident(&ident)
+            }
+            Token::Backslash => {
+                let command = self.read_identifier().await?;
+                self.parse_math_identifier_command(&command).await?
+            }
+            t => return Err(ParseError::InvalidIdentifierToken { token: t }),
+        };
+        self.math_identifier_tail(math_identifier).await
+    }
+
+    /// Parse a [MathIdentifier] that starts with a command.
+    async fn parse_math_identifier_command(
+        &mut self,
+        command: &str,
+    ) -> Result<MathIdentifier, ParseError> {
+        let letter = MathLetter::from_latex(command);
+        let modifier = ModifierType::from_latex(command);
+        let math_identifier = if let Some(letter) = letter {
+            let math_str = MathString::from_letters(vec![letter]);
+            MathIdentifier::Name(math_str)
+        } else if let Some(modifier) = modifier {
+            let inner = self.parse_inner_math_identifier().await?;
+            MathIdentifier::Modifier(modifier, Box::new(inner))
+        } else {
+            return Err(ParseError::InvalidIdentifierCommmand {
+                command: command.to_string(),
+            });
+        };
+        // Parse index if there is one and then return.
+        self.math_identifier_tail(math_identifier).await
+    }
+
+    /// Parse an inner identifier which may be one character long, or if
+    /// surrounded by curly brackets may hold an entire inner identifier.
+    async fn parse_inner_math_identifier(
+        &mut self,
+    ) -> Result<MathIdentifier, ParseError> {
+        if self.reader.peek().await == Token::LeftCurlyBracket {
+            self.reader.skip().await;
+            let inner = self.parse_math_identifier().await?;
+            self.expect(Token::RightCurlyBracket).await?;
+            Ok(inner)
+        } else {
+            todo!("handle single character inner. For example \\overline x or x_1.");
+        }
+    }
+
+    /// Parse the index of an identifier, if there is an index. Otherwise return
+    /// the identifier as is.
+    async fn math_identifier_tail(
+        &mut self,
+        ident: MathIdentifier,
+    ) -> Result<MathIdentifier, ParseError> {
+        // Check for index
+        Ok(if self.reader.peek().await == Token::Underscore {
+            self.reader.skip().await;
+            let index = self.parse_inner_math_identifier().await?;
+            MathIdentifier::Index {
+                name: Box::new(ident),
+                index: Box::new(index),
+            }
+        } else {
+            // No index, just return as-is.
+            ident
+        })
+    }
+
+    /// Parse a factor when an identifier was just read. This may either be a
+    /// function or a variable.
     async fn factor_identifier(
         &mut self,
         identifier: MathIdentifier,
     ) -> Result<Factor, ParseError> {
-        // TODO indexes, for example \log_2(x)
-
         // This might be a function.
         if self.context.is_defined_function(&identifier) {
             Ok(self.factor_function_call(identifier).await?)
@@ -500,17 +576,21 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use crate::{
-        identifier::{GreekLetter, OtherSymbol},
+        identifier::{GreekLetter, ModifierType, OtherSymbol},
         prelude::*,
     };
     use pretty_assertions::assert_eq;
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let found_ast = parse(text, &MathContext::standard_math())
-            .await
-            .expect("failed to parse AST");
-
-        // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast, expected_ast);
+        let found_ast = parse(text, &MathContext::standard_math()).await;
+        match found_ast {
+            Ok(found_ast) => {
+                // Compare and print with debug and formatting otherwise.
+                assert_eq!(found_ast, expected_ast);
+            }
+            Err(err) => {
+                panic!("Failed to parse AST:\n{}\n\nDebug: {:?}", err, err);
+            }
+        }
     }
 
     #[tokio::test]
@@ -934,6 +1014,36 @@ mod tests {
         parse_test(
             r#"\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6  \end{bmatrix}"#,
             Ast::Expression(Factor::Matrix(matrix).into()),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn math_identifier_overline() {
+        parse_test(
+            r#"\overline{x}"#,
+            Ast::Expression(
+                Factor::Variable(MathIdentifier::Modifier(
+                    ModifierType::Overline,
+                    Box::new(MathIdentifier::from_single_ident("x")),
+                ))
+                .into(),
+            ),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn math_identifier_index() {
+        parse_test(
+            "x_{y}",
+            Ast::Expression(
+                Factor::Variable(MathIdentifier::Index {
+                    name: Box::new(MathIdentifier::from_single_ident("x")),
+                    index: Box::new(MathIdentifier::from_single_ident("y")),
+                })
+                .into(),
+            ),
         )
         .await;
     }

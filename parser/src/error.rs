@@ -35,6 +35,19 @@ pub enum ParseError {
         ///The token could not be understood when parsing a factor
         token: Token,
     },
+    /// When an unexpected command is encountered when parsing a
+    /// MathIdentifier.
+    #[snafu(display("Unexpected command {{{command}}}, I expected either a greek letter like \\alpha or a modifier like \\overline{{x}}"))]
+    InvalidIdentifierCommmand {
+        /// The command that was unexpected.
+        command: String,
+    },
+    /// When an unexpected token is encountered when parsing a MathIdentifier.
+    #[snafu(display("Unexpected token {{{token}}}, I expected either a greek letter like \\alpha or a modifier like \\overline{{x}}"))]
+    InvalidIdentifierToken {
+        /// The token that was unexpected.
+        token: Token,
+    },
     ///Invalid in begin statement
     #[snafu(display("Got invalid \\begin{{{beginning}}}"))]
     InvalidBegin {
