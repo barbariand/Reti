@@ -1,6 +1,7 @@
 //!Factorization
 use crate::prelude::*;
 use std::fmt::Debug;
+use tracing::trace;
 
 /// A vector of factors. They are usually intended to be multiplied together.
 #[derive(Debug)]
@@ -69,13 +70,13 @@ pub trait Factorize {
 
 impl<T: FactorizeCollecting + Debug + Clone> Factorize for T {
     fn factorize(self) -> FactorizationResult {
-        println!("Factorizing {:#?}", self);
+        trace!("Factorizing {:#?}", self);
         let mut result = FactorizationResult::new();
         self.clone().factorize_collecting(&mut result); // TODO this is debug, remove clone.
         if result.factors_num.vec.is_empty() {
             panic!("Empty numerator when factorizing {:?}", self);
         }
-        print!("Resulted in {:#?}", result);
+        trace!("Resulted in {:#?}", result);
         result
     }
 }

@@ -1,6 +1,7 @@
 //! the implementations of simplification
 
 use crate::prelude::*;
+use tracing::trace;
 
 use super::{
     factorize::{FactorVec, Factorize},
@@ -124,7 +125,7 @@ impl FactorVec {
         if self.vec.len() == 0 {
             panic!("Cannot simplify empty factors vector.");
         }
-        println!("simple, before: {:?}", self.vec);
+        trace!("simple, before: {:?}", self.vec);
         let mut result = Vec::with_capacity(self.vec.len());
         let mut constant_term = 1.0;
         for factor in self.vec {
@@ -149,7 +150,7 @@ impl FactorVec {
         if !constant_term.is_one() || result.is_empty() {
             result.insert(0, Factor::Constant(constant_term));
         }
-        println!("simple, after: {:?}", result);
+        trace!("simple, after: {:?}", result);
         FactorVec { vec: result }
     }
 }
