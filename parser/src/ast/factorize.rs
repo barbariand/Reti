@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use tracing::trace;
 
 /// A vector of factors. They are usually intended to be multiplied together.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FactorVec {
     /// The vector that holds the factors.
     pub vec: Vec<Factor>,
@@ -15,7 +15,7 @@ impl FactorVec {
     ///
     /// Returns `None` if the vector is empty.
     pub fn to_term_ast(self) -> Option<Term> {
-        if self.vec.len() == 0 {
+        if self.vec.is_empty() {
             None
         } else if self.vec.len() == 2 {
             let mut vec = self.vec;
@@ -39,21 +39,12 @@ impl FactorVec {
 
 /// The result of factorization that holds the factors for the numerator and
 /// denominator.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FactorizationResult {
     /// The factors in the numerator (top part of a division).
     pub factors_num: FactorVec,
     /// The factors in the denominator (the bottom part of the division).
     pub factors_den: FactorVec,
-}
-
-impl FactorizationResult {
-    fn new() -> Self {
-        Self {
-            factors_num: FactorVec { vec: Vec::new() },
-            factors_den: FactorVec { vec: Vec::new() },
-        }
-    }
 }
 
 /// A trait added to things that can be factorized into vectors of factors.
@@ -71,7 +62,7 @@ pub trait Factorize {
 impl<T: FactorizeCollecting + Debug + Clone> Factorize for T {
     fn factorize(self) -> FactorizationResult {
         trace!("Factorizing {:#?}", self);
-        let mut result = FactorizationResult::new();
+        let mut result = FactorizationResult::default();
         self.clone().factorize_collecting(&mut result); // TODO this is debug, remove clone.
         if result.factors_num.vec.is_empty() {
             panic!("Empty numerator when factorizing {:?}", self);

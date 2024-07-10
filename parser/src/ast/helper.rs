@@ -188,7 +188,7 @@ impl Simple {
     }
     /// Construct a Simple without actually checking
     /// that it's simplified.
-    pub fn new_unchecked(expr: MathExpr) -> Self {
+    pub const fn new_unchecked(expr: MathExpr) -> Self {
         Simple(expr)
     }
     ///Constructs a Ast::Expression from the contained MathExpr

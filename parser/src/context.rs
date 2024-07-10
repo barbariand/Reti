@@ -56,7 +56,7 @@ impl MathContext {
         self.variables
             .insert(MathIdentifier::from_single_greek(letter), value);
     }
-
+    /// Adding a string as a single ident
     fn add_ascii_var(&mut self, s: &str, value: MathExpr) {
         self.variables
             .insert(MathIdentifier::from_single_ident(s), value);

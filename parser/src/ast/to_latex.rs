@@ -138,7 +138,7 @@ impl ToLaTeX for MathString {
         let mut str = String::new();
         for letter in self.letters() {
             let ll: String = letter.to_latex();
-            if !ll.starts_with("\\") && str.len() > 0 {
+            if !ll.starts_with('\\') && !str.is_empty() {
                 str.push(' ');
             }
             str.push_str(&ll);

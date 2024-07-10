@@ -1,6 +1,5 @@
 //! A module describing mathematical identifiers used in variable and function
 //! names.
-
 /// A mathematical identifier, for example variable or function names.
 ///
 /// Examples of valid math identifiers: "x", "x_1", "F_g", "\overline{v}".
@@ -67,19 +66,21 @@ impl MathIdentifier {
 #[macro_export]
 macro_rules! enum_with_latex {
     ($name:ident { $($variant:ident => $latex:expr),* $(,)? }) => {
-        /// Generated enum. TODO Cindy fix this.
+        /// Generated enum.
         #[derive(Eq, PartialEq, Debug, Hash, Clone)]
         pub enum $name {
             $(
                 /// Generated enum variant.
-                /// LaTeX: $latex
+                ///
+                /// LaTeX:
+                #[doc=$latex]
                 $variant
             ),*
-        }
+    }
 
         impl $name {
             /// Get the LaTeX code for this enum variant.
-            pub fn latex_code(&self) -> &'static str {
+            pub const fn latex_code(&self) -> &'static str {
                 match self {
                     $(Self::$variant => $latex),*
                 }
@@ -126,7 +127,7 @@ impl MathString {
     }
 
     /// Get the letters of this string.
-    pub fn letters(&self) -> &Vec<MathLetter> {
+    pub const fn letters(&self) -> &Vec<MathLetter> {
         &self.vec
     }
 }

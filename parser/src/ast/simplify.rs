@@ -122,7 +122,7 @@ impl FactorVec {
         // TODO this method only works for real numbers (or things that
         // commute). Matricies for example do not commute, so we cannot
         // move them around like this method does.
-        if self.vec.len() == 0 {
+        if self.vec.is_empty() {
             panic!("Cannot simplify empty factors vector.");
         }
         trace!("simple, before: {:?}", self.vec);
@@ -220,10 +220,10 @@ impl Simplify for Term {
             _ => Factor::Parenthesis(MathExpr::Term(denominator).boxed()),
         };
 
-        return Ok(Simple::new_unchecked(MathExpr::Term(Term::Divide(
+        Ok(Simple::new_unchecked(MathExpr::Term(Term::Divide(
             numerator.boxed(),
             denominator_factor,
-        ))));
+        ))))
     }
 }
 
@@ -320,6 +320,7 @@ impl Simplify for Factor {
 ///
 /// Because the division and factorization both use Simple objects it can be
 /// ensured that
+
 fn simplify_fraction_or_div(
     numerator: Simple,
     denominator: Simple,
