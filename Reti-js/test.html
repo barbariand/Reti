@@ -10,10 +10,10 @@
 
 <body>
     <script type="module">
-        import init, { test } from "./wasm/Reti_js.js"
+        import init, { parse } from "./wasm/Reti_js.js"
         async function run() {
             await init()
-            window.test = test;
+            window.test_parse = parse;
         }
 
         run()

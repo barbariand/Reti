@@ -4,7 +4,7 @@ use parser::{
     approximator::Approximator,
     ast::{simplify::Simplify, Ast},
     context::MathContext,
-    parse,
+    parse as parse_internal,
 };
 
 lazy_static! {
@@ -24,9 +24,10 @@ extern "C" {
     fn log(s: &str);
 }
 #[wasm_bindgen]
-pub fn test(s: String) -> Result<JsValue, String> {
+pub fn parse(s: String) -> Result<JsValue, String> {
     let aprox = Approximator::new(MathContext::default());
-    let parsed = RT.block_on(async { parse(&s, aprox.context()).await });
+    let parsed =
+        RT.block_on(async { parse_internal(&s, aprox.context()).await });
     let parsed = parsed.map_err(|e| format!("{e}"))?;
     match parsed {
         Ast::Expression(expr) => expr
