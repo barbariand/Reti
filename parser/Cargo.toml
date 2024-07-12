@@ -13,10 +13,12 @@ tracing = { version = "0.1.40", features = ["async-await"] }
 futures = "0.3.30"
 slicedisplay = "0.2.2"
 snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
+
 [dev-dependencies]
 pretty_assertions = "1.4.0"
 
 [features]
 default = ["tokio/test-util", "tokio/rt-multi-thread", "doc_test"]
-serde = ["dep:serde", "tokio/rt", "tokio/sync"]
+serde = ["dep:serde"]
 doc_test = []
+wasm = ["serde", "tokio/rt", "tokio/sync"]
