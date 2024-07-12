@@ -122,7 +122,7 @@ pub struct MathString {
 
 impl MathString {
     /// Create a MathString from letters.
-    pub fn from_letters(vec: Vec<MathLetter>) -> Self {
+    pub const fn from_letters(vec: Vec<MathLetter>) -> Self {
         Self { vec }
     }
 
