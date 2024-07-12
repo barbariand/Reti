@@ -12,10 +12,10 @@ Cargo.lock
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
-./Reti-js/wasm
 .idea
 .vscode
 
 # Added by cargo
 
 /target
+/Reti-js/wasm/**
