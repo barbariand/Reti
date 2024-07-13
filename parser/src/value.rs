@@ -17,6 +17,7 @@ pub enum Value {
 
 impl Value {
     ///returns as a scalar or fails
+    #[inline(always)]
     pub fn scalar(&self) -> Result<f64, EvalError> {
         match self {
             Value::Scalar(val) => Ok(*val),
@@ -31,6 +32,7 @@ impl Value {
     }
     /// mapping it for a function where it is a scalar and if not it returns an
     /// error
+    #[inline(always)]
     pub fn map_expecting_scalar(
         &self,
         func: impl Fn(f64) -> f64,
