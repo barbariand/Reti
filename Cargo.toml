@@ -11,4 +11,4 @@ lto = "fat"
 parser = { path = "./parser" }
 
 [workspace]
-members = ["Reti-js", "parser", "repl", "utils"]
+members = ["reti-js", "parser", "repl", "utils"]
