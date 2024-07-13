@@ -88,7 +88,6 @@ impl MathIdentifier {
 /// Hat => "hat",
 /// });
 /// ```
-#[macro_export]
 macro_rules! enum_with_latex {
     ($name:ident { $($variant:ident => $latex:expr),* $(,)? }) => {
         /// Generated enum.
@@ -98,7 +97,7 @@ macro_rules! enum_with_latex {
                 /// Generated enum variant.
                 ///
                 /// LaTeX:
-                #[doc=$latex]
+                #[doc=concat!("\\\\",$latex)]
                 $variant
             ),*
     }
