@@ -304,26 +304,6 @@ impl Parser {
         })
     }
 
-    /// Parse a math identifier. May be ran recursively to parse inner
-    /// identifiers.
-    #[async_recursion]
-    async fn parse_math_identifier(
-        &mut self,
-    ) -> Result<MathIdentifier, ParseError> {
-        self.split_next_identifier().await;
-        let math_identifier = match self.reader.read().await {
-            Token::Identifier(ident) => {
-                MathIdentifier::from_single_ident(&ident)
-            }
-            Token::Backslash => {
-                let command = self.read_identifier().await?;
-                self.parse_math_identifier_command(&command).await?
-            }
-            t => return Err(ParseError::InvalidIdentifierToken { token: t }),
-        };
-        self.math_identifier_tail(math_identifier).await
-    }
-
     /// Parse a [MathIdentifier] that starts with a command.
     async fn parse_math_identifier_command(
         &mut self,
@@ -350,10 +330,10 @@ impl Parser {
     /// surrounded by curly brackets may hold an entire inner identifier.
     async fn parse_inner_math_identifier(
         &mut self,
-    ) -> Result<MathIdentifier, ParseError> {
+    ) -> Result<MathExpr, ParseError> {
         if self.reader.peek().await == Token::LeftCurlyBracket {
             self.reader.skip().await;
-            let inner = self.parse_math_identifier().await?;
+            let inner = self.expr().await?;
             self.expect(Token::RightCurlyBracket).await?;
             Ok(inner)
         } else {
@@ -1025,7 +1005,7 @@ mod tests {
             Ast::Expression(
                 Factor::Variable(MathIdentifier::Modifier(
                     ModifierType::Overline,
-                    Box::new(MathIdentifier::from_single_ident("x")),
+                    Box::new(Factor::Variable(MathIdentifier::from_single_ident("x")).into()),
                 ))
                 .into(),
             ),
@@ -1034,13 +1014,46 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn math_identifier_index() {
+    async fn math_identifier_index_letter() {
         parse_test(
             "x_{y}",
             Ast::Expression(
                 Factor::Variable(MathIdentifier::Index {
                     name: Box::new(MathIdentifier::from_single_ident("x")),
-                    index: Box::new(MathIdentifier::from_single_ident("y")),
+                    index: Box::new(Factor::Variable(MathIdentifier::from_single_ident("y")).into()),
+                })
+                .into(),
+            ),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn math_identifier_index_brackets_digit() {
+        parse_test(
+            "x_{1}",
+            Ast::Expression(
+                Factor::Variable(MathIdentifier::Index {
+                    name: Box::new(MathIdentifier::from_single_ident("x")),
+                    index: Box::new(Factor::Constant(1.0).into()),
+                })
+                .into(),
+            ),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn math_identifier_index_n_plus_one() {
+        parse_test(
+            "x_{n+1}",
+            Ast::Expression(
+                Factor::Variable(MathIdentifier::Index {
+                    name: Box::new(MathIdentifier::from_single_ident("x")),
+                    index: Box::new(MathExpr::Add(
+                        Factor::Variable(MathIdentifier::from_single_ident("n")).into(),
+                        1_f64.into()
+                    )),
                 })
                 .into(),
             ),

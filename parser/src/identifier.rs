@@ -1,9 +1,14 @@
 //! A module describing mathematical identifiers used in variable and function
 //! names.
+
+use crate::ast::to_latex::ToLaTeX;
+use crate::prelude::*;
+use std::hash::Hash;
+
 /// A mathematical identifier, for example variable or function names.
 ///
 /// Examples of valid math identifiers: "x", "x_1", "F_g", "\overline{v}".
-#[derive(Eq, PartialEq, Debug, Hash, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum MathIdentifier {
     /// Identified by a name, for example "x".
     Name(MathString),
@@ -16,14 +21,34 @@ pub enum MathIdentifier {
     Index {
         /// The base part of the identifier.
         name: Box<MathIdentifier>,
-        /// The index identifier.
-        index: Box<MathIdentifier>,
+        /// The expression in the index.
+        index: Box<MathExpr>,
     },
     /// A modifier applied to a MathIdentifier, for example an accent like
     /// `\overline{x}`, `\hat{x}` and `\tilde{x}`. It may also be a
     /// change in font or other text rendering, for example \mathbb{R},
     /// \mathcal{C} and \text{sin}.
-    Modifier(ModifierType, Box<MathIdentifier>),
+    Modifier(ModifierType, Box<MathExpr>),
+}
+
+// TODO this is a bit of a hack since MathExpr doesn't implement Hash or Eq.
+// We might want to move away from using f64 for Factor::Constant so that
+// all AST structs can implement Eq and Hash.
+impl Eq for MathIdentifier {}
+impl Hash for MathIdentifier {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            MathIdentifier::Name(s) => s.hash(state),
+            MathIdentifier::Index { name, index } => {
+                name.hash(state);
+                index.to_latex().hash(state);
+            }
+            MathIdentifier::Modifier(m, i) => {
+                m.hash(state);
+                i.to_latex().hash(state);
+            }
+        }
+    }
 }
 
 impl MathIdentifier {
