@@ -70,8 +70,8 @@ impl<'a, T> Vector<'a, T> {
 impl<T> Matrix<T> {
     /// Constructs a new `Matrix` instance from a vector containing the values
     ///
-    /// In the Matrix internal representation the data as a Vec<T> witch is why
-    /// it is required to provide a Vec<T> instead of Vec<Vec<T>>
+    /// In the Matrix internal representation the data as a `Vec<T>` witch is
+    /// why it is required to provide a `Vec<T>` instead of `Vec<Vec<T>>`
     ///
     /// Note that this means that the elements need to be column per column so
     /// that indexing an element in row 1 and column 2 with size
