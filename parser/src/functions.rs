@@ -31,7 +31,7 @@ impl Debug for NativeFunction {
 }
 impl NativeFunction {
     ///New native function
-    const fn new(
+    pub(crate) const fn new(
         approximate: InnerMathFunction,
         arguments: usize,
         derivative: InnerDeriveFunction,
