@@ -115,6 +115,7 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {
 }
 /// functions for doc testing and other things that need to be public only for
 /// tests
+#[cfg(feature = "doc_test")]
 pub mod _private {
     use super::*;
 

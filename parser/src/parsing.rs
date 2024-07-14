@@ -129,7 +129,7 @@ impl Parser {
                     let mul_type = match ident.as_str() {
                         "cdot" | "cdotp" => MulType::Cdot,
                         "times" => MulType::Times,
-                        _ => unreachable!(),
+                        _ => unreachable!("invalid multype"),
                     };
                     self.reader.skip().await;
                     self.reader.skip().await;

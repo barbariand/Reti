@@ -1,9 +1,8 @@
 //!The errors that can happen when evaluating a latex string
+use crate::prelude::{MulType, Token};
 use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
-
-use crate::prelude::{MulType, Token};
 ///The errors that can happen while parsing latex
 #[derive(Debug, Snafu)]
 pub enum ParseError {

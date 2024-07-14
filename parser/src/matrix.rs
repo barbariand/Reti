@@ -7,6 +7,7 @@ use crate::prelude::*;
 
 ///The matrix struct representing a Matrix with one or more rows and columns
 #[derive(PartialEq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Matrix<T> {
     /// all the values stored in a Vec stored column per column so first in:
     /// values\[row*column_count+column]
