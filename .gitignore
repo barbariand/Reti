@@ -18,4 +18,4 @@ Cargo.lock
 # Added by cargo
 
 /target
-/Reti-js/wasm/**
+/reti-js/wasm/**
