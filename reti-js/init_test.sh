@@ -7,6 +7,6 @@ echo "building"
 FLAGS="-C opt-level=z -C lto";
 env RUSTFLAGS="$FLAGS" sh -c 'echo "running with flags $RUSTFLAGS" & cargo build --release --target wasm32-unknown-unknown'
 echo "binding wasm"
-wasm-bindgen --web $SCRIPT_DIR/../target/wasm32-unknown-unknown/release/Reti_js.wasm --out-dir $SCRIPT_DIR/wasm
+wasm-bindgen --web $SCRIPT_DIR/../target/wasm32-unknown-unknown/release/reti_js.wasm --out-dir $SCRIPT_DIR/wasm
 echo "done, returning to dir"
 cd $dir
