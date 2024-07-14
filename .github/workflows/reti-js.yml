@@ -3,10 +3,10 @@ name: Rust
 on:
   push:
     paths:
-      - Reti-js/**
+      - reti-js/**
   pull_request:
     paths:
-      - Reti-js/**
+      - reti-js/**
 
 env:
   CARGO_TERM_COLOR: always
