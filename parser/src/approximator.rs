@@ -29,7 +29,10 @@ impl Approximator {
     /// # Errors
     /// [EvalError]
     /// This can error if it can not be completed or it is wrong
-    pub fn eval_expr(&self, expr: Simple<MathExpr>) -> Result<Value, EvalError> {
+    pub fn eval_expr(
+        &self,
+        expr: Simple<MathExpr>,
+    ) -> Result<Value, EvalError> {
         match expr.expr() {
             MathExpr::Term(term) => self.eval_term(term.simple(&self.context)?),
             MathExpr::Add(a, b) => {
@@ -48,7 +51,7 @@ impl Approximator {
     /// [EvalError]
     /// This can error if it can not complete
     fn eval_term(&self, term: Simple<Term>) -> Result<Value, EvalError> {
-        match term.expr(){
+        match term.expr() {
             Term::Factor(factor) => {
                 self.eval_factor(factor.simple(&self.context)?)
             }

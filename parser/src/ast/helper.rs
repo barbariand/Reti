@@ -83,28 +83,6 @@ impl Factor {
     }
 }
 
-impl MathIdentifier {
-    ///Creates a new MathIdentifier fom a vec to identify a variable and
-    /// function
-    pub const fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens }
-    }
-    ///Creates a new MathIdentifier from a single Token to identify a variable
-    /// and a function
-    pub fn new_from_one(token: Token) -> Self {
-        Self {
-            tokens: vec![token],
-        }
-    }
-    ///# Warning
-    /// does no conversion or latex translation
-    pub fn from_single_ident(s: &str) -> Self {
-        Self {
-            tokens: vec![Token::Identifier(s.to_owned())],
-        }
-    }
-}
-
 impl FunctionCall {
     ///a helper method
     pub const fn new(
@@ -140,24 +118,25 @@ impl NumberCompare for f64 {
         (self - other).abs() < f64::EPSILON
     }
 }
-///This type if for comparing Simple<MathExpr>s and returning Simples, this makes sure
-/// that only correct simples can be constructed///Trait for comparing Simple<MathExpr>s
-pub trait SimpleMathExprs{
+///This type if for comparing Simple<MathExpr>s and returning Simples, this
+/// makes sure that only correct simples can be constructed///Trait for
+/// comparing Simple<MathExpr>s
+pub trait SimpleMathExprs {
     ///Gives as Ast::equals
     fn ast_equals(self) -> Ast;
 }
-impl SimpleMathExprs for (Simple<MathExpr>,Simple<MathExpr>){
+impl SimpleMathExprs for (Simple<MathExpr>, Simple<MathExpr>) {
     fn ast_equals(self) -> Ast {
-        Ast::Equality(self.0.0, self.1.0)
+        Ast::Equality(self.0 .0, self.1 .0)
     }
 }
 ///Trait for finding if they are equivalent
-pub trait SimpleCompareEquivalent{
+pub trait SimpleCompareEquivalent {
     ///checks if the contained are  the same
     fn equivalent(&self, cont: &MathContext) -> bool;
 }
-///This type if for comparing Simple<MathExpr> to Simple<Term> and returning Simples, this makes sure
-/// that only correct simples can be constructed
+///This type if for comparing Simple<MathExpr> to Simple<Term> and returning
+/// Simples, this makes sure that only correct simples can be constructed
 pub trait SimpleCompareMathExpr {
     ///gets the math_exprs to compare
     fn to_expr(&self) -> (&MathExpr, &Term);
@@ -166,9 +145,9 @@ pub trait SimpleCompareMathExpr {
     ///subtracts the compared items and produces a Simple
     fn sub_wrapped(self) -> Simple<MathExpr>;
 }
-impl SimpleCompareMathExpr for (Simple<MathExpr>,Simple<Term>){
+impl SimpleCompareMathExpr for (Simple<MathExpr>, Simple<Term>) {
     fn to_expr(&self) -> (&MathExpr, &Term) {
-        (&self.0.0,&self.1.0)
+        (&self.0 .0, &self.1 .0)
     }
 
     fn add(self) -> Simple<MathExpr> {
@@ -179,14 +158,15 @@ impl SimpleCompareMathExpr for (Simple<MathExpr>,Simple<Term>){
         Simple(MathExpr::Subtract(self.0.boxed_inner(), self.1.expr()))
     }
 }
-impl SimpleCompareEquivalent for (Simple<MathExpr>,Simple<Term>){
+impl SimpleCompareEquivalent for (Simple<MathExpr>, Simple<Term>) {
     fn equivalent(&self, cont: &MathContext) -> bool {
-        self.0.equivalent(&Simple(MathExpr::Term(self.1.0.clone())), cont)
+        self.0
+            .equivalent(&Simple(MathExpr::Term(self.1 .0.clone())), cont)
     }
 }
-///This type if for comparing Simple<Term> to Simple<Factor> and returning Simples, this makes sure
-/// that only correct simples can be constructed
-pub trait SimpleCompareTerm{
+///This type if for comparing Simple<Term> to Simple<Factor> and returning
+/// Simples, this makes sure that only correct simples can be constructed
+pub trait SimpleCompareTerm {
     ///gets the math_exprs to compare
     fn to_expr(&self) -> (&Term, &Factor);
     ///multiplies the compared items and produces a Simple
@@ -194,9 +174,9 @@ pub trait SimpleCompareTerm{
     ///divides them and produces a Simple
     fn div_wrapped(self) -> Simple<Term>;
 }
-impl SimpleCompareTerm for (Simple<Term>,Simple<Factor>){
+impl SimpleCompareTerm for (Simple<Term>, Simple<Factor>) {
     fn to_expr(&self) -> (&Term, &Factor) {
-        (&self.0.0,&self.1.0)
+        (&self.0 .0, &self.1 .0)
     }
 
     fn mul_wrapped(self, m: MulType) -> Simple<Term> {
@@ -204,42 +184,50 @@ impl SimpleCompareTerm for (Simple<Term>,Simple<Factor>){
     }
 
     fn div_wrapped(self) -> Simple<Term> {
-        Simple(Term::Divide( self.0.boxed_inner(), self.1.expr()))
+        Simple(Term::Divide(self.0.boxed_inner(), self.1.expr()))
     }
 }
-impl SimpleCompareEquivalent for (Simple<Term>,Simple<Factor>){
+impl SimpleCompareEquivalent for (Simple<Term>, Simple<Factor>) {
     fn equivalent(&self, cont: &MathContext) -> bool {
-        self.0.equivalent(&Simple(Term::Factor(self.1.0.clone())), cont)
+        self.0
+            .equivalent(&Simple(Term::Factor(self.1 .0.clone())), cont)
     }
-}///This type if for comparing Simple<Factor> to Simple<MathExpr> and returning Simples, this makes sure
-/// that only correct simples can be constructed
-pub trait SimpleCompareFactor{
+}
+///This type if for comparing Simple<Factor> to Simple<MathExpr> and returning
+/// Simples, this makes sure that only correct simples can be constructed
+pub trait SimpleCompareFactor {
     ///gets the math_exprs to compare
     fn to_expr(&self) -> (&Factor, &MathExpr);
     ///pows them and produces a Simple
     fn pow_wrapped(self) -> Simple<Factor>;
 }
-impl SimpleCompareFactor for (Simple<Factor>,Simple<MathExpr>){
+impl SimpleCompareFactor for (Simple<Factor>, Simple<MathExpr>) {
     fn to_expr(&self) -> (&Factor, &MathExpr) {
-        (&self.0,&self.1)
+        (&self.0, &self.1)
     }
 
     fn pow_wrapped(self) -> Simple<Factor> {
-        Simple(Factor::Power { base: self.0.boxed_inner(), exponent: self.1.boxed_inner() })
+        Simple(Factor::Power {
+            base: self.0.boxed_inner(),
+            exponent: self.1.boxed_inner(),
+        })
     }
 }
-impl SimpleCompareEquivalent for (Simple<Factor>,Simple<MathExpr>){
+impl SimpleCompareEquivalent for (Simple<Factor>, Simple<MathExpr>) {
     fn equivalent(&self, cont: &MathContext) -> bool {
-        self.1.equivalent(&Simple(MathExpr::Term(Term::Factor(self.0.0.clone()))), cont)
+        self.1.equivalent(
+            &Simple(MathExpr::Term(Term::Factor(self.0 .0.clone()))),
+            cont,
+        )
     }
 }
 ///Simple is a wrapper struct only allowed to be constructed when the contained
 /// MathExpr is in the simplest form
 #[derive(Clone, Debug, PartialEq)]
-pub struct Simple<T:Simplify+Into<MathExpr>>(pub(crate) T);
-impl<T:Simplify+Into<MathExpr>> Simple<T> {
+pub struct Simple<T: Simplify + Into<MathExpr>>(pub(crate) T);
+impl<T: Simplify + Into<MathExpr>> Simple<T> {
     ///returns the inner T in a box
-    pub fn boxed_inner(self)->Box<T>{
+    pub fn boxed_inner(self) -> Box<T> {
         Box::new(self.0)
     }
     ///Constructs a Simple from a MathExpr
@@ -248,6 +236,11 @@ impl<T:Simplify+Into<MathExpr>> Simple<T> {
         cont: &MathContext,
     ) -> Result<Simple<T>, EvalError> {
         math_expr.simple(cont)
+    }
+    /// Construct a Simple without actually checking
+    /// that it's simplified.
+    pub const fn new_unchecked(expr: T) -> Self {
+        Simple(expr)
     }
     ///Constructs a Ast::Expression from the contained MathExpr
     pub fn expression(self) -> Ast {
@@ -261,24 +254,23 @@ impl<T:Simplify+Into<MathExpr>> Simple<T> {
     pub fn expr(self) -> T {
         self.0
     }
-    
 }
-impl From<Simple<Term>> for Simple<MathExpr>{
+impl From<Simple<Term>> for Simple<MathExpr> {
     fn from(value: Simple<Term>) -> Self {
         Simple(value.0.into())
     }
 }
-impl From<Simple<Factor>> for Simple<MathExpr>{
+impl From<Simple<Factor>> for Simple<MathExpr> {
     fn from(value: Simple<Factor>) -> Self {
         Simple(value.0.into())
     }
 }
-impl From<Simple<Factor>> for Simple<Term>{
+impl From<Simple<Factor>> for Simple<Term> {
     fn from(value: Simple<Factor>) -> Self {
         Simple(value.0.into())
     }
 }
-impl Simple<Factor>{
+impl Simple<Factor> {
     ///adds 2 f64s and makes a Simple Constant
     pub fn add(lhs: f64, rhs: f64) -> Self {
         Simple(Factor::Constant(lhs + rhs).into())
@@ -308,11 +300,15 @@ impl Simple<Factor>{
         Simple(Factor::FunctionCall(f))
     }
     ///simplifies a matrix
-    pub fn matrix(m:Matrix<MathExpr>,cont:&MathContext)->Result<Self, EvalError>{
-        Ok(Simple(Factor::Matrix(m.map_owned(|v|Ok(v.simple(cont)?.expr()))?).into()))
+    pub fn matrix(
+        m: Matrix<MathExpr>,
+        cont: &MathContext,
+    ) -> Result<Self, EvalError> {
+        Ok(Simple(
+            Factor::Matrix(m.map_owned(|v| Ok(v.simple(cont)?.expr()))?).into(),
+        ))
     }
 }
-
 
 impl AsRef<MathExpr> for Simple<MathExpr> {
     fn as_ref(&self) -> &MathExpr {

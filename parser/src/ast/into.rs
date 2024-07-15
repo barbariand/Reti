@@ -7,7 +7,7 @@ impl From<Term> for MathExpr {
         MathExpr::Term(value)
     }
 }
-impl<T:Simplify+Into<MathExpr>> From<Simple<T>> for MathExpr{
+impl<T: Simplify + Into<MathExpr>> From<Simple<T>> for MathExpr {
     fn from(value: Simple<T>) -> Self {
         value.0.into()
     }

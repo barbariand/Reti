@@ -24,8 +24,9 @@ pub(crate) type TokenSender = Sender<Token>;
 
 #[allow(unused_imports)]
 pub(crate) use crate::{
-    ast::{Factor, FunctionCall, MathExpr, MathIdentifier, MulType, Term},
+    ast::{Factor, FunctionCall, MathExpr, MulType, Term},
     functions::IntoMathFunction,
+    identifier::MathIdentifier,
     lexer::Lexer,
     matrix::Matrix,
     normalizer::Normalizer,
@@ -114,6 +115,7 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {
 }
 /// functions for doc testing and other things that need to be public only for
 /// tests
+#[cfg(feature = "doc_test")]
 pub mod _private {
     use super::*;
 
@@ -157,7 +159,10 @@ where
 }
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::{
+        identifier::{GreekLetter, OtherSymbol},
+        prelude::*,
+    };
     use pretty_assertions::assert_eq;
     async fn parse_test(text: &str, expected_ast: Ast) {
         let found_ast =
@@ -258,12 +263,9 @@ mod tests {
                 Factor::Power {
                     base: Box::new(2f64.into()),
                     exponent: Box::new(
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![
-                                Token::Backslash,
-                                Token::Identifier("pi".to_string()),
-                            ],
-                        })
+                        Factor::Variable(MathIdentifier::from_single_greek(
+                            GreekLetter::LowercasePi,
+                        ))
                         .into(),
                     ),
                 }
@@ -323,9 +325,9 @@ mod tests {
                     Box::new(Term::Factor(Factor::Constant(2.0))),
                     // x^{2}
                     Factor::Power {
-                        base: Box::new(Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("x".to_string())],
-                        })),
+                        base: Box::new(Factor::Variable(
+                            MathIdentifier::from_single_ident("x"),
+                        )),
                         exponent: Box::new(MathExpr::Term(Term::Factor(
                             Factor::Constant(2.0),
                         ))),
@@ -340,14 +342,12 @@ mod tests {
                         // 5
                         Box::new(5f64.into()),
                         // x
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("x".to_string())],
-                        }),
+                        Factor::Variable(MathIdentifier::from_single_ident(
+                            "x",
+                        )),
                     )),
                     // y
-                    Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Identifier("y".to_string())],
-                    }),
+                    Factor::Variable(MathIdentifier::from_single_ident("y")),
                 ),
             )),
         )
@@ -366,15 +366,13 @@ mod tests {
                     // 2
                     Box::new(2f64.into()),
                     // x
-                    Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Identifier("x".to_string())],
-                    }),
+                    Factor::Variable(MathIdentifier::from_single_ident("x")),
                 )),
                 // y^2
                 Factor::Power {
-                    base: Box::new(Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Identifier("y".to_string())],
-                    })),
+                    base: Box::new(Factor::Variable(
+                        MathIdentifier::from_single_ident("y"),
+                    )),
                     exponent: 2f64.into(),
                 },
             ))),
@@ -387,12 +385,7 @@ mod tests {
         parse_test(
             "\\pi",
             Ast::Expression(MathExpr::Term(Term::Factor(Factor::Variable(
-                MathIdentifier {
-                    tokens: vec![
-                        Token::Backslash,
-                        Token::Identifier("pi".to_string()),
-                    ],
-                },
+                MathIdentifier::from_single_greek(GreekLetter::LowercasePi),
             )))),
         )
         .await;
@@ -408,31 +401,25 @@ mod tests {
                 Box::new(Term::Multiply(
                     MulType::Implicit,
                     Box::new(
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![
-                                Token::Backslash,
-                                Token::Identifier("pi".to_string()),
-                            ],
-                        })
+                        Factor::Variable(MathIdentifier::from_single_greek(
+                            GreekLetter::LowercasePi,
+                        ))
                         .into(),
                     ),
                     Factor::Parenthesis(Box::new(
-                        Factor::Variable(MathIdentifier {
-                            tokens: vec![Token::Identifier("x".to_string())],
-                        })
+                        Factor::Variable(MathIdentifier::from_single_ident(
+                            "x",
+                        ))
                         .into(),
                     )),
                 )),
                 Factor::FunctionCall(FunctionCall {
-                    function_name: MathIdentifier {
-                        tokens: vec![
-                            Token::Backslash,
-                            Token::Identifier("ln".to_string()),
-                        ],
-                    },
-                    arguments: vec![Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Identifier("x".to_string())],
-                    })
+                    function_name: MathIdentifier::from_single_symbol(
+                        OtherSymbol::Ln,
+                    ),
+                    arguments: vec![Factor::Variable(
+                        MathIdentifier::from_single_ident("x"),
+                    )
                     .into()],
                 }),
             ))),
@@ -459,9 +446,7 @@ mod tests {
                         Factor::Constant(2.0),
                     )),
                     // x
-                    Factor::Variable(MathIdentifier {
-                        tokens: vec![Token::Identifier("x".to_string())],
-                    }),
+                    Factor::Variable(MathIdentifier::from_single_ident("x")),
                 ))),
                 // 3
                 Term::Factor(Factor::Constant(3.0)),
@@ -500,10 +485,7 @@ mod tests {
         parse_test(
             "x=2",
             Ast::Equality(
-                Factor::Variable(MathIdentifier {
-                    tokens: vec![Token::Identifier("x".to_string())],
-                })
-                .into(),
+                Factor::Variable(MathIdentifier::from_single_ident("x")).into(),
                 2f64.into(),
             ),
         )

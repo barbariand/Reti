@@ -1,6 +1,9 @@
 //! convert the ast to latex
 
-use crate::prelude::*;
+use crate::{
+    identifier::{MathLetter, MathString},
+    prelude::*,
+};
 
 ///Converting the AST to latex
 pub trait ToLaTeX {
@@ -114,9 +117,44 @@ impl ToLaTeX for Factor {
 
 impl ToLaTeX for MathIdentifier {
     fn to_latex(&self) -> String {
-        self.tokens.iter().fold(String::new(), |mut output, token| {
-            output.push_str(&token.to_string());
-            output
-        })
+        match self {
+            MathIdentifier::Name(ms) => ms.to_latex(),
+            MathIdentifier::Index { name, index } => {
+                format!("{}_{{{}}}", name.to_latex(), index.to_latex())
+            }
+            MathIdentifier::Modifier(modifier_type, inner) => {
+                format!(
+                    "\\{}{{{}}}",
+                    modifier_type.latex_code(),
+                    inner.to_latex()
+                )
+            }
+        }
+    }
+}
+
+impl ToLaTeX for MathString {
+    fn to_latex(&self) -> String {
+        let mut str = String::new();
+        for letter in self.letters() {
+            let ll: String = letter.to_latex();
+            if !ll.starts_with('\\') && !str.is_empty() {
+                str.push(' ');
+            }
+            str.push_str(&ll);
+        }
+        str
+    }
+}
+
+impl ToLaTeX for MathLetter {
+    fn to_latex(&self) -> String {
+        match self {
+            MathLetter::Ascii(b) => {
+                String::from_utf8(vec![*b]).expect("Invalid MathIdentifier")
+            }
+            MathLetter::Greek(letter) => format!("\\{}", letter.latex_code()),
+            MathLetter::Other(symbol) => format!("\\{}", symbol.latex_code()),
+        }
     }
 }

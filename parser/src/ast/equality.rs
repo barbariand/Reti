@@ -7,14 +7,12 @@ use super::{
 };
 ///the implementation part
 #[allow(private_bounds)]
-pub trait MathEquality<T=Self>: PrivateMathEquality<T>
-where T:Simplify<T>{
+pub trait MathEquality<T = Self>: PrivateMathEquality<T>
+where
+    T: Simplify<T>,
+{
     ///the user part of the trait
-    fn equivalent(
-        &self,
-        other: &Self,
-        cont: &MathContext,
-    ) -> bool {
+    fn equivalent(&self, other: &Self, cont: &MathContext) -> bool {
         self.private_equals(other, cont)
     }
 }
@@ -22,13 +20,16 @@ impl MathEquality<MathExpr> for Simple<MathExpr> {}
 impl MathEquality<Term> for Simple<Term> {}
 impl MathEquality<Factor> for Simple<Factor> {}
 ///tries to see if they are mathematically the same
-trait PrivateMathEquality<T=Self>: Simplify<T> + Clone 
-where T:Simplify<T>+Into<MathExpr>{
+trait PrivateMathEquality<T = Self>: Simplify<T> + Clone
+where
+    T: Simplify<T> + Into<MathExpr>,
+{
     ///The implementation part
     fn private_equals(&self, other: &Self, cont: &MathContext) -> bool {
         self.clone().into().simple(cont).is_ok_and(|s| {
             other
-                .clone().into()
+                .clone()
+                .into()
                 .simple(cont)
                 .is_ok_and(|other| s.equals(&other, cont))
         })
@@ -39,7 +40,7 @@ where T:Simplify<T>+Into<MathExpr>{
     fn equals(&self, other: &Self, cont: &MathContext) -> bool;
 }
 
-impl PrivateMathEquality<MathExpr> for Simple<MathExpr>{
+impl PrivateMathEquality<MathExpr> for Simple<MathExpr> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
         match (self.inner(), other.inner()) {
             (
@@ -51,23 +52,19 @@ impl PrivateMathEquality<MathExpr> for Simple<MathExpr>{
         }
     }
 }
-impl PrivateMathEquality<Term> for Simple<Term>{
+impl PrivateMathEquality<Term> for Simple<Term> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
         match (self.inner(), other.inner()) {
-            (
-                Term::Factor(a),
-                Term::Factor(b),
-            ) => a.equals(b, cont),
-            (a,b) => a.equals(b, cont),
+            (Term::Factor(a), Term::Factor(b)) => a.equals(b, cont),
+            (a, b) => a.equals(b, cont),
         }
     }
 }
-impl PrivateMathEquality<Factor> for Simple<Factor>{
+impl PrivateMathEquality<Factor> for Simple<Factor> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
         self.inner().equals(&other.0, cont)
     }
 }
-
 
 impl PrivateMathEquality for MathExpr {
     fn equals(&self, other: &MathExpr, cont: &MathContext) -> bool {
@@ -145,14 +142,18 @@ impl PrivateMathEquality for Factor {
             ) => {
                 let res = match (d_1, d_2) {
                     (None, None) => true,
-                    (None, Some(d_2)) => d_2
-                        .clone()
-                        .simple(cont)
-                        .is_ok_and(|v| Into::<MathExpr>::into(Simple::constant(2.0)).equals(&v, cont)),
-                    (Some(d_1), None) => d_1
-                        .clone()
-                        .simple(cont)
-                        .is_ok_and(|v| Into::<MathExpr>::into(Simple::constant(2.0)).equals(&v, cont)),
+                    (None, Some(d_2)) => {
+                        d_2.clone().simple(cont).is_ok_and(|v| {
+                            Into::<MathExpr>::into(Simple::constant(2.0))
+                                .equals(&v, cont)
+                        })
+                    }
+                    (Some(d_1), None) => {
+                        d_1.clone().simple(cont).is_ok_and(|v| {
+                            Into::<MathExpr>::into(Simple::constant(2.0))
+                                .equals(&v, cont)
+                        })
+                    }
                     (Some(d_1), Some(d_2)) => {
                         d_1.clone().simple(cont).is_ok_and(|v_1| {
                             d_2.clone()

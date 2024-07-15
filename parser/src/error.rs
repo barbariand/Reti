@@ -1,9 +1,8 @@
 //!The errors that can happen when evaluating a latex string
+use crate::prelude::{MulType, Token};
 use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
-
-use crate::prelude::{MulType, Token};
 ///The errors that can happen while parsing latex
 #[derive(Debug, Snafu)]
 pub enum ParseError {
@@ -33,6 +32,19 @@ pub enum ParseError {
     #[snafu(display("Got invalid when parsing factor{{{token}}}"))]
     InvalidFactor {
         ///The token could not be understood when parsing a factor
+        token: Token,
+    },
+    /// When an unexpected command is encountered when parsing a
+    /// MathIdentifier.
+    #[snafu(display("Unexpected command {{{command}}}, I expected either a greek letter like \\alpha or a modifier like \\overline{{x}}"))]
+    InvalidIdentifierCommmand {
+        /// The command that was unexpected.
+        command: String,
+    },
+    /// When an unexpected token is encountered when parsing a MathIdentifier.
+    #[snafu(display("Unexpected token {{{token}}}, I expected either a greek letter like \\alpha or a modifier like \\overline{{x}}"))]
+    InvalidIdentifierToken {
+        /// The token that was unexpected.
         token: Token,
     },
     ///Invalid in begin statement
@@ -123,6 +135,9 @@ pub enum EvalError {
         ///The actual derive error
         source: DeriveError,
     },
+    /// Division by zero.
+    #[snafu(display("Cannot divide by zero"))]
+    DivideByZero,
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]

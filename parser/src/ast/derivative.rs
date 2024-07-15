@@ -1,5 +1,5 @@
 //! the derive implementations
-use crate::prelude::*;
+use crate::{identifier::OtherSymbol, prelude::*};
 impl Ast {
     ///doing derivation for the AST
     pub fn derivative(
@@ -144,10 +144,7 @@ impl Factor {
                     Term::Multiply(
                         MulType::Implicit,
                         Factor::FunctionCall(FunctionCall::new(
-                            MathIdentifier::new(vec![
-                                Token::Backslash,
-                                Token::Identifier("ln".to_owned()),
-                            ]),
+                            MathIdentifier::from_single_symbol(OtherSymbol::Ln),
                             vec![*exponent.clone()],
                         ))
                         .into(),
@@ -170,10 +167,11 @@ impl Factor {
                     radicand: radicand.clone(),
                 };
 
+                // Derivative of radicand
                 let radicand_deriv = Term::Multiply(
                     MulType::Implicit,
                     Factor::Fraction(
-                        root.into(),
+                        root.clone().into(),
                         Term::Multiply(
                             MulType::Implicit,
                             degree
@@ -188,7 +186,27 @@ impl Factor {
                     .into(),
                     radicand.derivative(dependent)?.get_factor_or_wrap(),
                 );
-                let degree_deriv = 0_f64.into(); // TODO
+
+                // Derivative of degree, for exmaple in \sqrt[x]{2}.
+                let degree_deriv = Term::Multiply(
+                    MulType::Implicit,
+                    Term::Multiply(
+                        MulType::Implicit,
+                        root.clone().into(),
+                        Factor::FunctionCall(FunctionCall {
+                            function_name: MathIdentifier::from_single_symbol(
+                                OtherSymbol::Ln,
+                            ),
+                            arguments: vec![*radicand.clone()],
+                        }),
+                    )
+                    .boxed(),
+                    degree
+                        .clone()
+                        .unwrap_or(2_f64.into())
+                        .derivative(dependent)?
+                        .get_factor_or_wrap(),
+                );
                 MathExpr::Add(radicand_deriv.into(), degree_deriv)
             }
             Factor::Fraction(f, g) => quotient_rule(f, g, dependent)?,
@@ -221,7 +239,11 @@ mod test {
             .expect("could not parse the expected ast");
         let expected_simple = expected_ast.simplify(&context).unwrap();
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_simple.to_latex(), expected_simple.to_latex(), "\n\nfound / expected")
+        assert_eq!(
+            found_simple.to_latex(),
+            expected_simple.to_latex(),
+            "\n\nfound / expected"
+        )
     }
 
     #[tokio::test]

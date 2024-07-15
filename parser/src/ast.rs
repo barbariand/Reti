@@ -3,7 +3,7 @@ use crate::prelude::*;
 
 pub mod derivative;
 pub mod equality;
-pub mod factorize_gcd;
+pub mod factorize;
 pub mod helper;
 pub mod into;
 pub mod simplify;
@@ -225,21 +225,15 @@ pub enum Factor {
     /// # use parser::token::Token;
     /// # use parser::prelude::MathContext;
     /// # use parser::value::Value;
+    /// # use parser::identifier::MathIdentifier;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let mut context=MathContext::standard_math();
-    /// # context.variables.insert(MathIdentifier::new(vec![Token::Identifier("f".to_owned())]), Value::Scalar(2.0));
     /// // parsing x
     ///
     /// assert_eq!(
     ///     parse("x", &context),
     ///     Ast::Expression(
-    ///         Factor::Variable(
-    ///             MathIdentifier::new(
-    ///                 vec![
-    ///                     Token::Identifier("x".to_owned())
-    ///                 ]
-    ///             )
-    ///         ).into()
+    ///         Factor::Variable(MathIdentifier::from_single_ident("x")).into()
     ///     )
     /// );
     /// ```
@@ -250,35 +244,26 @@ pub enum Factor {
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
-    /// # use parser::context::IntoMathFunction;
     /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # use std::sync::Arc;
     /// # use parser::value::Value;
+    /// # use parser::identifier::MathIdentifier;
     /// # let mut context=MathContext::standard_math();
-    /// # context.add_function(
-    /// # vec![Token::Identifier("f".to_owned())],
-    /// # (|_x:f64|{2.0},None)
-    /// # );
+    /// # context.add_ident_function("f", |_x:f64|{2.0});
     /// // parsing f(x)
     /// // where f needs to be defined for it to be interpreted as a function call
     ///
-    /// assert_eq!(parse("f(x)",&context),
-    /// Ast::Expression(
-    ///     Factor::FunctionCall(
-    ///         FunctionCall::new(
-    ///             MathIdentifier::new(
-    ///                 vec![Token::Identifier("f".to_owned())]
-    ///             ),
-    ///             vec![
-    ///                 Factor::Variable(
-    ///                     MathIdentifier::new(
-    ///                         vec![Token::Identifier("x".to_owned())]
-    ///                     )
-    ///                 ).into()
-    ///             ],
-    ///         )
-    ///     ).into()
-    /// ));
+    /// assert_eq!(
+    ///     parse("f(x)", &context),
+    ///     Ast::Expression(
+    ///         Factor::FunctionCall(FunctionCall::new(
+    ///             MathIdentifier::from_single_ident("f"),
+    ///             vec![Factor::Variable(MathIdentifier::from_single_ident("x"))
+    ///                 .into()],
+    ///         ))
+    ///         .into()
+    ///     )
+    /// );
     /// ```
     FunctionCall(FunctionCall),
 
@@ -465,16 +450,6 @@ pub enum Factor {
     /// );
     /// ```
     Matrix(Matrix<MathExpr>),
-}
-
-/// A mathematical identifier, for example variable or function names.
-///
-/// Examples of valid math identifiers: "x", "x_1", "F_g", "\overline{v}".
-#[derive(Eq, PartialEq, Debug, Hash, Clone)]
-pub struct MathIdentifier {
-    /// The tokens making up a identification
-    /// can be multiple as _ is understood as a token
-    pub tokens: Vec<Token>,
 }
 
 /// an identified function

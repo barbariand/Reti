@@ -4,10 +4,8 @@ use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
 use parser::{
-    ast::{
-        simplify::Simplify, Factor, MathExpr, MathIdentifier,
-        Term,
-    },
+    ast::{simplify::Simplify, Factor, MathExpr, Term},
+    identifier::MathIdentifier,
     prelude::*,
 };
 use rustyline::{
@@ -47,14 +45,14 @@ struct Repl {
     simple_ast_mode: bool,
     approximator: Approximator,
     rl: Editor<(), FileHistory>,
-    time_it:bool,
+    time_it: bool,
 }
 impl Repl {
     fn new(ast_start: bool) -> Repl {
         let context = MathContext::standard_math();
         Repl {
             simple_ast_mode: false,
-            time_it:false,
+            time_it: false,
             ast_mode: ast_start,
             approximator: Approximator::new(context),
             rl: DefaultEditor::new().expect("could not use as a terminal"), /* TODO manage this
@@ -81,12 +79,12 @@ impl Repl {
         match readline {
             Ok(line) => {
                 self.read(&line).await?;
-                let start_parse=Instant::now();
+                let start_parse = Instant::now();
                 let ast = self.parse(&line).await.map_err(|e| {
                     error!("{}", e);
                     ControlFlow::Continue(())
                 })?;
-                let time_parse=start_parse.elapsed();
+                let time_parse = start_parse.elapsed();
 
                 /*
                 use parser::ast::to_latex::ToLaTeX;
@@ -106,15 +104,15 @@ impl Repl {
                     return Ok(());
                 };
                 */
-                let start_eval=Instant::now();
+                let start_eval = Instant::now();
                 let s = self.eval(ast).map_err(|e| {
                     error!("could not evaluate ast {:?}", e);
                     ControlFlow::Continue(())
                 })?;
-                let time_eval=start_eval.elapsed();
-                if self.time_it{
-                    println!("Parsing took:{}ns",time_parse.as_nanos());
-                    println!("Evaluating took:{}ns",time_eval.as_nanos());
+                let time_eval = start_eval.elapsed();
+                if self.time_it {
+                    println!("Parsing took:{}ns", time_parse.as_nanos());
+                    println!("Evaluating took:{}ns", time_eval.as_nanos());
                 }
                 println!("{}", s);
             }
@@ -134,7 +132,6 @@ impl Repl {
         Ok(())
     }
     async fn read(&mut self, line: &String) -> Result<(), ControlFlow<()>> {
-        
         let span = trace_span!("preparing statement");
         let _enter = span.enter();
         debug!(line);
@@ -196,7 +193,8 @@ impl Repl {
                 ))
             }
             Ast::Equality(lhs, rhs) => {
-                let rhs_simple = rhs.clone().simple(self.approximator.context())?;
+                let rhs_simple =
+                    rhs.clone().simple(self.approximator.context())?;
                 if self.simple_ast_mode {
                     println!("{:#?}={:#?}", lhs, rhs_simple);
                 }
@@ -214,7 +212,7 @@ fn ast_equality_to_string(
     cont: &mut MathContext,
     lhs: MathExpr,
     rhs: MathExpr,
-) -> Result<String,EvalError> {
+) -> Result<String, EvalError> {
     if let MathExpr::Term(Term::Multiply(
         parser::ast::MulType::Implicit,
         var,
@@ -223,19 +221,20 @@ fn ast_equality_to_string(
     {
         if let Term::Factor(Factor::Variable(function_name)) = &*var {
             match factor {
-                Factor::Parenthesis(f)=>{
-                    if let MathExpr::Term(Term::Factor(Factor::Variable(arg))) =*f {
+                Factor::Parenthesis(f) => {
+                    if let MathExpr::Term(Term::Factor(Factor::Variable(arg))) =
+                        *f
+                    {
                         let variable_name = arg.clone();
-                    cont.add_function(
-                        function_name.tokens.clone(),
-                        MathFunction::new_foreign(rhs, vec![variable_name]),
-                    );
-                    Ok("added function:".to_owned())
+                        cont.add_function(
+                            function_name.clone(),
+                            MathFunction::new_foreign(rhs, vec![variable_name]),
+                        );
+                        Ok("added function:".to_owned())
+                    } else {
+                        todo!("you cant have anything but a variable in a function definition")
+                    }
                 }
-                else{
-                    todo!("you cant have anything but a variable in a function definition")
-                }
-            }
                 Factor::Matrix(matrix) => {
                     if matrix.is_vector() {
                         let vec = matrix.get_all_vector_elements();
@@ -250,7 +249,7 @@ fn ast_equality_to_string(
                             })
                             .collect();
                         cont.add_function(
-                            function_name.tokens.clone(),
+                            function_name.clone(),
                             MathFunction::new_foreign(
                                 rhs,
                                 args.expect(
@@ -264,21 +263,24 @@ fn ast_equality_to_string(
                     }
                 }
                 e => {
-                    todo!("Could not understand equals: got factor:{:#?}",e)
+                    todo!("Could not understand equals: got factor:{:#?}", e)
                 }
             }
         } else {
-            todo!("Could not understand equals. got:{:#?}",MathExpr::Term(Term::Multiply(
-        parser::ast::MulType::Implicit,
-        var,
-        factor,
-    )));
+            todo!(
+                "Could not understand equals. got:{:#?}",
+                MathExpr::Term(Term::Multiply(
+                    parser::ast::MulType::Implicit,
+                    var,
+                    factor,
+                ))
+            );
         }
     } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) = lhs {
         cont.variables.insert(ident, rhs);
         Ok("added variable".to_owned())
     } else {
-        todo!("Could not understand equals. got:{:#?}",lhs);
+        todo!("Could not understand equals. got:{:#?}", lhs);
     }
 }
 fn value_res_to_string(result: Result<Value, EvalError>) -> String {
