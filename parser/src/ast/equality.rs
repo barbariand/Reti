@@ -37,7 +37,7 @@ trait PrivateMathEquality: Simplify + Clone {
 }
 impl PrivateMathEquality for Simple {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
-        match (self.math_expr(), other.math_expr()) {
+        match (self.inner(), other.inner()) {
             (
                 MathExpr::Term(Term::Factor(a)),
                 MathExpr::Term(Term::Factor(b)),
