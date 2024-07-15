@@ -140,16 +140,25 @@ impl NumberCompare for f64 {
         (self - other).abs() < f64::EPSILON
     }
 }
-
+///This type if for comparing Simple<MathExpr>s and returning Simples, this makes sure
+/// that only correct simples can be constructed///Trait for comparing Simple<MathExpr>s
+pub trait SimpleMathExprs{
+    ///Gives as Ast::equals
+    fn ast_equals(self) -> Ast;
+}
+impl SimpleMathExprs for (Simple<MathExpr>,Simple<MathExpr>){
+    fn ast_equals(self) -> Ast {
+        Ast::Equality(self.0.0, self.1.0)
+    }
+}
+///Trait for finding if they are equivalent
 pub trait SimpleCompareEquivalent{
     ///checks if the contained are  the same
     fn equivalent(&self, cont: &MathContext) -> bool;
 }
-///This type if for comparing Simples and returning Simples, this makes sure
+///This type if for comparing Simple<MathExpr> to Simple<Term> and returning Simples, this makes sure
 /// that only correct simples can be constructed
 pub trait SimpleCompareMathExpr {
-    ///Gives as Ast::equals
-    fn ast_equals(self) -> Ast;
     ///gets the math_exprs to compare
     fn to_expr(&self) -> (&MathExpr, &Term);
     ///adds the compared items and produces a Simple
@@ -169,17 +178,15 @@ impl SimpleCompareMathExpr for (Simple<MathExpr>,Simple<Term>){
     fn sub_wrapped(self) -> Simple<MathExpr> {
         Simple(MathExpr::Subtract(self.0.boxed_inner(), self.1.expr()))
     }
-    
-    fn ast_equals(self) -> Ast {
-        todo!()
-    }
 }
 impl SimpleCompareEquivalent for (Simple<MathExpr>,Simple<Term>){
     fn equivalent(&self, cont: &MathContext) -> bool {
-        todo!("IDK MAN")
+        self.0.equivalent(&Simple(MathExpr::Term(self.1.0.clone())), cont)
     }
 }
-pub trait SimpleCompareFactor{
+///This type if for comparing Simple<Term> to Simple<Factor> and returning Simples, this makes sure
+/// that only correct simples can be constructed
+pub trait SimpleCompareTerm{
     ///gets the math_exprs to compare
     fn to_expr(&self) -> (&Term, &Factor);
     ///multiplies the compared items and produces a Simple
@@ -187,7 +194,7 @@ pub trait SimpleCompareFactor{
     ///divides them and produces a Simple
     fn div_wrapped(self) -> Simple<Term>;
 }
-impl SimpleCompareFactor for (Simple<Term>,Simple<Factor>){
+impl SimpleCompareTerm for (Simple<Term>,Simple<Factor>){
     fn to_expr(&self) -> (&Term, &Factor) {
         (&self.0.0,&self.1.0)
     }
@@ -202,16 +209,17 @@ impl SimpleCompareFactor for (Simple<Term>,Simple<Factor>){
 }
 impl SimpleCompareEquivalent for (Simple<Term>,Simple<Factor>){
     fn equivalent(&self, cont: &MathContext) -> bool {
-        todo!("IDK MAN")
+        self.0.equivalent(&Simple(Term::Factor(self.1.0.clone())), cont)
     }
-}
-pub trait SimpleCompareTerm{
+}///This type if for comparing Simple<Factor> to Simple<MathExpr> and returning Simples, this makes sure
+/// that only correct simples can be constructed
+pub trait SimpleCompareFactor{
     ///gets the math_exprs to compare
     fn to_expr(&self) -> (&Factor, &MathExpr);
     ///pows them and produces a Simple
     fn pow_wrapped(self) -> Simple<Factor>;
 }
-impl SimpleCompareTerm for (Simple<Factor>,Simple<MathExpr>){
+impl SimpleCompareFactor for (Simple<Factor>,Simple<MathExpr>){
     fn to_expr(&self) -> (&Factor, &MathExpr) {
         (&self.0,&self.1)
     }
@@ -222,7 +230,7 @@ impl SimpleCompareTerm for (Simple<Factor>,Simple<MathExpr>){
 }
 impl SimpleCompareEquivalent for (Simple<Factor>,Simple<MathExpr>){
     fn equivalent(&self, cont: &MathContext) -> bool {
-        todo!("IDK MAN")
+        self.1.equivalent(&Simple(MathExpr::Term(Term::Factor(self.0.0.clone()))), cont)
     }
 }
 ///Simple is a wrapper struct only allowed to be constructed when the contained
@@ -230,6 +238,7 @@ impl SimpleCompareEquivalent for (Simple<Factor>,Simple<MathExpr>){
 #[derive(Clone, Debug, PartialEq)]
 pub struct Simple<T:Simplify+Into<MathExpr>>(pub(crate) T);
 impl<T:Simplify+Into<MathExpr>> Simple<T> {
+    ///returns the inner T in a box
     pub fn boxed_inner(self)->Box<T>{
         Box::new(self.0)
     }

@@ -2,12 +2,31 @@
 
 use crate::prelude::*;
 
-use super::helper::{NumberCompare, Simple, SimpleCompareEquivalent, SimpleCompareFactor, SimpleCompareMathExpr, SimpleCompareTerm};
+use super::helper::{NumberCompare, Simple, SimpleCompareEquivalent, SimpleCompareTerm, SimpleCompareMathExpr, SimpleCompareFactor, SimpleMathExprs};
 
 ///helper trait to make it easier to change stuff
-pub trait Simplify:Sized+Into<MathExpr> {
+pub trait Simplify<Res=Self>:Sized+Into<MathExpr> 
+where Res:Simplify{
     ///Simplifies as best as it can
-    fn simple(self, cont: &MathContext) -> Result<Simple<Self>, EvalError>;
+    fn simple(self, cont: &MathContext) -> Result<Simple<Res>, EvalError>;
+}
+impl Simplify<MathExpr> for Simple<MathExpr>{
+
+    fn simple(self, _: &MathContext) -> Result<Simple<MathExpr>, EvalError> {
+        Ok(self)
+    }
+}
+impl Simplify<Term> for Simple<Term>{
+
+    fn simple(self, _: &MathContext) -> Result<Simple<Term>, EvalError> {
+        Ok(self)
+    }
+}
+impl Simplify<Factor> for Simple<Factor>{
+
+    fn simple(self, _: &MathContext) -> Result<Simple<Factor>, EvalError> {
+        Ok(self)
+    }
 }
 
 impl Ast {
@@ -85,6 +104,7 @@ impl Simplify for MathExpr {
 }
 
 impl Simplify for Term {
+
     fn simple(self, cont: &MathContext) -> Result<Simple<Term>, EvalError> {
         Ok(match self {
             Term::Factor(f) => return Ok(f.simple(cont)?.into()),
@@ -141,7 +161,7 @@ impl Simplify for Term {
                     numerator.simple(cont)?,
                     denominator.simple(cont)?,
                     cont,
-                )
+                ).into()
             }
         })
     }
@@ -151,7 +171,7 @@ impl Simplify for Factor {
     fn simple(self, cont: &MathContext) -> Result<Simple<Factor>, EvalError> {
         Ok(match self {
             Factor::Constant(c) => Simple::constant(c),
-            Factor::Parenthesis(p) => Simple(Factor::Parenthesis(Box::new(p.simple(cont)?.expr()))),
+            Factor::Parenthesis(p) => simplify_parentasis(p.simple(cont)?),
             Factor::Variable(m) => {
                 return cont
                     .variables
@@ -219,15 +239,15 @@ impl Simplify for Factor {
             Factor::Root {
                 degree: _,
                 radicand: _,
-            } => todo!(),
+            } => todo!("root"),
             Factor::Fraction(numerator, denominator) => {
                 simplify_fraction_or_div(
-                    numerator.simple(cont)?,
-                    denominator.simple(cont)?,
+                    Term::Factor(Factor::Parenthesis(numerator)).simple(cont)?,
+                    Factor::Parenthesis(denominator).simple(cont)?,
                     cont,
                 )
             }
-            Factor::Abs(_) => todo!(),
+            Factor::Abs(_) => todo!(""),
             Factor::Matrix(m) => Simple::matrix(m,cont)?,
         })
     }
@@ -240,7 +260,7 @@ fn simplify_fraction_or_div(
     numerator: Simple<Term>,
     denominator: Simple<Factor>,
     cont: &MathContext,
-) -> Simple {
+) -> Simple<Factor> {
     // TODO simplify fraction, aka factor a and b and cancel common
     // factors, remove fraction of b==1, etc.
     let simple = (numerator, denominator);
@@ -249,22 +269,34 @@ fn simplify_fraction_or_div(
     } else {
         match simple.to_expr() {
             (
-                MathExpr::Term(Term::Factor(Factor::Constant(num))),
-                MathExpr::Term(Term::Factor(Factor::Constant(den))),
+                Term::Factor(Factor::Constant(num)),
+                Factor::Constant(den),
             ) => Simple::divide(*num, *den),
-            (_, MathExpr::Term(Term::Factor(Factor::Constant(c)))) => {
+            (_, Factor::Constant(c)) => {
                 if c.is_one() {
-                    simple.0
+                    simplify_parentasis(simple.0.into())
                 } else if c.is_zero() {
                     Simple::constant(f64::NAN)
                 } else {
-                    simple.div_wrapped()
+                    simplify_parentasis(simple.div_wrapped().into())
                 }
             }
-            _ => simple.div_wrapped(),
+            _ => simplify_parentasis(simple.div_wrapped().into()),
         }
     }
 }
+///
+fn simplify_parentasis(p:Simple<MathExpr>)->Simple<Factor>{
+    Simple(match p.expr(){
+                MathExpr::Term(Term::Factor(Factor::Abs(a))) => Factor::Abs(a),
+                MathExpr::Term(Term::Factor(Factor::Variable(a))) => Factor::Variable(a),
+                MathExpr::Term(Term::Factor(Factor::Constant(a))) => Factor::Constant(a),
+                MathExpr::Term(Term::Factor(Factor::Matrix(a))) => Factor::Matrix(a),
+                MathExpr::Term(Term::Factor(Factor::Parenthesis(p_2))) => Factor::Parenthesis(p_2),
+                v=>Factor::Parenthesis(v.boxed())
+            })
+}
+
 
 #[cfg(test)]
 mod test {

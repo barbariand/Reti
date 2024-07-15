@@ -29,7 +29,7 @@ impl Approximator {
     /// # Errors
     /// [EvalError]
     /// This can error if it can not be completed or it is wrong
-    pub fn eval_expr(&self, expr: Simple) -> Result<Value, EvalError> {
+    pub fn eval_expr(&self, expr: Simple<MathExpr>) -> Result<Value, EvalError> {
         match expr.expr() {
             MathExpr::Term(term) => self.eval_term(term.simple(&self.context)?),
             MathExpr::Add(a, b) => {
@@ -47,8 +47,8 @@ impl Approximator {
     /// # Errors
     /// [EvalError]
     /// This can error if it can not complete
-    fn eval_term(&self, term: Simple) -> Result<Value, EvalError> {
-        match term.expr().get_term_or_wrap() {
+    fn eval_term(&self, term: Simple<Term>) -> Result<Value, EvalError> {
+        match term.expr(){
             Term::Factor(factor) => {
                 self.eval_factor(factor.simple(&self.context)?)
             }
@@ -69,8 +69,8 @@ impl Approximator {
     ///
     /// # Panics
     ///  this implementation currently panics when it can not under
-    fn eval_factor(&self, factor: Simple) -> Result<Value, EvalError> {
-        Ok(match factor.get_factor_or_wrap() {
+    fn eval_factor(&self, factor: Simple<Factor>) -> Result<Value, EvalError> {
+        Ok(match factor.expr() {
             Factor::Constant(c) => Value::Scalar(c),
             Factor::Parenthesis(expr) => {
                 self.eval_expr(expr.simple(&self.context)?)?

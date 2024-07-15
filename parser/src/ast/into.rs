@@ -1,8 +1,15 @@
 //! into and from implementations
 use crate::prelude::*;
+
+use super::{helper::Simple, simplify::Simplify};
 impl From<Term> for MathExpr {
     fn from(value: Term) -> Self {
         MathExpr::Term(value)
+    }
+}
+impl<T:Simplify+Into<MathExpr>> From<Simple<T>> for MathExpr{
+    fn from(value: Simple<T>) -> Self {
+        value.0.into()
     }
 }
 

@@ -147,7 +147,7 @@ impl MathFunction {
         )
     }
     ///take the derivative of the function
-    pub fn derivate(&self,val:Vec<MathExpr>,cont:&MathContext,_dependant:MathIdentifier)->Result<Simple,EvalError>{
+    pub fn derivate(&self,val:Vec<MathExpr>,cont:&MathContext,_dependant:MathIdentifier)->Result<Simple<MathExpr>,EvalError>{
         match self{
             MathFunction::Native(n) =>n.derivate(val).map(|v|v.simple(cont))?,
             MathFunction::Foreign(_f) => todo!(),
