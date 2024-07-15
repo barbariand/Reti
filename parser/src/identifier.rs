@@ -142,6 +142,7 @@ enum_with_latex!(ModifierType {
 /// math symbols.
 #[derive(Eq, PartialEq, Debug, Hash, Clone)]
 pub struct MathString {
+    ///THe MathLetters composing the string
     vec: Vec<MathLetter>,
 }
 

@@ -7,14 +7,6 @@ use crate::prelude::*;
 use super::{equality::MathEquality, simplify::Simplify};
 
 impl MathExpr {
-    ///makes a new MathExpr where the term part is wrapped if needed
-    fn add_wrapped(a: MathExpr, b: MathExpr) -> Self {
-        Self::Add(a.boxed(), b.get_term_or_wrap())
-    }
-    ///makes a new MathExpr where the term part is wrapped if needed
-    fn subtract_wrapped(a: MathExpr, b: MathExpr) -> Self {
-        Self::Subtract(a.boxed(), b.get_term_or_wrap())
-    }
     ///gets the term or wraps it in parenthesis
     pub fn get_term_or_wrap(&self) -> Term {
         match self {
@@ -56,17 +48,6 @@ impl Term {
         Box::new(self)
     }
     ///does multiplication but wraps if need be
-    fn mul_wrapped(mul: MulType, a: MathExpr, b: MathExpr) -> Self {
-        Self::Multiply(
-            mul,
-            a.get_term_or_wrap().boxed(),
-            b.get_factor_or_wrap(),
-        )
-    }
-    ///does division but wraps if need be
-    fn div_wrapped(a: MathExpr, b: MathExpr) -> Self {
-        Self::Divide(a.get_term_or_wrap().boxed(), b.get_factor_or_wrap())
-    }
     ///Gets a factor if it is a factor otherwise None
     pub const fn factor(&self) -> Option<&Factor> {
         match self {
@@ -273,19 +254,19 @@ impl From<Simple<Factor>> for Simple<Term> {
 impl Simple<Factor> {
     ///adds 2 f64s and makes a Simple Constant
     pub fn add(lhs: f64, rhs: f64) -> Self {
-        Simple(Factor::Constant(lhs + rhs).into())
+        Simple(Factor::Constant(lhs + rhs))
     }
     ///subtracts 2 f64s and makes a Simple Constant
     pub fn sub(lhs: f64, rhs: f64) -> Self {
-        Simple(Factor::Constant(lhs - rhs).into())
+        Simple(Factor::Constant(lhs - rhs))
     }
     ///multiplies 2 f64s and makes a Simple Constant
     pub fn mul(lhs: f64, rhs: f64) -> Self {
-        Simple(Factor::Constant(lhs * rhs).into())
+        Simple(Factor::Constant(lhs * rhs))
     }
     ///divide 2 f64s and makes a Simple Constant
     pub fn divide(numerator: f64, denominator: f64) -> Self {
-        Simple(Factor::Constant(numerator / denominator).into())
+        Simple(Factor::Constant(numerator / denominator))
     }
     ///makes a Factor::Constant() containing the given constant
     pub const fn constant(constant: f64) -> Self {
@@ -305,7 +286,7 @@ impl Simple<Factor> {
         cont: &MathContext,
     ) -> Result<Self, EvalError> {
         Ok(Simple(
-            Factor::Matrix(m.map_owned(|v| Ok(v.simple(cont)?.expr()))?).into(),
+            Factor::Matrix(m.map_owned(|v| Ok(v.simple(cont)?.expr()))?),
         ))
     }
 }

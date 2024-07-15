@@ -102,7 +102,7 @@ impl Approximator {
                             n.run(args?)?
                         }
                         MathFunction::Foreign(_) => {
-                            unreachable!("this should never be reatched")
+                            unreachable!("Foreign function was not inlined")
                         }
                     },
                     None => panic!(

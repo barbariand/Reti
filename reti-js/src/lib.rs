@@ -1,4 +1,3 @@
-use console_error_panic_hook;
 use lazy_static::lazy_static;
 use parser::{
     approximator::Approximator,

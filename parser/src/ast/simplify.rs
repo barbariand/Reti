@@ -227,7 +227,7 @@ impl Simplify for Term {
             .expect("simplify_factors does not return empty factors")?;
 
         let denominator_factor =
-            simplify_parentasis(denominator.clone().into());
+            simplify_parenthesis(denominator.clone().into());
 
         Ok(Simple::new_unchecked(Term::Divide(
             numerator.expr().boxed(),
@@ -240,7 +240,7 @@ impl Simplify for Factor {
     fn simple(self, cont: &MathContext) -> Result<Simple<Factor>, EvalError> {
         Ok(match self {
             Factor::Constant(c) => Simple::constant(c),
-            Factor::Parenthesis(p) => simplify_parentasis(p.simple(cont)?),
+            Factor::Parenthesis(p) => simplify_parenthesis(p.simple(cont)?),
             Factor::Variable(m) => {
                 return cont
                     .variables
@@ -357,19 +357,19 @@ fn simplify_fraction_or_div(
             }
             (_, Factor::Constant(c)) => {
                 if c.is_one() {
-                    simplify_parentasis(simple.0.into())
+                    simplify_parenthesis(simple.0.into())
                 } else if c.is_zero() {
                     Simple::constant(f64::NAN)
                 } else {
-                    simplify_parentasis(simple.div_wrapped().into())
+                    simplify_parenthesis(simple.div_wrapped().into())
                 }
             }
-            _ => simplify_parentasis(simple.div_wrapped().into()),
+            _ => simplify_parenthesis(simple.div_wrapped().into()),
         }
     }
 }
-///
-pub fn simplify_parentasis(p: Simple<MathExpr>) -> Simple<Factor> {
+/// simplifying all the things we can in parenthesis
+pub fn simplify_parenthesis(p: Simple<MathExpr>) -> Simple<Factor> {
     Simple(match p.expr() {
         MathExpr::Term(Term::Factor(Factor::Abs(a))) => Factor::Abs(a),
         MathExpr::Term(Term::Factor(Factor::Variable(a))) => {
@@ -442,5 +442,9 @@ mod test {
     #[tokio::test]
     async fn multiply_remove_parenthesis_2() {
         ast_test_simplify("3(2x)+2", "6x+2").await;
+    }
+    #[tokio::test]
+    async fn simple_test() {
+        ast_test_simplify("((1)+(2x))", "1+2x").await;
     }
 }
