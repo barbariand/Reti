@@ -50,8 +50,8 @@ impl Ast {
 impl Simplify for MathExpr {
     ///Tries to simplify this
     fn simple(self, cont: &MathContext) -> Result<Simple<Self>, EvalError> {
-        Ok(match self {
-            MathExpr::Term(t) => return Ok(t.simple(cont)?.into()),
+        let simple = match self {
+            MathExpr::Term(t) => t.simple(cont)?.into(),
             MathExpr::Add(lhs, rhs) => {
                 let simple = (lhs.simple(cont)?, rhs.simple(cont)?);
                 match simple.to_expr() {
@@ -105,6 +105,14 @@ impl Simplify for MathExpr {
                     _ => simple.sub_wrapped(),
                 }
             }
+        };
+
+        Ok(match simple.expr() {
+            MathExpr::Term(Term::Factor(Factor::Parenthesis(expr))) => {
+                // We can always remove a parenthesis surrounding an expression since it will never affect the order of operations.
+                Simple(*expr)
+            }
+            expr => Simple(expr)
         })
     }
 }
@@ -388,7 +396,7 @@ pub fn simplify_parenthesis(p: Simple<MathExpr>) -> Simple<Factor> {
 
 #[cfg(test)]
 mod test {
-    use crate::prelude::*;
+    use crate::{ast::to_latex::ToLaTeX, prelude::*};
     use pretty_assertions::assert_eq;
     async fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
@@ -400,8 +408,10 @@ mod test {
         let expected_ast = parse(expected_latex, &context)
             .await
             .expect("failed to parse latex to ast");
+        let found = format!("{}\nAST:\n{:#?}", found_ast.to_latex(), found_ast);
+        let expected = format!("{}\nAST:\n{:#?}", expected_ast.to_latex(), expected_ast);
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast, expected_ast, "found/expected")
+        assert_eq!(found, expected, "found/expected")
     }
     #[tokio::test]
     async fn one_minus_one() {
