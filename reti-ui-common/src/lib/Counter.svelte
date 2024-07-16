@@ -1,11 +1,11 @@
 <script lang="ts">
-let count: number = 0;
+    let count: number = 0;
 
-const increment = () => {
-    count += 1;
-};
+    const increment = () => {
+        count += 1;
+    };
 
-console.log("hello");
+    console.log("hello");
 </script>
 
 <button on:click={increment}>
@@ -13,7 +13,7 @@ console.log("hello");
 </button>
 
 <style>
-button {
-    color: red;
-}
+    button {
+        color: red;
+    }
 </style>
