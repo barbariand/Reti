@@ -4,9 +4,6 @@ on:
   push:
     paths:
       - repl/**
-  pull_request:
-    paths:
-      - repl/**
 
 env:
   CARGO_TERM_COLOR: always

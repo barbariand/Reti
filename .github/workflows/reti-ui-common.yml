@@ -4,9 +4,6 @@ on:
   push:
     paths:
       - reti-ui-common/**
-  pull_request:
-    paths:
-      - reti-ui-common/**
 
 env:
   CARGO_TERM_COLOR: always
