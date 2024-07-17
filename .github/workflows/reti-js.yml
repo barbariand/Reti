@@ -19,4 +19,4 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1.9
       - name: Building Wasm
         run: cargo build --verbose --target wasm32-unknown-unknown
-        working-directory: Reti-js
+        working-directory: reti-js
