@@ -1,0 +1,22 @@
+name: Rust
+
+on:
+  push:
+    paths:
+      - repl/**
+  pull_request:
+    paths:
+      - repl/**
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Building Repl
+        run: cargo build --verbose
+        working-directory: repl

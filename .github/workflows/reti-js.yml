@@ -1,0 +1,22 @@
+name: Rust
+
+on:
+  push:
+    paths:
+      - reti-js/**
+  pull_request:
+    paths:
+      - reti-js/**
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.9
+      - name: Building Wasm
+        run: cargo build --verbose --target wasm32-unknown-unknown
+        working-directory: reti-js
