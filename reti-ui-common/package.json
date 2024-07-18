@@ -33,6 +33,7 @@
         "vitest": "^2.0.3"
     },
     "dependencies": {
+        "globals": "^15.8.0",
         "katex": "^0.16.11"
     }
 }
