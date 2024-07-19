@@ -4,9 +4,6 @@ on:
   push:
     paths:
       - parser/**
-  pull_request:
-    paths:
-      - parser/**
 
 env:
   CARGO_TERM_COLOR: always
