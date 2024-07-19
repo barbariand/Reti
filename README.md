@@ -2,7 +2,7 @@
 <div align="center">
 Reti is an in-development calculator that can evaluate LaTeX expressions.
 <br>
-<img src="./docs/dark_icon.svg" width="300" />
+<img src="./docs/dark_icon_loading.svg" width="300" />
 </div>
 
 <h2 align="center" id="development-status">Development Status</h2>
