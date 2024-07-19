@@ -10,7 +10,9 @@
         "check": "svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
         "lint": "eslint './src/**/*.{js,ts,svelte}'",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "fmt": "prettier . --write",
+        "fmt:check": "prettier . --check"
     },
     "devDependencies": {
         "@eslint/js": "^9.7.0",
