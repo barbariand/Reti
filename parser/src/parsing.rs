@@ -1005,7 +1005,12 @@ mod tests {
             Ast::Expression(
                 Factor::Variable(MathIdentifier::Modifier(
                     ModifierType::Overline,
-                    Box::new(Factor::Variable(MathIdentifier::from_single_ident("x")).into()),
+                    Box::new(
+                        Factor::Variable(MathIdentifier::from_single_ident(
+                            "x",
+                        ))
+                        .into(),
+                    ),
                 ))
                 .into(),
             ),
@@ -1020,7 +1025,12 @@ mod tests {
             Ast::Expression(
                 Factor::Variable(MathIdentifier::Index {
                     name: Box::new(MathIdentifier::from_single_ident("x")),
-                    index: Box::new(Factor::Variable(MathIdentifier::from_single_ident("y")).into()),
+                    index: Box::new(
+                        Factor::Variable(MathIdentifier::from_single_ident(
+                            "y",
+                        ))
+                        .into(),
+                    ),
                 })
                 .into(),
             ),
@@ -1051,8 +1061,11 @@ mod tests {
                 Factor::Variable(MathIdentifier::Index {
                     name: Box::new(MathIdentifier::from_single_ident("x")),
                     index: Box::new(MathExpr::Add(
-                        Factor::Variable(MathIdentifier::from_single_ident("n")).into(),
-                        1_f64.into()
+                        Factor::Variable(MathIdentifier::from_single_ident(
+                            "n",
+                        ))
+                        .into(),
+                        1_f64.into(),
                     )),
                 })
                 .into(),
