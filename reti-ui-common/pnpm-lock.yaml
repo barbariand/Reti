@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      globals:
-        specifier: ^15.8.0
-        version: 15.8.0
       katex:
         specifier: ^0.16.11
         version: 0.16.11
@@ -39,6 +36,9 @@ importers:
       eslint-plugin-svelte:
         specifier: ^2.42.0
         version: 2.42.0(eslint@9.7.0)(svelte@4.2.18)
+      globals:
+        specifier: ^15.8.0
+        version: 15.8.0
       happy-dom:
         specifier: ^14.12.3
         version: 14.12.3
