@@ -6,7 +6,7 @@ on:
       - reti-ui-common/**
   pull_request:
     branches:
-      - master
+      - main
 
 env:
   CARGO_TERM_COLOR: always
