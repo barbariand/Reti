@@ -21,4 +21,4 @@ Cargo.lock
 
 /target
 /reti-js/wasm/**
-!/reti-js/wams/.gitkeep
+!/reti-js/wamM/.gitkeep
