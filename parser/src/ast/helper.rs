@@ -203,20 +203,6 @@ impl Simple {
     pub fn expr(self) -> MathExpr {
         self.0
     }
-    ///gets as a Term if it is one
-    pub fn get_term(&self) -> Option<Term> {
-        match &self.0 {
-            MathExpr::Term(t) => Some(t.clone()),
-            _ => None,
-        }
-    }
-    ///gets as Factor if it is one
-    pub fn get_factor(&self) -> Option<Factor> {
-        match &self.0 {
-            MathExpr::Term(Term::Factor(f)) => Some(f.clone()),
-            _ => None,
-        }
-    }
     ///adds 2 f64s and makes a Simple Constant
     pub fn add(lhs: f64, rhs: f64) -> Self {
         Simple(Factor::Constant(lhs + rhs).into())
