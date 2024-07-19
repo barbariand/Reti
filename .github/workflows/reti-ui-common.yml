@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - reti-ui-common/**
+  pull_request:
+    branches:
+      - master
 
 env:
   CARGO_TERM_COLOR: always
