@@ -68,15 +68,13 @@ impl TokenReader {
             let token = self.read_internal().await;
             self.next.push_back(token);
         }
-        if self.next.len() < n {
-            panic!(
-                "Jump peek detected. This is usually a bug. \
-                Previous peek: {:?}, this peek: {}",
-                self.next.len().checked_sub(1),
-                n
-            );
-        }
-
+        assert!(
+            self.next.len() >= n,
+            "Jump peek detected. This is usually a bug. \
+            Previous peek: {:?}, this peek: {}",
+            self.next.len().checked_sub(1),
+            n
+        );
         // Will never panic since we ensured the queue has enough elements.
         &self.next[n]
     }
@@ -139,12 +137,11 @@ impl TokenReader {
         range: RangeInclusive<usize>,
         replacement: Vec<Token>,
     ) {
-        if self.next.len() <= *range.end() {
-            panic!(
-                "Please call peekn before calling replace. You must know what you are replacing! range = {:?}",
-                range
-            );
-        }
+        assert!( self.next.len() > *range.end(),
+            "Please call peekn before calling replace. You must know what you are replacing! range = {:?}",
+            range
+        );
+
         let start = *range.start();
         for _ in range.clone() {
             // Always remove start index because it shifts elements down.
@@ -173,7 +170,9 @@ mod tests {
         let mut reader = TokenReader::new(rx);
 
         for token in &tokens {
-            tx.send(token.clone()).await.unwrap();
+            tx.send(token.clone())
+                .await
+                .expect("failed to send token in test");
         }
 
         for token in tokens {
@@ -196,7 +195,9 @@ mod tests {
         let mut reader = TokenReader::new(rx);
 
         for token in &tokens {
-            tx.send(token.clone()).await.unwrap();
+            tx.send(token.clone())
+                .await
+                .expect("failed to send token in test");
         }
 
         assert_eq!(Token::Backslash, reader.peek().await);
@@ -223,7 +224,9 @@ mod tests {
         let mut reader = TokenReader::new(rx);
 
         for token in &tokens {
-            tx.send(token.clone()).await.unwrap();
+            tx.send(token.clone())
+                .await
+                .expect("failed to send token in test");
         }
 
         assert_eq!(Token::Backslash, reader.peek().await);
@@ -243,8 +246,12 @@ mod tests {
         let (tx, rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
 
         let mut reader = TokenReader::new(rx);
-        tx.send(Token::Plus).await.unwrap();
-        tx.send(Token::EndOfContent).await.unwrap();
+        tx.send(Token::Plus)
+            .await
+            .expect("failed to send token in test");
+        tx.send(Token::EndOfContent)
+            .await
+            .expect("failed to send token in test");
 
         assert_eq!(Token::Plus, reader.read().await);
         assert_eq!(Token::EndOfContent, reader.read().await);
@@ -275,7 +282,9 @@ mod tests {
         let mut reader = TokenReader::new(rx);
 
         for token in &tokens {
-            tx.send(token.clone()).await.unwrap();
+            tx.send(token.clone())
+                .await
+                .expect("failed to send token in test");
         }
 
         assert_eq!(Token::Backslash, reader.peekn(0).await);
@@ -299,7 +308,9 @@ mod tests {
         let mut reader = TokenReader::new(rx);
 
         for token in &tokens {
-            tx.send(token.clone()).await.unwrap();
+            tx.send(token.clone())
+                .await
+                .expect("failed to send token in test");
         }
 
         assert_eq!(Token::LeftBracket, reader.read().await);
@@ -327,7 +338,9 @@ mod tests {
         let mut reader = TokenReader::new(rx);
 
         for token in &tokens {
-            tx.send(token.clone()).await.unwrap();
+            tx.send(token.clone())
+                .await
+                .expect("failed to send token in test");
         }
 
         assert_eq!(Token::LeftBracket, reader.read().await);
@@ -355,7 +368,9 @@ mod tests {
         let mut reader = TokenReader::new(rx);
 
         for token in &tokens {
-            tx.send(token.clone()).await.unwrap();
+            tx.send(token.clone())
+                .await
+                .expect("failed to send token in test");
         }
 
         assert_eq!(Token::LeftBracket, reader.read().await);

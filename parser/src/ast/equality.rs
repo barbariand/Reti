@@ -90,11 +90,11 @@ impl PrivateMathEquality for Term {
             if let(Term::Factor(lhs_1),Term::Factor(lhs_2))=(lhs_1.as_ref(),lhs_2.as_ref()){
                 #[allow(unused_variables)]//remove this when we do matrix equality needs to be checked her because MulType
                 return match (lhs_1,rhs_1,lhs_2,rhs_2){
-                    (Factor::Matrix(lhs1),Factor::Matrix(rhs1),Factor::Matrix(lhs2),Factor::Matrix(rhs2))=>todo!(),
-                    (Factor::Matrix(lhs1),rhs1,Factor::Matrix(lhs2),_)=>todo!(),
-                    (Factor::Matrix(lhs1),rhs1,lhs2,Factor::Matrix(rhs2))=>todo!(),
-                    (_,Factor::Matrix(rhs1),Factor::Matrix(lhs2),_)=>todo!(),
-                    (_,Factor::Matrix(rhs1),_,Factor::Matrix(rhs2))=>todo!(),
+                    (Factor::Matrix(lhs1),Factor::Matrix(rhs1),Factor::Matrix(lhs2),Factor::Matrix(rhs2))=>todo!("matrixes do not implement equal"),
+                    (Factor::Matrix(lhs1),rhs1,Factor::Matrix(lhs2),_)=>todo!("matrixes do not implement equal"),
+                    (Factor::Matrix(lhs1),rhs1,lhs2,Factor::Matrix(rhs2))=>todo!("matrixes do not implement equal"),
+                    (_,Factor::Matrix(rhs1),Factor::Matrix(lhs2),_)=>todo!("matrixes do not implement equal"),
+                    (_,Factor::Matrix(rhs1),_,Factor::Matrix(rhs2))=>todo!("matrixes do not implement equal"),
                     _=>(lhs_1.equals(lhs_2,cont)&&rhs_1.equals(rhs_2,cont))||
             (lhs_1.equals(rhs_2,cont)&&
             lhs_2.equals(rhs_1,cont))

@@ -177,7 +177,7 @@ impl MathFunction {
             MathFunction::Native(n) => {
                 n.derivate(val).map(|v| v.simple(cont))?
             }
-            MathFunction::Foreign(_f) => todo!(),
+            MathFunction::Foreign(_f) => todo!("fix derivation for functions"),
         }
     }
 }

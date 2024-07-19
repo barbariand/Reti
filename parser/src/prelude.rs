@@ -122,9 +122,9 @@ pub mod _private {
     ///function for parsing in sync doc tests
     pub fn parse_sync_doc_test(text: &str, context: &MathContext) -> Ast {
         tokio::runtime::Runtime::new()
-            .unwrap()
+            .expect("could not create runtime for doc test")
             .block_on(parse(text, context))
-            .unwrap()
+            .expect("could not ")
     }
 }
 ///starting a task that has a certain output and returning the JoinHandle
@@ -165,8 +165,9 @@ mod tests {
     };
     use pretty_assertions::assert_eq;
     async fn parse_test(text: &str, expected_ast: Ast) {
-        let found_ast =
-            parse(text, &MathContext::standard_math()).await.unwrap();
+        let found_ast = parse(text, &MathContext::standard_math())
+            .await
+            .expect("Could not parse in test");
         // Compare and print with debug and formatting otherwise.
         assert_eq!(found_ast, expected_ast)
     }

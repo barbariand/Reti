@@ -62,9 +62,8 @@ impl Normalizer {
             }
             [Token::Caret, Token::NumberLiteral(n)] => {
                 trace!("number literal = {n}");
-                if n.raw.is_empty() {
-                    panic!("string is weird");
-                }
+                assert!(!n.raw.is_empty(), "Raw number string is empty");
+
                 if n.raw.len() != 1 {
                     let mut s = n.raw.clone();
                     let rest = Token::NumberLiteral(s.split_off(1).into());
@@ -93,7 +92,7 @@ mod tests {
         let mut result = Vec::with_capacity(tokens.len());
 
         for token in tokens {
-            tx1.send(token).await.unwrap();
+            tx1.send(token).await.expect("Can not send tokens in test");
         }
 
         normalizer.normalize().await;

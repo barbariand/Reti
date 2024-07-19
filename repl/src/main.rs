@@ -142,7 +142,6 @@ impl Repl {
         debug!("trimming expression");
         let trimmed = line.trim();
         if trimmed.is_empty() {
-            println!();
             return Err(ControlFlow::Continue(()));
         }
 

@@ -87,22 +87,22 @@ impl<T> Matrix<T> {
     ///
     /// Will also panic if the Matrix has a row or column count of zero.
     pub fn new(values: Vec<T>, row_count: usize, column_count: usize) -> Self {
-        if values.len() != row_count * column_count {
-            panic!(
-                "values has incorrect size. Expected {} ({}*{}), found {}",
-                row_count * column_count,
-                row_count,
-                column_count,
-                values.len()
-            );
-            //should it be a panic or an err? i mean its probably a parse error
-            // here but i think we want that as a result No I think
-            // it should be a panic. If this is called with an incorrect vec
-            // that is a bug that we need to fix.
-        }
-        if row_count == 0 || column_count == 0 {
-            panic!("Empty matrix.");
-        }
+        assert!(
+            values.len() == row_count * column_count,
+            "values has incorrect size. Expected {} ({}*{}), found {}",
+            row_count * column_count,
+            row_count,
+            column_count,
+            values.len()
+        );
+        //should it be a panic or an err? i mean its probably a parse error
+        // here but i think we want that as a result No I think
+        // it should be a panic. If this is called with an incorrect vec
+        // that is a bug that we need to fix.
+        assert!(
+            !(row_count == 0 || column_count == 0),
+            "Empty matrix not allowed"
+        );
         Self {
             values,
             row_count,
@@ -117,12 +117,20 @@ impl<T> Matrix<T> {
     /// when instantiated it will be considered out of bounds witch is most
     /// likely to be a bug
     fn index(&self, row: usize, column: usize) -> usize {
-        if row >= self.row_count {
-            panic!("Row out out bounds. {}/{}", row, self.row_count);
-        }
-        if column >= self.column_count {
-            panic!("Column out out bounds. {}/{}", column, self.column_count);
-        }
+        assert!(
+            row < self.row_count,
+            "Row out out bounds. {}/{}",
+            row,
+            self.row_count
+        );
+
+        assert!(
+            column < self.column_count,
+            "Column out out bounds. {}/{}",
+            column,
+            self.column_count
+        );
+
         row * self.column_count + column
     }
 
@@ -193,7 +201,7 @@ impl<T> Matrix<T> {
         if self.is_vector() {
             return &self.values;
         }
-        panic!("Not a vector")
+        unreachable!("Matrix is not a vector")
     }
 }
 
@@ -701,7 +709,7 @@ mod tests {
         let b = Matrix::new_default(2, 3, Value::Scalar(2.0));
         let c = Matrix::new_default(2, 3, Value::Scalar(3.0));
 
-        assert_eq!((a + b).unwrap(), c);
+        assert_eq!((a + b).expect("Could not add matrix in test"), c);
     }
 
     #[test]
@@ -710,7 +718,7 @@ mod tests {
         let b = Matrix::new_default(2, 3, Value::Scalar(1.0));
         let c = Matrix::new_default(2, 3, Value::Scalar(2.0));
 
-        assert_eq!((a - b).unwrap(), c);
+        assert_eq!((a - b).expect("Could not subtract matrix in test"), c);
     }
 
     #[test]
@@ -731,7 +739,10 @@ mod tests {
         c.set(1, 0, Value::Scalar(43.0));
         c.set(1, 1, Value::Scalar(50.0));
 
-        assert_eq!((a.matrix_mul(&b)).unwrap(), c);
+        assert_eq!(
+            (a.matrix_mul(&b)).expect("Could not matrix_mul in test"),
+            c
+        );
     }
 
     #[test]
@@ -751,7 +762,10 @@ mod tests {
         c.set(1, 0, Value::Scalar(53.0));
         c.set(2, 0, Value::Scalar(83.0));
 
-        assert_eq!((a.matrix_mul(&b)).unwrap(), c);
+        assert_eq!(
+            (a.matrix_mul(&b)).expect("Could not matrix_mul in test"),
+            c
+        );
     }
 
     #[test]
@@ -765,8 +779,16 @@ mod tests {
         b.set(1, 0, Value::Scalar(5.0));
         b.set(2, 0, Value::Scalar(6.0));
 
-        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
-        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+        assert_eq!(
+            a.dot_product(&b)
+                .expect("Could not do dot product on matrix in test"),
+            Value::Scalar(32.0)
+        );
+        assert_eq!(
+            b.dot_product(&a)
+                .expect("Could not do dot product on matrix in test"),
+            Value::Scalar(32.0)
+        );
     }
 
     #[test]
@@ -780,8 +802,16 @@ mod tests {
         b.set(0, 0, Value::Scalar(4.0));
         b.set(0, 2, Value::Scalar(6.0));
 
-        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
-        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+        assert_eq!(
+            a.dot_product(&b)
+                .expect("Could not do dot product on matrix in test"),
+            Value::Scalar(32.0)
+        );
+        assert_eq!(
+            b.dot_product(&a)
+                .expect("Could not do dot product on matrix in test"),
+            Value::Scalar(32.0)
+        );
     }
 
     #[test]
@@ -795,8 +825,16 @@ mod tests {
         b.set(1, 0, Value::Scalar(5.0));
         b.set(2, 0, Value::Scalar(6.0));
 
-        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
-        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+        assert_eq!(
+            a.dot_product(&b)
+                .expect("Could not do dot product on matrix in test"),
+            Value::Scalar(32.0)
+        );
+        assert_eq!(
+            b.dot_product(&a)
+                .expect("Could not do dot product on matrix in test"),
+            Value::Scalar(32.0)
+        );
     }
 
     #[test]
@@ -814,11 +852,35 @@ mod tests {
         z.set(1, 0, Value::Scalar(0.0));
         z.set(2, 0, Value::Scalar(1.0));
 
-        assert_eq!(x.cross_product(&y).unwrap(), z);
-        assert_eq!(y.cross_product(&x).unwrap(), (&z * -1.0).unwrap());
-        assert_eq!(z.cross_product(&x).unwrap(), y);
-        assert_eq!(x.cross_product(&z).unwrap(), (&y * -1.0).unwrap());
-        assert_eq!(y.cross_product(&z).unwrap(), x);
-        assert_eq!(z.cross_product(&y).unwrap(), (&x * -1.0).unwrap());
+        assert_eq!(
+            x.cross_product(&y)
+                .expect("Could not do cross product on matrix in test"),
+            z
+        );
+        assert_eq!(
+            y.cross_product(&x)
+                .expect("Could not do cross product on matrix in test"),
+            (&z * -1.0).expect("could not do scalar multiplication in test")
+        );
+        assert_eq!(
+            z.cross_product(&x)
+                .expect("Could not do cross product on matrix in test"),
+            y
+        );
+        assert_eq!(
+            x.cross_product(&z)
+                .expect("Could not do cross product on matrix in test"),
+            (&y * -1.0).expect("could not do scalar multiplication in test")
+        );
+        assert_eq!(
+            y.cross_product(&z)
+                .expect("Could not do cross product on matrix in test"),
+            x
+        );
+        assert_eq!(
+            z.cross_product(&y)
+                .expect("Could not do cross product on matrix in test"),
+            (&x * -1.0).expect("could not do scalar multiplication in test")
+        );
     }
 }

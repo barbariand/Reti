@@ -38,8 +38,16 @@ pub fn init_logger(
 ) -> Option<WorkerGuard> {
     let env_filter = EnvFilter::default()
         .add_directive(level.into())
-        .add_directive("rustyline=off".parse().unwrap())
-        .add_directive("tokio=off".parse().unwrap());
+        .add_directive(
+            "rustyline=off"
+                .parse()
+                .expect("Could not turn off rustyline tracing"),
+        )
+        .add_directive(
+            "tokio=off"
+                .parse()
+                .expect("Could not turn off tokio tracing"),
+        );
 
     let stdout = tracing_subscriber::fmt::layer()
         .with_filter(env_filter)

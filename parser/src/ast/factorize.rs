@@ -78,9 +78,12 @@ impl<T: FactorizeCollecting + Debug + Clone> Factorize for T {
         trace!("Factorizing {:#?}", self);
         let mut result = FactorizationResult::default();
         self.clone().factorize_collecting(&mut result); // TODO this is debug, remove clone.
-        if result.factors_num.vec.is_empty() {
-            panic!("Empty numerator when factorizing {:?}", self);
-        }
+        assert!(
+            !result.factors_num.vec.is_empty(),
+            "Empty numerator when factorizing {:?}",
+            self
+        );
+
         trace!("Resulted in {:#?}", result);
         result
     }

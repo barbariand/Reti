@@ -223,9 +223,7 @@ impl Parser {
                 Factor::Abs(Box::new(expr))
             }
             Token::Identifier(ident) => {
-                if ident.chars().count() != 1 {
-                    panic!("Identifier was not splitted correctly.")
-                }
+                assert!( ident.chars().count() == 1 ,"Identifier was not identified or split correctly, expected one char at a time");
                 let math_identifier = MathIdentifier::from_single_ident(&ident);
                 let math_identifier =
                     self.math_identifier_tail(math_identifier).await?;
@@ -398,25 +396,25 @@ impl Parser {
             Token::Identifier(ident) => {
                 let ident = ident.clone();
                 self.reader.skip().await;
-                if ident.len() != 1 {
-                    panic!(
-                        "The normalizer did not correctly handle exponent, got ident = {}",
-                        ident
-                    );
-                }
+                assert!( ident.len() == 1,
+                    "The normalizer did not correctly handle exponent, got ident = {}",
+                    ident
+                );
+
                 MathExpr::Term(Term::Factor(Factor::Variable(
                     MathIdentifier::Name(MathString::from_letters(vec![
-                        MathLetter::Ascii(ident.bytes().next().unwrap()),
+                        MathLetter::Ascii(ident.bytes().next().expect(
+                            "We already checked that it is 1 in length",
+                        )),
                     ])),
                 )))
             }
             Token::NumberLiteral(num) => {
-                if num.raw.len() != 1 {
-                    panic!(
-                        "The normalizer did not correctly handle exponent, got num = {:?}",
-                        num
-                    );
-                }
+                assert!( num.raw.len() == 1 ,
+                    "The normalizer did not correctly handle exponent, got num = {:?}",
+                    num
+                );
+
                 let parsed = num.parsed;
                 self.reader.skip().await;
                 MathExpr::Term(Term::Factor(Factor::Constant(parsed)))
@@ -568,7 +566,10 @@ mod tests {
                 assert_eq!(found_ast, expected_ast);
             }
             Err(err) => {
-                panic!("Failed to parse AST:\n{}\n\nDebug: {:?}", err, err);
+                unreachable!(
+                    "Failed to parse AST:\n{}\n\nDebug: {:?}",
+                    err, err
+                );
             }
         }
     }

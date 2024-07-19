@@ -102,10 +102,10 @@ impl<'a> Approximator<'a> {
                             n.run(args?)?
                         }
                         MathFunction::Foreign(_) => {
-                            unreachable!("Foreign function was not inlined")
+                            unreachable!("this should never be reatched, as the function should be inlined already")
                         }
                     },
-                    None => panic!(
+                    None => unreachable!(
                         "Parser incorrectly identified function {:?}",
                         func_call
                     ),
@@ -172,24 +172,22 @@ mod tests {
 
         let expr = match ast {
             Ast::Expression(expr) => expr,
-            Ast::Equality(_, _) => panic!("Cannot evaluate statement."),
+            Ast::Equality(_, _) => unimplemented!("Cannot evaluate statement."),
         };
 
-        let value = match approximator
-            .approximate_expr(expr.simple(approximator.context).unwrap())
-        {
-            Ok(val) => val,
-            Err(err) => panic!("{err:?}"),
-        };
+        let value = approximator
+            .approximate_expr(
+                expr.simple(approximator.context)
+                    .expect("Test should not fail"),
+            )
+            .expect("Test should not fail");
 
         let found = match value {
             Value::Scalar(val) => val,
-            Value::Matrix(m) => panic!("Unexpected matrix {m:?}"),
+            Value::Matrix(m) => unimplemented!("Unexpected matrix {m:?}"),
         };
 
-        if !found.equals(&expected) {
-            panic!("Found {} expected {}", found, expected);
-        }
+        assert!(found.equals(&expected));
     }
 
     async fn eval_test_from_str(expected: f64, text: &str) {
@@ -204,7 +202,7 @@ mod tests {
         let future2 = parser.parse();
 
         let ((), ast) = join!(future1, future2);
-        let ast = ast.unwrap();
+        let ast = ast.expect("Failed to create ast in test");
 
         eval_test_from_ast(expected, ast);
     }

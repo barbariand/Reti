@@ -261,7 +261,11 @@ mod tests {
     }
 
     fn from_latex_test(latex: &'static str, letter: GreekLetter) {
-        assert_eq!(GreekLetter::from_latex(latex).unwrap(), letter);
+        assert_eq!(
+            GreekLetter::from_latex(latex)
+                .expect("Could not make GreekLetter in test"),
+            letter
+        );
     }
 
     #[test]

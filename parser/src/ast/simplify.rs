@@ -142,9 +142,11 @@ impl FactorVec {
         // TODO this method only works for real numbers (or things that
         // commute). Matricies for example do not commute, so we cannot
         // move them around like this method does.
-        if self.vec.is_empty() {
-            panic!("Cannot simplify empty factors vector.");
-        }
+        assert!(
+            !self.vec.is_empty(),
+            "Cannot simplify empty factors vector."
+        );
+
         trace!("simple, before: {:?}", self.vec);
         let mut result = Vec::with_capacity(self.vec.len());
         let mut constant_term = 1.0;
@@ -421,7 +423,7 @@ mod test {
             .await
             .expect("failed to parse AST")
             .simple(&context)
-            .unwrap();
+            .expect("failed to simplify AST in test");
         let expected_ast = parse(expected_latex, &context)
             .await
             .expect("failed to parse latex to ast")
