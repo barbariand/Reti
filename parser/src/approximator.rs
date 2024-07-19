@@ -242,4 +242,8 @@ mod tests {
         )
         .await;
     }
+    #[tokio::test]
+    async fn markdown_example() {
+        eval_test_from_str(0.5, "\\frac{2\\sqrt{9}+5}{3(3+4)+1}").await;
+    }
 }

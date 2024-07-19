@@ -31,7 +31,7 @@ To get started with Reti, clone the repository and build the project using Rust'
 git clone https://github.com/barbariand/Reti.git
 
 # Change directory to the repl
-cd Reti/parser
+cd Reti/repl
 
 # Build the project
 cargo build --release
