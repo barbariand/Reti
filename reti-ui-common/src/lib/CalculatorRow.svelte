@@ -1,21 +1,21 @@
 <script lang="ts">
-    let wasm_lock=true;
+    let wasm_lock = true;
     import KaTeX from "./KaTeX.svelte";
-    import init, { parse } from "../wasm/reti_js.js"
-    let stored="";
+    import init, { parse } from "../wasm/reti_js.js";
+    let stored = "";
     async function init_wasm_lock() {
         await init();
-        wasm_lock=false;
+        wasm_lock = false;
     }
     init_wasm_lock();
-    function parse_cached(v:string):string{
-        if (wasm_lock){
+    function parse_cached(v: string): string {
+        if (wasm_lock) {
             return "";
         }
         try {
-            stored=parse(v).Scalar;
-        }catch(e){
-            console.error(e)
+            stored = parse(v).Scalar;
+        } catch (e) {
+            console.error(e);
         }
         return stored;
     }
