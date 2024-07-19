@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build_wasm": "sh ../reti-js/init_test.sh",
+        "build_wasm": "bash ../reti-js/init_test.sh",
         "dev": "pnpm build_wasm && vite",
         "build": "pnpm build_wasm && vite build",
         "preview": "pnpm build_wasm && vite preview",
