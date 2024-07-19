@@ -2,6 +2,8 @@
     import svelteLogo from "./assets/svelte.svg";
     import viteLogo from "/vite.svg";
     import Counter from "./lib/Counter.svelte";
+    import KaTeX from "./lib/KaTeX.svelte";
+    import CalculatorView from "./lib/CalculatorView.svelte";
 </script>
 
 <main>
@@ -31,6 +33,12 @@
         Click on the Vite and Svelte logos to learn more
     </p>
     <p>Test update content. again.</p>
+    <p>
+        This is a test. Assuming <KaTeX latex="\phi" /> is the golden ratio.
+        <span>Change</span>
+    </p>
+    <hr />
+    <CalculatorView />
 </main>
 
 <style>

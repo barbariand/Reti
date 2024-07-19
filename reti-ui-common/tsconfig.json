@@ -15,7 +15,8 @@
     "checkJs": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "strict": true
+    "strict": true,
+    "lib": ["ESNext", "DOM"]
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
   "references": [{ "path": "./tsconfig.node.json" }]
