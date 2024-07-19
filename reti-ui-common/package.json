@@ -40,5 +40,8 @@
     "dependencies": {
         "katex": "^0.16.11",
         "vite-plugin-top-level-await": "^1.4.1"
+    },
+    "overrides": {
+        "@swc/core": "~1.6.13"
     }
 }
