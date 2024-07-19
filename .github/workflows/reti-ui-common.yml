@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         working-directory: reti-ui-common
+      - name: Install wasm-bindgen
+        run: cargo install -f wasm-bindgen-cli
+        working-directory: reti-js
       - name: Check
         run: pnpm run check
         working-directory: reti-ui-common
@@ -48,6 +51,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         working-directory: reti-ui-common
+      - name: Install wasm-bindgen
+        run: cargo install -f wasm-bindgen-cli
+        working-directory: reti-js
       - name: Lint
         run: pnpm run lint
         working-directory: reti-ui-common
@@ -90,6 +96,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         working-directory: reti-ui-common
+      - name: Install wasm-bindgen
+        run: cargo install -f wasm-bindgen-cli
+        working-directory: reti-js
       - name: Test
         run: pnpm run test
         working-directory: reti-ui-common
@@ -111,6 +120,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         working-directory: reti-ui-common
+      - name: Install wasm-bindgen
+        run: cargo install -f wasm-bindgen-cli
+        working-directory: reti-js
       - name: Build
         run: pnpm run build
         working-directory: reti-ui-common
