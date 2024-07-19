@@ -172,11 +172,7 @@ impl Term {
 
 impl Simplify for Term {
     fn simple(self, cont: &MathContext) -> Result<Simple, EvalError> {
-        let factors = self
-            .simple_inner(cont)?
-            .get_term()
-            .expect("Im a term")
-            .factorize();
+        let factors = self.simple_inner(cont)?.get_term_or_wrap().factorize();
 
         let factors_num = factors.factors_num.simplify_factors(cont)?.simple();
 
