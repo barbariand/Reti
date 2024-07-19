@@ -17,6 +17,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.7.0",
+        "@swc/core": "~1.6.13",
         "@sveltejs/vite-plugin-svelte": "^3.1.1",
         "@testing-library/jest-dom": "^6.4.6",
         "@testing-library/svelte": "^5.2.0",
@@ -34,14 +35,11 @@
         "typescript": "^5.5.3",
         "typescript-eslint": "8.0.0-alpha.44",
         "vite": "^5.3.4",
+        "vite-plugin-top-level-await": "^1.4.1",
         "vite-plugin-wasm": "^3.3.0",
         "vitest": "^2.0.3"
     },
     "dependencies": {
-        "katex": "^0.16.11",
-        "vite-plugin-top-level-await": "^1.4.1"
-    },
-    "overrides": {
-        "@swc/core": "~1.6.13"
+        "katex": "^0.16.11"
     }
 }
