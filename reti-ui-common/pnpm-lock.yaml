@@ -66,6 +66,9 @@ importers:
       vite:
         specifier: ^5.3.1
         version: 5.3.3
+      vite-plugin-wasm:
+        specifier: ^3.3.0
+        version: 3.3.0(vite@5.3.3)
       vitest:
         specifier: ^2.0.3
         version: 2.0.3(happy-dom@14.12.3)
@@ -1401,6 +1404,11 @@ packages:
     resolution: {integrity: sha512-14jzwMx7XTcMB+9BhGQyoEAmSl0eOr3nrnn+Z12WNERtOvLN+d2scbRUvyni05rT3997Bg+rZb47NyP4IQPKXg==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
+
+  vite-plugin-wasm@3.3.0:
+    resolution: {integrity: sha512-tVhz6w+W9MVsOCHzxo6SSMSswCeIw4HTrXEi6qL3IRzATl83jl09JVO1djBqPSwfjgnpVHNLYcaMbaDX5WB/pg==}
+    peerDependencies:
+      vite: ^2 || ^3 || ^4 || ^5
 
   vite@5.3.3:
     resolution: {integrity: sha512-NPQdeCU0Dv2z5fu+ULotpuq5yfCS1BzKUIPhNbP3YBfAMGJXbt2nS+sbTFu+qchaqWTD+H3JK++nRwr6XIcp6A==}
@@ -2753,6 +2761,10 @@ snapshots:
       - sugarss
       - supports-color
       - terser
+
+  vite-plugin-wasm@3.3.0(vite@5.3.3):
+    dependencies:
+      vite: 5.3.3
 
   vite@5.3.3:
     dependencies:

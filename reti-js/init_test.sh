@@ -7,6 +7,6 @@ echo "running with flags $RUSTFLAGS"
 cargo build --release --target wasm32-unknown-unknown
 
 echo "binding wasm"
-wasm-bindgen --web ../target/wasm32-unknown-unknown/release/reti_js.wasm --out-dir wasm
+wasm-bindgen --target bundler ../target/wasm32-unknown-unknown/release/reti_js.wasm --out-dir wasm
 
 echo "done"
