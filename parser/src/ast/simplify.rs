@@ -429,7 +429,7 @@ mod test {
         let found = format!("{}\nAST:\n{:#?}", found_ast.to_latex(), found_ast);
         let expected = format!("{}\nAST:\n{:#?}", expected_ast.to_latex(), expected_ast);
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast, expected_ast, "\nfound/expected")
+        assert_eq!(found, expected, "\nfound/expected")
     }
     #[tokio::test]
     async fn one_minus_one() {
