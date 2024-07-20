@@ -20,4 +20,5 @@ pub mod prelude;
 pub mod token;
 pub mod token_reader;
 pub mod value;
+pub mod evaluator;
 pub use prelude::parse;
