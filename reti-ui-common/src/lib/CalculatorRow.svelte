@@ -8,7 +8,7 @@
     function parse_cached(v: string): string {
         if (!v) return "";
         try {
-            stored = String(parse(v).Scalar);
+            stored = String(parse(v));
         } catch (e) {
             console.error(e);
         }
