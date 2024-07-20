@@ -6,7 +6,8 @@
 //! [parse]: self::parse
 
 pub use crate::{
-    approximator::Approximator,
+    evaluator::Evaluator,
+    evaluator::Evaluation,
     ast::Ast,
     context::MathContext,
     error::{
@@ -22,7 +23,6 @@ pub(crate) use tokio::sync::mpsc;
 /// An alias for `Sender<Token>` to send tokens
 pub(crate) type TokenSender = Sender<Token>;
 
-#[allow(unused_imports)]
 pub(crate) use crate::{
     ast::{Factor, FunctionCall, MathExpr, MulType, Term},
     functions::IntoMathFunction,
