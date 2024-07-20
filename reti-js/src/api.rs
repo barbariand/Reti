@@ -1,12 +1,12 @@
 use std::sync::Mutex;
 
-use parser::{ast::{simplify::Simplify, Ast}, error::{AstError, EvalError}, parse, prelude::{Evaluation, Evaluator}};
+use parser::{ast::simplify::Simplify, prelude::*};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::RT;
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = "RetiJS")]
 pub struct JsAPI(Mutex<Evaluator>);
-#[wasm_bindgen]
+#[wasm_bindgen(js_class = RetiJS)]
 impl JsAPI{
     #[wasm_bindgen(constructor)]
     pub fn standard_math()->JsAPI{
@@ -17,6 +17,7 @@ impl JsAPI{
         let simple=ast.simple(lock.context())?;
         lock.eval_ast(simple)
     }
+    
     pub fn parse(&self,text:String)->Result<String,String>{
         let guard=self.0.lock().expect("Failed to get lock");
         let res=RT.block_on(parse(&text, guard.context())).map_err(|v|format!("{v}"))?;

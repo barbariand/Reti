@@ -10,10 +10,10 @@
 
 <body>
     <script type="module">
-        import init, { JsAPI } from "./wasm/reti_js.js"
+        import init, { RetiJS } from "./wasm/reti_js.js"
         async function run() {
             await init()
-            window.JsAPI=JsAPI;
+            window.RetiJS=RetiJS;
         }
         run()
     </script>
