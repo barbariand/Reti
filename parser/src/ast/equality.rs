@@ -9,7 +9,7 @@ use super::{
 #[allow(private_bounds)]
 pub trait MathEquality<T = Self>: PrivateMathEquality<T>
 where
-    T: Simplify<T>,
+    T: Simplify<T>+Into<MathExpr>,
 {
     ///the user part of the trait
     fn equivalent(&self, other: &Self, cont: &MathContext) -> bool {
@@ -20,7 +20,7 @@ impl MathEquality<MathExpr> for Simple<MathExpr> {}
 impl MathEquality<Term> for Simple<Term> {}
 impl MathEquality<Factor> for Simple<Factor> {}
 ///tries to see if they are mathematically the same
-trait PrivateMathEquality<T = Self>: Simplify<T> + Clone
+trait PrivateMathEquality<T = Self>: Simplify<T> + Clone+ Into<MathExpr>
 where
     T: Simplify<T> + Into<MathExpr>,
 {
