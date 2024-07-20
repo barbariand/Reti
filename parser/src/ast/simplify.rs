@@ -41,9 +41,7 @@ impl Simplify for Ast {
     fn simple(self, cont: &MathContext) -> Result<Simple<Ast>, EvalError> {
         Ok(match self {
             Ast::Expression(e) => Simple(e.simple(cont)?.expression()),
-            Ast::Equality(a, b) => {
-                (a, b.simple(cont)?).ast_equals()
-            }
+            Ast::Equality(a, b) => (a, b.simple(cont)?).ast_equals(),
         })
     }
 }
@@ -328,26 +326,26 @@ impl Simplify for Factor {
                     _ => simple.pow_wrapped(),
                 }
             }
-            Factor::Root {
-                degree,
-                radicand,
-            } => {
-                match degree{
-                    Some(deg) => {
-                        let simple=(deg.simple(cont)?,radicand.simple(cont)?);
-                        match simple.to_expr(){
-                            (MathExpr::Term(Term::Factor(Factor::Constant(deg))), 
-                            MathExpr::Term(Term::Factor(Factor::Constant(rad)))) => Simple::constant(rad.powf(1.0/deg)),
-                            _=>simple.root()
-                        }
-                    },
-                    None => {
-                        match radicand.simple(cont)?.expr(){
-                            MathExpr::Term(Term::Factor(Factor::Constant(rad))) => Simple::constant(rad.sqrt()),
-                            v=>Simple::new_unchecked(Factor::Root { degree: None, radicand: v.boxed() })
-                        }
-                    },
+            Factor::Root { degree, radicand } => match degree {
+                Some(deg) => {
+                    let simple = (deg.simple(cont)?, radicand.simple(cont)?);
+                    match simple.to_expr() {
+                        (
+                            MathExpr::Term(Term::Factor(Factor::Constant(deg))),
+                            MathExpr::Term(Term::Factor(Factor::Constant(rad))),
+                        ) => Simple::constant(rad.powf(1.0 / deg)),
+                        _ => simple.root(),
+                    }
                 }
+                None => match radicand.simple(cont)?.expr() {
+                    MathExpr::Term(Term::Factor(Factor::Constant(rad))) => {
+                        Simple::constant(rad.sqrt())
+                    }
+                    v => Simple::new_unchecked(Factor::Root {
+                        degree: None,
+                        radicand: v.boxed(),
+                    }),
+                },
             },
             Factor::Fraction(numerator, denominator) => {
                 simplify_fraction_or_div(
@@ -426,7 +424,9 @@ mod test {
             .unwrap();
         let expected_ast = parse(expected_latex, &context)
             .await
-            .expect("failed to parse latex to ast").simple(&context).unwrap();
+            .expect("failed to parse latex to ast")
+            .simple(&context)
+            .unwrap();
         let found = format!("{}\nAST:\n{:#?}", found_ast.to_latex(), found_ast);
         let expected =
             format!("{}\nAST:\n{:#?}", expected_ast.to_latex(), expected_ast);

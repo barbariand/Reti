@@ -6,13 +6,13 @@
 //! [parse]: self::parse
 
 pub use crate::{
-    evaluator::Evaluator,
-    evaluator::Evaluation,
     ast::Ast,
     context::MathContext,
     error::{
         AstError, DeriveError, EvalError, IncompatibleMatrixSizes, ParseError,
     },
+    evaluator::Evaluation,
+    evaluator::Evaluator,
     functions::MathFunction,
     value::Value,
 };

@@ -55,8 +55,8 @@ impl Repl {
             ast_mode: ast_start,
             evaluator: Evaluator::standard_math(),
             rl: DefaultEditor::new().expect("could not use as a terminal"), /* TODO manage this
-                                                                                * so we just accept
-                                                                                * stdin instead */
+                                                                             * so we just accept
+                                                                             * stdin instead */
         }
     }
     async fn start(&mut self) {
@@ -184,6 +184,8 @@ impl Repl {
         if self.simple_ast_mode {
             println!("{:#?}", simple_ast)
         }
-        self.evaluator.eval_ast(simple_ast).map(|v| format!("> {}", v))
+        self.evaluator
+            .eval_ast(simple_ast)
+            .map(|v| format!("> {}", v))
     }
 }

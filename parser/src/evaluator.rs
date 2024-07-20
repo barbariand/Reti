@@ -1,35 +1,45 @@
 //!A robust single threaded evaluator for [Ast]
 use std::fmt::Display;
 
-use crate::{ast::{helper::Simple, simplify::Simplify, to_latex::{LaTeX, ToLaTeX}}, prelude::*};
+use crate::{
+    ast::{
+        helper::Simple,
+        simplify::Simplify,
+        to_latex::{LaTeX, ToLaTeX},
+    },
+    prelude::*,
+};
 
 ///Evaluations for ast, delegates it to aprox and other
 pub struct Evaluator(MathContext);
-impl Default for Evaluator{
+impl Default for Evaluator {
     fn default() -> Self {
-        Self (MathContext::standard_math() )
+        Self(MathContext::standard_math())
     }
 }
 
-impl Evaluator{
+impl Evaluator {
     ///creates a new Evaluator with a empty [MathContext]
-    pub fn new_empty()->Self{
-        Self ( MathContext::new() )
+    pub fn new_empty() -> Self {
+        Self(MathContext::new())
     }
     ///Get the context to it
-    pub const fn context(&self)->&MathContext{
+    pub const fn context(&self) -> &MathContext {
         &self.0
     }
     ///Creates a new with [MathContext::standard_math]
-    pub fn standard_math()->Self{
-        Self (MathContext::standard_math() )
+    pub fn standard_math() -> Self {
+        Self(MathContext::standard_math())
     }
     ///Evaluates the ast and inserts variables as needed
-    pub fn eval_ast(&mut self, ast: Simple<Ast>) -> Result<Evaluation, EvalError> {
+    pub fn eval_ast(
+        &mut self,
+        ast: Simple<Ast>,
+    ) -> Result<Evaluation, EvalError> {
         Ok(match ast.0 {
-            Ast::Expression(expr) => Evaluation::LaTeX(
-                expr.simple(self.context())?.to_latex()
-            ),
+            Ast::Expression(expr) => {
+                Evaluation::LaTeX(expr.simple(self.context())?.to_latex())
+            }
             Ast::Equality(lhs, rhs) => self.eval_equality(lhs, rhs)?,
         })
     }
@@ -117,7 +127,7 @@ impl Evaluator{
     }
 }
 ///The response for the Approximator
-#[derive(PartialEq, Eq,Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Evaluation {
     ///Added a function to the context
     AddedFunction,
@@ -139,12 +149,12 @@ impl Display for Evaluation {
         )
     }
 }
-impl From<&str> for Evaluation{
+impl From<&str> for Evaluation {
     fn from(value: &str) -> Self {
         Evaluation::LaTeX(value.to_owned())
     }
 }
-impl From<f64> for Evaluation{
+impl From<f64> for Evaluation {
     fn from(value: f64) -> Self {
         Evaluation::LaTeX(value.to_string())
     }
@@ -153,11 +163,8 @@ impl From<f64> for Evaluation{
 #[cfg(test)]
 mod tests {
     use super::Evaluator;
-    use crate::{
-        ast::simplify::Simplify,
-        prelude::*,
-    };
-    
+    use crate::{ast::simplify::Simplify, prelude::*};
+
     fn eval_test_from_ast(expected: impl Into<Evaluation>, ast: Ast) {
         let mut evaluator = Evaluator::new_empty();
 
@@ -168,12 +175,11 @@ mod tests {
             Err(err) => panic!("{err:?}"),
         };
 
-        assert_eq!(expected.into(),value);
+        assert_eq!(expected.into(), value);
     }
 
     async fn eval_test_from_str(expected: impl Into<Evaluation>, text: &str) {
-        
-        let ast=parse(text,&MathContext::new()).await.unwrap();
+        let ast = parse(text, &MathContext::new()).await.unwrap();
 
         eval_test_from_ast(expected, ast);
     }

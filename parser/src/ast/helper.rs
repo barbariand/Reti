@@ -201,24 +201,27 @@ impl SimpleCompareEquivalent for (Simple<Factor>, Simple<MathExpr>) {
         )
     }
 }
-///This type if for comparing Simple<MathExpr> to Simple<MathExpr> and returning
-/// Simples, this makes sure that only correct simples can be constructed
-pub trait SimpleCompareMultipleMathExprs{
+///This type if for comparing Simple<MathExpr> to Simple<MathExpr> and
+/// returning Simples, this makes sure that only correct simples can be
+/// constructed
+pub trait SimpleCompareMultipleMathExprs {
     ///gets the math_exprs to compare
     fn to_expr(&self) -> (&MathExpr, &MathExpr);
     /// takes the root as simple
-    fn root(self)->Simple<Factor>;
+    fn root(self) -> Simple<Factor>;
 }
-impl SimpleCompareMultipleMathExprs for (Simple<MathExpr>,Simple<MathExpr>){
+impl SimpleCompareMultipleMathExprs for (Simple<MathExpr>, Simple<MathExpr>) {
     fn to_expr(&self) -> (&MathExpr, &MathExpr) {
-        (&self.0,&self.1)
+        (&self.0, &self.1)
     }
-    
-    fn root(self)->Simple<Factor> {
-        Simple(Factor::Root { degree:Some(self.0.expr().boxed()), radicand:self.1.expr().boxed() })
+
+    fn root(self) -> Simple<Factor> {
+        Simple(Factor::Root {
+            degree: Some(self.0.expr().boxed()),
+            radicand: self.1.expr().boxed(),
+        })
     }
-    
-} 
+}
 ///Simple is a wrapper struct only allowed to be constructed when the contained
 /// MathExpr is in the simplest form
 #[derive(Clone, Debug, PartialEq)]
@@ -249,20 +252,20 @@ impl<T: Simplify> Simple<T> {
         self.0
     }
 }
-impl<T:Simplify+Into<MathExpr>> Simple<T>{
+impl<T: Simplify + Into<MathExpr>> Simple<T> {
     ///Constructs a Ast::Expression from the contained MathExpr
     pub fn expression(self) -> Ast {
         Ast::Expression(self.0.into())
     }
 }
-impl<T:Simplify> Deref for Simple<T>{
-    type Target=T;
+impl<T: Simplify> Deref for Simple<T> {
+    type Target = T;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl<T:Simplify> DerefMut for Simple<T>{
+impl<T: Simplify> DerefMut for Simple<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -321,7 +324,7 @@ impl Simple<Factor> {
         )))
     }
 }
-impl<T:ToLaTeX+Simplify> ToLaTeX for Simple<T> {
+impl<T: ToLaTeX + Simplify> ToLaTeX for Simple<T> {
     fn to_latex(&self) -> String {
         self.0.to_latex()
     }

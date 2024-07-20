@@ -218,7 +218,10 @@ impl Factor {
 
 #[cfg(test)]
 mod test {
-    use crate::{ast::{simplify::Simplify, to_latex::ToLaTeX}, prelude::*};
+    use crate::{
+        ast::{simplify::Simplify, to_latex::ToLaTeX},
+        prelude::*,
+    };
     use pretty_assertions::assert_eq;
     async fn ast_test_derive(
         text: &str,

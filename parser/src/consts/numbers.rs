@@ -71,7 +71,8 @@ pub mod physics_si {
         pub const SIMPLE: f64 = 10.0;
     }
 }
-/// macro for convertion with fixed ratio not used beacuse we dont suport imperial rn
+/// macro for convertion with fixed ratio not used beacuse we dont suport
+/// imperial rn
 #[allow(unused)]
 macro_rules! covert_using_ratio {
     ($conversion:path, { $($name:ident => $si:path),* $(,)? }) => {
@@ -86,4 +87,3 @@ macro_rules! covert_using_ratio {
         )*
     };
 }
-

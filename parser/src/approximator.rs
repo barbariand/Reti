@@ -26,7 +26,9 @@ impl<'a> Approximator<'a> {
         expr: Simple<MathExpr>,
     ) -> Result<Value, EvalError> {
         match expr.expr() {
-            MathExpr::Term(term) => self.approximate_term(term.simple(self.context)?),
+            MathExpr::Term(term) => {
+                self.approximate_term(term.simple(self.context)?)
+            }
             MathExpr::Add(a, b) => {
                 self.approximate_expr(a.simple(self.context)?)?
                     + self.approximate_term(b.simple(self.context)?)?
@@ -47,9 +49,12 @@ impl<'a> Approximator<'a> {
             Term::Factor(factor) => {
                 self.approximate_factor(factor.simple(self.context)?)
             }
-            Term::Multiply(mul_type, a, b) => self
-                .approximate_term(a.simple(self.context)?)?
-                .mul(&mul_type, &self.approximate_factor(b.simple(self.context)?)?),
+            Term::Multiply(mul_type, a, b) => {
+                self.approximate_term(a.simple(self.context)?)?.mul(
+                    &mul_type,
+                    &self.approximate_factor(b.simple(self.context)?)?,
+                )
+            }
             Term::Divide(a, b) => {
                 self.approximate_term(a.simple(self.context)?)?
                     / self.approximate_factor(b.simple(self.context)?)?
@@ -64,7 +69,10 @@ impl<'a> Approximator<'a> {
     ///
     /// # Panics
     ///  this implementation currently panics when it can not under
-    fn approximate_factor(&self, factor: Simple<Factor>) -> Result<Value, EvalError> {
+    fn approximate_factor(
+        &self,
+        factor: Simple<Factor>,
+    ) -> Result<Value, EvalError> {
         Ok(match factor.expr() {
             Factor::Constant(c) => Value::Scalar(c),
             Factor::Parenthesis(expr) => {
@@ -104,8 +112,9 @@ impl<'a> Approximator<'a> {
                 }
             }
             Factor::Power { base, exponent } => {
-                let base_val =
-                    self.approximate_factor(base.simple(self.context)?)?.scalar()?;
+                let base_val = self
+                    .approximate_factor(base.simple(self.context)?)?
+                    .scalar()?;
                 let exp_val = self
                     .approximate_expr(exponent.simple(self.context)?)?
                     .scalar()?;
@@ -134,7 +143,9 @@ impl<'a> Approximator<'a> {
                 (a_val / b_val)?
             }
             Factor::Abs(val) => Value::Scalar(
-                self.approximate_expr(val.simple(self.context)?)?.scalar()?.abs(),
+                self.approximate_expr(val.simple(self.context)?)?
+                    .scalar()?
+                    .abs(),
             ),
             Factor::Matrix(matrix) => Value::Matrix(matrix.map(|expr| {
                 self.approximate_expr(expr.clone().simple(self.context)?)
