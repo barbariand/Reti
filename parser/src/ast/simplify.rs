@@ -109,10 +109,11 @@ impl Simplify for MathExpr {
 
         Ok(match simple.expr() {
             MathExpr::Term(Term::Factor(Factor::Parenthesis(expr))) => {
-                // We can always remove a parenthesis surrounding an expression since it will never affect the order of operations.
+                // We can always remove a parenthesis surrounding an expression
+                // since it will never affect the order of operations.
                 Simple(*expr)
             }
-            expr => Simple(expr)
+            expr => Simple(expr),
         })
     }
 }
@@ -409,7 +410,8 @@ mod test {
             .await
             .expect("failed to parse latex to ast");
         let found = format!("{}\nAST:\n{:#?}", found_ast.to_latex(), found_ast);
-        let expected = format!("{}\nAST:\n{:#?}", expected_ast.to_latex(), expected_ast);
+        let expected =
+            format!("{}\nAST:\n{:#?}", expected_ast.to_latex(), expected_ast);
         // Compare and print with debug and formatting otherwise.
         assert_eq!(found, expected, "found/expected")
     }

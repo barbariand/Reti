@@ -2,7 +2,7 @@
 <div align="center">
 Reti is an in-development calculator that can evaluate LaTeX expressions.
 <br>
-<img src="./docs/dark_icon.svg" width="300" />
+<img src="./docs/dark_icon_loading.svg" width="300" />
 </div>
 
 <h2 align="center" id="development-status">Development Status</h2>
@@ -31,7 +31,7 @@ To get started with Reti, clone the repository and build the project using Rust'
 git clone https://github.com/barbariand/Reti.git
 
 # Change directory to the repl
-cd Reti/parser
+cd Reti/repl
 
 # Build the project
 cargo build --release

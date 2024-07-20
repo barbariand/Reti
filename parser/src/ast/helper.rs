@@ -285,9 +285,9 @@ impl Simple<Factor> {
         m: Matrix<MathExpr>,
         cont: &MathContext,
     ) -> Result<Self, EvalError> {
-        Ok(Simple(
-            Factor::Matrix(m.map_owned(|v| Ok(v.simple(cont)?.expr()))?),
-        ))
+        Ok(Simple(Factor::Matrix(
+            m.map_owned(|v| Ok(v.simple(cont)?.expr()))?,
+        )))
     }
 }
 

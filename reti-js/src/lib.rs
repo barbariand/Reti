@@ -11,7 +11,7 @@ lazy_static! {
 }
 #[wasm_bindgen(start)]
 pub fn init_wasm() {
-    console_error_panic_hook::set_once()
+    console_error_panic_hook::set_once();
 }
 use tokio::runtime::{Builder, Runtime};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
