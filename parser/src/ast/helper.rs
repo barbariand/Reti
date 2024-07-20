@@ -1,10 +1,10 @@
 //! helper functions
 
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use crate::prelude::*;
 
-use super::{equality::MathEquality, simplify::Simplify};
+use super::{equality::MathEquality, simplify::Simplify, to_latex::ToLaTeX};
 
 impl MathExpr {
     ///gets the term or wraps it in parenthesis
@@ -83,7 +83,6 @@ pub(crate) trait NumberCompare {
     ///if it is one
     fn is_one(&self) -> bool;
     ///if it equals the other
-    #[allow(dead_code)]
     fn equals(&self, other: &Self) -> bool;
 }
 impl NumberCompare for f64 {
@@ -104,11 +103,11 @@ impl NumberCompare for f64 {
 /// comparing Simple<MathExpr>s
 pub trait SimpleMathExprs {
     ///Gives as Ast::equals
-    fn ast_equals(self) -> Ast;
+    fn ast_equals(self) -> Simple<Ast>;
 }
-impl SimpleMathExprs for (Simple<MathExpr>, Simple<MathExpr>) {
-    fn ast_equals(self) -> Ast {
-        Ast::Equality(self.0 .0, self.1 .0)
+impl SimpleMathExprs for (MathExpr, Simple<MathExpr>) {
+    fn ast_equals(self) -> Simple<Ast> {
+        Simple(Ast::Equality(self.0, self.1 .0))
     }
 }
 ///Trait for finding if they are equivalent
@@ -202,11 +201,29 @@ impl SimpleCompareEquivalent for (Simple<Factor>, Simple<MathExpr>) {
         )
     }
 }
+///This type if for comparing Simple<MathExpr> to Simple<MathExpr> and returning
+/// Simples, this makes sure that only correct simples can be constructed
+pub trait SimpleCompareMultipleMathExprs{
+    ///gets the math_exprs to compare
+    fn to_expr(&self) -> (&MathExpr, &MathExpr);
+    /// takes the root as simple
+    fn root(self)->Simple<Factor>;
+}
+impl SimpleCompareMultipleMathExprs for (Simple<MathExpr>,Simple<MathExpr>){
+    fn to_expr(&self) -> (&MathExpr, &MathExpr) {
+        (&self.0,&self.1)
+    }
+    
+    fn root(self)->Simple<Factor> {
+        Simple(Factor::Root { degree:Some(self.0.expr().boxed()), radicand:self.1.expr().boxed() })
+    }
+    
+} 
 ///Simple is a wrapper struct only allowed to be constructed when the contained
 /// MathExpr is in the simplest form
 #[derive(Clone, Debug, PartialEq)]
-pub struct Simple<T: Simplify + Into<MathExpr>>(pub(crate) T);
-impl<T: Simplify + Into<MathExpr>> Simple<T> {
+pub struct Simple<T: Simplify>(pub(crate) T);
+impl<T: Simplify> Simple<T> {
     ///returns the inner T in a box
     pub fn boxed_inner(self) -> Box<T> {
         Box::new(self.0)
@@ -223,10 +240,6 @@ impl<T: Simplify + Into<MathExpr>> Simple<T> {
     pub const fn new_unchecked(expr: T) -> Self {
         Simple(expr)
     }
-    ///Constructs a Ast::Expression from the contained MathExpr
-    pub fn expression(self) -> Ast {
-        Ast::Expression(self.0.into())
-    }
     ///gets a ref to inner item
     pub const fn inner(&self) -> &T {
         &self.0
@@ -234,6 +247,24 @@ impl<T: Simplify + Into<MathExpr>> Simple<T> {
     ///gets a ref to inner item
     pub fn expr(self) -> T {
         self.0
+    }
+}
+impl<T:Simplify+Into<MathExpr>> Simple<T>{
+    ///Constructs a Ast::Expression from the contained MathExpr
+    pub fn expression(self) -> Ast {
+        Ast::Expression(self.0.into())
+    }
+}
+impl<T:Simplify> Deref for Simple<T>{
+    type Target=T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<T:Simplify> DerefMut for Simple<T>{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 impl From<Simple<Term>> for Simple<MathExpr> {
@@ -290,31 +321,8 @@ impl Simple<Factor> {
         )))
     }
 }
-
-impl AsRef<MathExpr> for Simple<MathExpr> {
-    fn as_ref(&self) -> &MathExpr {
-        &self.0
-    }
-}
-
-impl Deref for Simple<MathExpr> {
-    type Target = MathExpr;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl Deref for Simple<Term> {
-    type Target = Term;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl Deref for Simple<Factor> {
-    type Target = Factor;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl<T:ToLaTeX+Simplify> ToLaTeX for Simple<T> {
+    fn to_latex(&self) -> String {
+        self.0.to_latex()
     }
 }

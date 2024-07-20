@@ -1,6 +1,6 @@
 //! the implementations of simplification
 
-use crate::prelude::*;
+use crate::{ast::helper::SimpleCompareMultipleMathExprs, prelude::*};
 use tracing::trace;
 
 use super::{
@@ -12,7 +12,7 @@ use super::{
 };
 
 ///helper trait to make it easier to change stuff
-pub trait Simplify<Res = Self>: Sized + Into<MathExpr>
+pub trait Simplify<Res = Self>: Sized
 where
     Res: Simplify,
 {
@@ -35,13 +35,14 @@ impl Simplify<Factor> for Simple<Factor> {
     }
 }
 
-impl Ast {
+impl Simplify for Ast {
     ///simplifies the ast as best possible
-    pub fn simplify(self, cont: &MathContext) -> Result<Ast, EvalError> {
+    /// not the ö
+    fn simple(self, cont: &MathContext) -> Result<Simple<Ast>, EvalError> {
         Ok(match self {
-            Ast::Expression(e) => e.simple(cont)?.expression(),
+            Ast::Expression(e) => Simple(e.simple(cont)?.expression()),
             Ast::Equality(a, b) => {
-                (a.simple(cont)?, b.simple(cont)?).ast_equals()
+                (a, b.simple(cont)?).ast_equals()
             }
         })
     }
@@ -328,9 +329,26 @@ impl Simplify for Factor {
                 }
             }
             Factor::Root {
-                degree: _,
-                radicand: _,
-            } => Simple::new_unchecked(self), /* TODO */
+                degree,
+                radicand,
+            } => {
+                match degree{
+                    Some(deg) => {
+                        let simple=(deg.simple(cont)?,radicand.simple(cont)?);
+                        match simple.to_expr(){
+                            (MathExpr::Term(Term::Factor(Factor::Constant(deg))), 
+                            MathExpr::Term(Term::Factor(Factor::Constant(rad)))) => Simple::constant(rad.powf(1.0/deg)),
+                            _=>simple.root()
+                        }
+                    },
+                    None => {
+                        match radicand.simple(cont)?.expr(){
+                            MathExpr::Term(Term::Factor(Factor::Constant(rad))) => Simple::constant(rad.sqrt()),
+                            v=>Simple::new_unchecked(Factor::Root { degree: None, radicand: v.boxed() })
+                        }
+                    },
+                }
+            }, /* TODO */
             Factor::Fraction(numerator, denominator) => {
                 simplify_fraction_or_div(
                     Term::Factor(Factor::Parenthesis(numerator))
@@ -397,23 +415,23 @@ pub fn simplify_parenthesis(p: Simple<MathExpr>) -> Simple<Factor> {
 
 #[cfg(test)]
 mod test {
-    use crate::{ast::to_latex::ToLaTeX, prelude::*};
+    use crate::{ast::simplify::Simplify, ast::to_latex::ToLaTeX, prelude::*};
     use pretty_assertions::assert_eq;
     async fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
             .await
             .expect("failed to parse AST")
-            .simplify(&context)
+            .simple(&context)
             .unwrap();
         let expected_ast = parse(expected_latex, &context)
             .await
-            .expect("failed to parse latex to ast");
+            .expect("failed to parse latex to ast").simple(&context).unwrap();
         let found = format!("{}\nAST:\n{:#?}", found_ast.to_latex(), found_ast);
         let expected =
             format!("{}\nAST:\n{:#?}", expected_ast.to_latex(), expected_ast);
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found, expected, "found/expected")
+        assert_eq!(found_ast, expected_ast, "\nfound/expected")
     }
     #[tokio::test]
     async fn one_minus_one() {
