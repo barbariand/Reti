@@ -348,7 +348,7 @@ impl Simplify for Factor {
                         }
                     },
                 }
-            }, /* TODO */
+            },
             Factor::Fraction(numerator, denominator) => {
                 simplify_fraction_or_div(
                     Term::Factor(Factor::Parenthesis(numerator))
