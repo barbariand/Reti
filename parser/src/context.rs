@@ -137,7 +137,6 @@ mod test {
     use snafu::whatever;
 
     use crate::identifier::OtherSymbol;
-    #[allow(unused_imports)]
     use crate::prelude::*;
 
     #[test]
