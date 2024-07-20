@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! Simple single-threaded Approximator for AST
 
 use crate::ast::{helper::Simple, simplify::Simplify};
@@ -25,14 +26,14 @@ impl<'a> Approximator<'a> {
         expr: Simple<MathExpr>,
     ) -> Result<Value, EvalError> {
         match expr.expr() {
-            MathExpr::Term(term) => self.approximate_term(term.simple(&self.context)?),
+            MathExpr::Term(term) => self.approximate_term(term.simple(self.context)?),
             MathExpr::Add(a, b) => {
-                self.approximate_expr(a.simple(&self.context)?)?
-                    + self.approximate_term(b.simple(&self.context)?)?
+                self.approximate_expr(a.simple(self.context)?)?
+                    + self.approximate_term(b.simple(self.context)?)?
             }
             MathExpr::Subtract(a, b) => {
-                self.approximate_expr(a.simple(&self.context)?)?
-                    - self.approximate_term(b.simple(&self.context)?)?
+                self.approximate_expr(a.simple(self.context)?)?
+                    - self.approximate_term(b.simple(self.context)?)?
             }
         }
     }
@@ -44,14 +45,14 @@ impl<'a> Approximator<'a> {
     fn approximate_term(&self, term: Simple<Term>) -> Result<Value, EvalError> {
         match term.expr() {
             Term::Factor(factor) => {
-                self.approximate_factor(factor.simple(&self.context)?)
+                self.approximate_factor(factor.simple(self.context)?)
             }
             Term::Multiply(mul_type, a, b) => self
-                .approximate_term(a.simple(&self.context)?)?
-                .mul(&mul_type, &self.approximate_factor(b.simple(&self.context)?)?),
+                .approximate_term(a.simple(self.context)?)?
+                .mul(&mul_type, &self.approximate_factor(b.simple(self.context)?)?),
             Term::Divide(a, b) => {
-                self.approximate_term(a.simple(&self.context)?)?
-                    / self.approximate_factor(b.simple(&self.context)?)?
+                self.approximate_term(a.simple(self.context)?)?
+                    / self.approximate_factor(b.simple(self.context)?)?
             }
         }
     }
@@ -67,14 +68,14 @@ impl<'a> Approximator<'a> {
         Ok(match factor.expr() {
             Factor::Constant(c) => Value::Scalar(c),
             Factor::Parenthesis(expr) => {
-                self.approximate_expr(expr.simple(&self.context)?)?
+                self.approximate_expr(expr.simple(self.context)?)?
             }
 
             Factor::Variable(x) => self.approximate_expr(
                 self.context
                     .variables
                     .get(&x)
-                    .map(|v| v.clone().simple(&self.context))
+                    .map(|v| v.clone().simple(self.context))
                     .ok_or(EvalError::NotDefined)??,
             )?,
             Factor::FunctionCall(func_call) => {
@@ -86,7 +87,7 @@ impl<'a> Approximator<'a> {
                                 .iter()
                                 .map(|expr| {
                                     self.approximate_expr(
-                                        expr.clone().simple(&self.context)?,
+                                        expr.clone().simple(self.context)?,
                                     )
                                 })
                                 .collect();
@@ -104,23 +105,23 @@ impl<'a> Approximator<'a> {
             }
             Factor::Power { base, exponent } => {
                 let base_val =
-                    self.approximate_factor(base.simple(&self.context)?)?.scalar()?;
+                    self.approximate_factor(base.simple(self.context)?)?.scalar()?;
                 let exp_val = self
-                    .approximate_expr(exponent.simple(&self.context)?)?
+                    .approximate_expr(exponent.simple(self.context)?)?
                     .scalar()?;
                 Value::Scalar(base_val.powf(exp_val))
             }
             Factor::Root { degree, radicand } => Value::Scalar(
                 match degree.as_ref().map(|expr| {
-                    self.approximate_expr(expr.clone().simple(&self.context)?)
+                    self.approximate_expr(expr.clone().simple(self.context)?)
                 }) {
                     None => self
-                        .approximate_expr(radicand.simple(&self.context)?)?
+                        .approximate_expr(radicand.simple(self.context)?)?
                         .scalar()?
                         .sqrt(),
                     Some(degree) => {
                         let radicand_val = self
-                            .approximate_expr(radicand.simple(&self.context)?)?
+                            .approximate_expr(radicand.simple(self.context)?)?
                             .scalar()?;
                         let degree_val = degree?.scalar()?;
                         radicand_val.powf(1.0 / degree_val)
@@ -128,15 +129,15 @@ impl<'a> Approximator<'a> {
                 },
             ),
             Factor::Fraction(a, b) => {
-                let a_val = self.approximate_expr(a.simple(&self.context)?)?;
-                let b_val = self.approximate_expr(b.simple(&self.context)?)?;
+                let a_val = self.approximate_expr(a.simple(self.context)?)?;
+                let b_val = self.approximate_expr(b.simple(self.context)?)?;
                 (a_val / b_val)?
             }
             Factor::Abs(val) => Value::Scalar(
-                self.approximate_expr(val.simple(&self.context)?)?.scalar()?.abs(),
+                self.approximate_expr(val.simple(self.context)?)?.scalar()?.abs(),
             ),
             Factor::Matrix(matrix) => Value::Matrix(matrix.map(|expr| {
-                self.approximate_expr(expr.clone().simple(&self.context)?)
+                self.approximate_expr(expr.clone().simple(self.context)?)
             })?),
         })
     }
@@ -164,7 +165,7 @@ mod tests {
         };
 
         let value = match approximator
-            .approximate_expr(expr.simple(&approximator.context).unwrap())
+            .approximate_expr(expr.simple(approximator.context).unwrap())
         {
             Ok(val) => val,
             Err(err) => panic!("{err:?}"),
