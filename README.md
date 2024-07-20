@@ -2,7 +2,7 @@
 <div align="center">
 Reti is an in-development calculator that can evaluate LaTeX expressions.
 <br>
-<img src="./dark_icon.svg" width="300" />
+<img src="./docs/dark_icon_loading.svg" width="300" />
 </div>
 
 <h2 align="center" id="development-status">Development Status</h2>
@@ -31,7 +31,7 @@ To get started with Reti, clone the repository and build the project using Rust'
 git clone https://github.com/barbariand/Reti.git
 
 # Change directory to the repl
-cd Reti/parser
+cd Reti/repl
 
 # Build the project
 cargo build --release
@@ -39,8 +39,8 @@ cargo build --release
 
 <h2 align="center" id="repl-usage">REPL Usage</h2>
 
-
 Just input a string from any LaTeX mathematics and get back the calculated result
+
 ```
 >> \displaystyle \frac{2\sqrt{9}+5}{3(3+4)+1}
 > 0.5
@@ -57,7 +57,6 @@ The same LaTeX expression that was used as input can be rendered as $\displaysty
 
 <h2 align="center" id="contribute">Contribute</h2>
 Contributions are welcome! If you're interested in improving Reti, fork the repository, make your changes, and submit a pull request. We appreciate your input in making Reti better for everyone.
-
 
 <h2 align="center" id="contributors">Contributors</h2>
 Thanks to all the contributors who invest their time and expertise. Your efforts are greatly enhancing the usability of LaTeX in practical applications.

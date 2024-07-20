@@ -1,28 +1,71 @@
+//!All valid token types in the TokenStream
 use std::{fmt::Display, hash::Hash, num::ParseFloatError, str::FromStr};
-
+/// All the accepted tokens
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub enum Token {
+    /// Any other unknown chars not identified under
     Identifier(String),
+
+    /// A number with extra info
+    /// specifically matching [ `0` - `9` ] and `.`
     NumberLiteral(NumberLiteral),
-    Backslash,         // \
-    LeftCurlyBracket,  // {
-    RightCurlyBracket, // }
-    LeftBracket,       // [
-    RightBracket,      // ]
-    LeftParenthesis,   // (
-    RightParenthesis,  // )
-    Plus,              // +
-    Minus,             // -
-    Asterisk,          // *
-    Slash,             // /
-    Apostrophe,        // '
-    Underscore,        // _
-    Caret,             // ^
-    VerticalPipe,      // | and |
-    Comma,             // ,
-    Ampersand,         // &
-    Equals,            // =
-    EndOfContent,      // A special token that represents the end of content.
+
+    /// String representation:`\`
+    Backslash,
+
+    /// String representation:`{`
+    LeftCurlyBracket,
+
+    /// String representation:`}`
+    RightCurlyBracket,
+
+    /// String representation:`[`
+    LeftBracket,
+
+    /// String representation:`]`
+    RightBracket,
+
+    /// String representation:`(`
+    LeftParenthesis,
+
+    /// String representation:`)`
+    RightParenthesis,
+
+    /// String representation:`+`
+    Plus,
+
+    /// String representation:`-`
+    Minus,
+
+    /// String representation:`*`
+    Asterisk,
+
+    /// String representation:`/`
+    Slash,
+
+    /// String representation:`'`
+    Apostrophe,
+
+    /// String representation:`_`
+    Underscore,
+
+    /// String representation:`^`
+    Caret,
+
+    /// String representation:`|`
+    VerticalPipe,
+
+    /// String representation:`,`
+    Comma,
+
+    /// String representation:`&`
+    Ampersand,
+
+    /// String representation:`=`
+    Equals,
+
+    /// No string representation
+    EndOfContent,
 }
 
 impl Display for Token {
@@ -59,20 +102,19 @@ impl Display for Token {
     }
 }
 impl Token {
+    ///if it is the ident variant and matching the string provided
     pub fn is_ident(&self, text: &str) -> bool {
         match self {
             Self::Identifier(val) => val == text,
             _ => false,
         }
     }
-    pub fn take_ident(&self) -> Option<&String> {
+    ///Takes a ref to the inner string of the ident
+    pub const fn take_ident(&self) -> Option<&String> {
         match self {
             Self::Identifier(v) => Some(v),
             _ => None,
         }
-    }
-    pub fn is_eof(&self) -> bool {
-        self == Token::EndOfContent
     }
 }
 impl PartialEq<Token> for &Token {
@@ -85,19 +127,17 @@ impl PartialEq<&Token> for Token {
         *self == **other
     }
 }
+///The number representation
 #[derive(Debug, Clone)]
 pub struct NumberLiteral {
+    ///the raw string without being parsed as a number
     pub raw: String,
+    ///The parsed value
     pub parsed: f64,
 }
 impl Display for NumberLiteral {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.parsed)
-    }
-}
-impl NumberLiteral {
-    pub fn reparse_from_raw(&mut self) {
-        self.parsed = self.raw.parse().expect("INTERNAL PARSING BUG")
     }
 }
 impl PartialEq for NumberLiteral {

@@ -6,17 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.37.0", features = ["test-util", "tracing", "rt-multi-thread", "macros"] }
+serde = { version = "1.0.204", optional = true }
+tokio = { version = "1.37.0", features = ["tracing", "macros"] }
 async-recursion = "1.1.0"
-colored = "2.1.0"
-clap = { version = "4.5.4", features = ["derive"] }
 tracing = { version = "0.1.40", features = ["async-await"] }
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-rustyline = "14.0.0"
 futures = "0.3.30"
+slicedisplay = "0.2.2"
+snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
 
-[lib]
+[dev-dependencies]
+pretty_assertions = "1.4.0"
 
-[[bin]]
-name = "RetiREPL"
-path = "./src/main.rs"
+[features]
+default = ["tokio/test-util", "tokio/rt-multi-thread", "doc_test"]
+serde = ["dep:serde"]
+doc_test = []
+wasm = ["serde", "tokio/rt", "tokio/sync"]

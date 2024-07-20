@@ -1,20 +1,25 @@
+//! Creating a token stream from a string
 use crate::prelude::*;
 use std::mem::take;
 use tracing::{debug, trace, trace_span};
-
+///The lexer creating tokens from a string
 pub struct Lexer {
+    ///where it sends the tokens
     channel: TokenSender,
 }
 
 impl Lexer {
+    ///creating a new Lexer
     pub fn new(channel: TokenSender) -> Self {
         trace!("created Lexer");
         Self { channel }
     }
+    ///for sending or crashing when the pipe is broken
     async fn send_or_crash(&self, token: Token) {
         trace!("send_or_crash token={token}");
         self.channel.send(token).await.expect("Broken Pipe")
     }
+    ///The main function of the Lexer, will create tokens and send them away
     pub async fn tokenize(self, s: &str) {
         let span = trace_span!("lexer::tokenize");
         let _enter = span.enter();
@@ -26,8 +31,10 @@ impl Lexer {
             let t = match c {
                 '0'..='9' | '.' => {
                     if !temp_ident.is_empty() {
-                        self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
-                            .await;
+                        self.send_or_crash(Token::Identifier(take(
+                            &mut temp_ident,
+                        )))
+                        .await;
                     }
                     trace!("temp_number::push char={c:?}");
                     temp_number.push(c);
@@ -58,8 +65,10 @@ impl Lexer {
                         self.send_or_crash(num).await;
                     }
                     if !temp_ident.is_empty() {
-                        self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
-                            .await;
+                        self.send_or_crash(Token::Identifier(take(
+                            &mut temp_ident,
+                        )))
+                        .await;
                     }
                     continue;
                 }
@@ -108,9 +117,9 @@ impl Lexer {
 mod tests {
 
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     async fn tokenize(text: &str) -> Vec<Token> {
-        let (tx, mut rx): (TokenSender, TokenResiver) = mpsc::channel(32); // idk what that 32 means tbh
+        let (tx, mut rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
         let lexer = Lexer::new(tx);
 
         lexer.tokenize(text).await;

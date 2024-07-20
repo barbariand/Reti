@@ -1,13 +1,18 @@
+//!Removing inconsistencies and style choices using the Normalizer
 use tracing::{debug, trace, trace_span};
 
 use crate::prelude::*;
-
+///The normalizer for making the tokens easier to handle by removing
+/// stylization for example
 pub struct Normalizer {
+    ///The input from the lexer
     reader: TokenReader,
+    ///The output to the parser
     output: TokenSender,
 }
 impl Normalizer {
-    pub fn new(input: TokenResiver, output: TokenSender) -> Self {
+    ///Creates a normalizer
+    pub fn new(input: TokenReceiver, output: TokenSender) -> Self {
         trace!("created Normalizer");
 
         Self {
@@ -15,7 +20,8 @@ impl Normalizer {
             output,
         }
     }
-
+    ///Starting the normalization process will read until EOF
+    /// for more info read on in the TokenSender
     pub async fn normalize(mut self) {
         let span = trace_span!("normalizer::normalize");
         let _enter = span.enter();
@@ -34,7 +40,7 @@ impl Normalizer {
             }
         }
     }
-
+    ///Removing unwanted stuff to make the stream easier to handle
     async fn normalize_tokens(&mut self) {
         let span = trace_span!("normalize_tokens");
         let _enter = span.enter();
@@ -43,9 +49,6 @@ impl Normalizer {
             [Token::Backslash, Token::Identifier(v)] => {
                 trace!("ident = {v}");
                 match v.as_str() {
-                    "cdot" | "cdotp" | "times" => {
-                        self.reader.replace(0..=1, vec![Token::Asterisk]).await;
-                    }
                     "left" | "middle" | "right" => {
                         self.reader.replace(0..=1, vec![]).await;
                         // TODO Remove dot after, for example "\left."
@@ -81,10 +84,10 @@ mod tests {
     use std::hint::black_box;
 
     use crate::prelude::*;
-
+    use pretty_assertions::assert_eq;
     async fn normalize(tokens: Vec<Token>) -> Vec<Token> {
-        let (tx1, rx1): (TokenSender, TokenResiver) = mpsc::channel(32);
-        let (tx2, mut rx2): (TokenSender, TokenResiver) = mpsc::channel(32);
+        let (tx1, rx1): (TokenSender, TokenReceiver) = mpsc::channel(32);
+        let (tx2, mut rx2): (TokenSender, TokenReceiver) = mpsc::channel(32);
         let normalizer = Normalizer::new(rx1, tx2);
 
         let mut result = Vec::with_capacity(tokens.len());
@@ -157,66 +160,6 @@ mod tests {
                 Token::Caret,
                 Token::NumberLiteral("0".to_owned().into()),
                 Token::NumberLiteral("25".to_owned().into()),
-                Token::EndOfContent,
-            ]
-        );
-    }
-
-    #[tokio::test]
-    async fn replace_cdot_with_asterisk() {
-        assert_eq!(
-            normalize(vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Backslash,
-                Token::Identifier("cdot".to_string()),
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ])
-            .await,
-            vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Asterisk,
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ]
-        );
-    }
-
-    #[tokio::test]
-    async fn replace_cdotp_with_asterisk() {
-        assert_eq!(
-            normalize(vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Backslash,
-                Token::Identifier("cdotp".to_string()),
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ])
-            .await,
-            vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Asterisk,
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ]
-        );
-    }
-
-    #[tokio::test]
-    async fn replace_times_with_asterisk() {
-        assert_eq!(
-            normalize(vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Backslash,
-                Token::Identifier("times".to_string()),
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::EndOfContent,
-            ])
-            .await,
-            vec![
-                Token::NumberLiteral("1".to_owned().into()),
-                Token::Asterisk,
-                Token::NumberLiteral("1".to_owned().into()),
                 Token::EndOfContent,
             ]
         );

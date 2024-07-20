@@ -1,13 +1,23 @@
-#![allow(dead_code)]
+//! Reti is an in-development calculator that can evaluate LaTeX expressions.
+#![warn(
+    missing_docs,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_const_for_fn
+)]
 
-mod approximator;
-mod ast;
+pub mod approximator;
+pub mod ast;
+pub mod context;
 
-mod context;
-mod lexer;
-mod normalizer;
-mod parsing;
+pub mod error;
+pub mod functions;
+pub mod identifier;
+pub mod lexer;
+pub mod matrix;
+pub mod normalizer;
+pub mod parsing;
 pub mod prelude;
-mod token;
-mod token_reader;
+pub mod token;
+pub mod token_reader;
+pub mod value;
 pub use prelude::parse;

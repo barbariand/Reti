@@ -1,0 +1,126 @@
+<svg id="ent7lsfUJC21"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1080 1080" shape-rendering="geometricPrecision" text-rendering="geometricPrecision">
+    <style>
+        .backgroundColor {
+            fill: #010906;
+        }
+
+        .primaryColor {
+            fill: #1DD390;
+        }
+
+        .secondaryColor {
+            fill: #125182;
+        }
+
+        .accentColor {
+            fill: #1752A6;
+        }
+    </style>
+    <style><![CDATA[
+    #plus {
+        animation: plus_animation 2000ms ease-in-out infinite normal forwards 1500ms
+    }
+
+    @keyframes plus_animation {
+        0% {
+            transform: translate(241.5px, 765px) scale(1)
+        }
+
+        50% {
+            transform: translate(241.5px, 765px) scale(0)
+        }
+
+        100% {
+            transform: translate(241.5px, 765px) scale(1)
+        }
+    }
+
+#minus {
+    animation: minus_animation 2000ms ease-in-out infinite normal forwards 1000ms
+}
+
+@keyframes minus_animation {
+    0% {
+        transform: translate(851.5px, 764.5px) scale(1)
+    }
+
+    50% {
+        transform: translate(851.5px, 764.5px) scale(0)
+    }
+
+    100% {
+        transform: translate(851.5px, 764.5px) scale(1)
+    }
+}
+
+#times {
+    animation: times_animation 2000ms ease-in-out infinite normal forwards 500ms
+}
+
+@keyframes times_animation {
+    0% {
+        transform: translate(856.5px, 224.880249px) scale(1)
+    }
+
+    50% {
+        transform: translate(856.5px, 224.880249px) scale(0)
+    }
+
+    100% {
+        transform: translate(856.5px, 224.880249px) scale(1)
+    }
+}
+
+#divide {
+    animation: divide_animation 2000ms ease-in-out infinite normal forwards 0ms
+}
+
+@keyframes divide_animation {
+    0% {
+        transform: translate(242px, 234.432251px) scale(1)
+    }
+
+    50% {
+        transform: translate(242px, 234.432251px) scale(0)
+    }
+
+    100% {
+        transform: translate(242px, 234.432251px) scale(1)
+    }
+}
+]]>    </style>
+    <rect width="1080" height="1080" rx="0" ry="0" clip-rule="evenodd" class="backgroundColor" fill-rule="evenodd"/>
+    <g>
+        <g clip-rule="evenodd">
+            <path d="M507.5,186.5c-13.667,0-27.333,0-41,0-.999,111.499-1.333,223.165-1,335c17.175.33,34.175-.003,51-1c37.571-.539,69.071-14.539,94.5-42c5.435-7.225,10.601-14.558,15.5-22c24.467,13.067,48.8,26.4,73,40-33.868,58.971-84.535,94.471-152,106.5-7.306.942-14.64,1.442-22,1.5-20,0-40,0-60,0c0,104,0,208,0,312-27.667,0-55.333,0-83,0c0-104,0-208,0-312-19.174-.33-38.174.003-57,0c.167,14.671,0,28.337-.5,42-27.874-27.54-55.374-55.373-82.5-83.5c27.126-28.127,54.626-55.96,82.5-83.5.5,13.663.667,27.329.5,41c18.826.997,37.826,1.33,57,1c.333-111.835-.001-223.501-1-335-13.671.167-27.337,0-41-.5c27.54-27.874,55.373-55.374,83.5-82.5c28.328,27.161,56.161,54.828,83.5,83Z" clip-rule="evenodd" fill="#1dd390" class="primaryColor" fill-rule="evenodd"/>
+        </g>
+    </g>
+    <g clip-rule="evenodd">
+        <path d="M466.5,186.5c13.667,0,27.333,0,41,0c48.373-1.919,92.039,10.915,131,38.5c63.114,48.42,91.948,112.587,86.5,192.5-3.049,28.308-11.549,54.641-25.5,79-24.2-13.6-48.533-26.933-73-40c23.062-48.188,19.562-94.188-10.5-138-22.242-26.868-50.742-42.701-85.5-47.5-21.311-1.313-41.645-1.813-64.6-1.5-.2-27.667-.2-55.333.6-83Z" clip-rule="evenodd" class="secondaryColor" fill-rule="evenodd"/>
+    </g>
+    <g clip-rule="evenodd">
+        <path d="M525.5,604.5c74.132,74.632,148.132,148.465,222,222.5.667.667,1.333.667,2,0c9.167-9.167,18.333-18.333,27.5-27.5.5,39.332.667,78.665.5,118-39.335.167-78.668,0-118-.5c9.5-9.5,19-19,28.5-28.5.667-.667.667-1.333,0-2-73.701-73.868-147.535-147.535-222.5-221c0-20,0-40,0-61c20.667,0,40.333,0,60,0Z" clip-rule="evenodd" class="secondaryColor" fill-rule="evenodd"/>
+    </g>
+    <g id="plus" transform="translate(241.5,765) scale(1)">
+        <g transform="translate(-241.5,-765)" clip-rule="evenodd">
+            <path d="M221.5,700.5c13.333,0,26.667,0,40,0-.329,15.176.004,30.176,1,45c14.333,0,28.667,0,43,0c0,12.667,0,25.333,0,38-14.51-.329-28.843.004-43,1c0,15,0,30,0,45-13.667,0-27.333,0-41,0c0-15.333,0-30.667,0-46-14.667,0-29.333,0-44,0c0-12.667,0-25.333,0-38c14.667,0,29.333,0,44,0c0-15,0-30,0-45Z" transform="translate(6 0)" clip-rule="evenodd" class="accentColor"/>
+        </g>
+    </g>
+    <g id="minus" transform="translate(851.5,764.5) scale(1)">
+        <g transform="translate(-851.5,-764.5)" clip-rule="evenodd">
+            <path d="M795.5,746.5c37.333,0,74.667,0,112,0c0,12,0,24,0,36-37.333,0-74.667,0-112,0c0-12,0-24,0-36Z" clip-rule="evenodd" class="accentColor" fill-rule="evenodd"/>
+        </g>
+    </g>
+    <g id="times" transform="translate(856.5,224.880249) scale(1)">
+        <g transform="translate(-856.5,-224.880249)" clip-rule="evenodd">
+            <path d="M837.5,161.5c13.376-.648,26.376.019,39,2-2.83,13.66-5.33,27.327-7.5,41c11.313-9.145,22.48-18.478,33.5-28c7.076,10.475,13.41,21.475,19,33-13.294,5.265-26.627,10.431-40,15.5c13.481,4.548,26.815,9.381,40,14.5-6.207,11.248-12.54,22.415-19,33.5-2.476-.747-4.809-2.081-7-4-8.536-8.205-17.369-16.038-26.5-23.5c2.675,14.218,5.175,28.551,7.5,43-13,0-26,0-39,0c2.648-14.386,5.148-28.719,7.5-43-10.982,9.481-21.816,19.148-32.5,29-6.874-11.916-13.874-23.749-21-35.5c13.48-5.384,27.147-10.384,41-15-13.321-4.274-26.655-8.441-40-12.5-.009-1.808.491-3.475,1.5-5c5.596-10.2,11.429-20.2,17.5-30c11.02,9.522,22.187,18.855,33.5,28-2.167-14.342-4.667-28.675-7.5-43Z" transform="translate(1.428571 0)" clip-rule="evenodd" class="accentColor"/>
+        </g>
+    </g>
+    <g id="divide" transform="translate(242,234.432251) scale(1)">
+        <g transform="translate(-242,-234.432251)" clip-rule="evenodd">
+            <path d="M187.5,376.5c21.845-94.716,44.012-189.383,66.5-286c6.93-.3142,14.096.0191,21.5,0c7,.3333,14,.6667,21,1-22.672,95.679-45.339,191.345-68,287l-41-2Z" clip-rule="evenodd" class="accentColor"/>
+        </g>
+    </g>
+</svg>
