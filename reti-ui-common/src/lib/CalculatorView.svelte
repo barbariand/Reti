@@ -1,11 +1,14 @@
 <script>
     import CalculatorRow from "./CalculatorRow.svelte";
+    import { init_wasm, RetiJS } from "../wasm/reti_js.js";
+    init_wasm();
+    const reti = new RetiJS();
 </script>
 
 <div>
     <div class="rows">
-        <CalculatorRow />
-        <CalculatorRow />
+        <CalculatorRow {reti} />
+        <CalculatorRow {reti} />
     </div>
 </div>
 

@@ -1,18 +1,19 @@
 <script lang="ts">
     import KaTeX from "./KaTeX.svelte";
-    import { init_wasm, parse } from "../wasm/reti_js.js";
-
-    let stored = "";
-    init_wasm();
-
-    function parse_cached(v: string): string {
-        if (!v) return "";
-        try {
-            stored = String(parse(v));
-        } catch (e) {
-            console.error(e);
+    import { RetiJS } from "../wasm/reti_js";
+    export let reti: RetiJS;
+    function parse_secure(text: string): string {
+        if (text==""){
+            return ""
         }
-        return stored;
+        try {
+            return reti.parse(text);
+        } catch (e: unknown) {
+            console.error(e);
+            if (typeof e === "string") {
+                return e.toString();
+            } else return "unknown error occurred, check console";
+        }
     }
     let latex = "";
 </script>
@@ -28,7 +29,7 @@
                 <KaTeX display {latex} />
             </div>
             <div class="math-output">
-                <KaTeX display latex={parse_cached(latex)} />
+                <KaTeX display latex={parse_secure(latex)} />
             </div>
         </div>
     </div>

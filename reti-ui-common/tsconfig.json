@@ -16,9 +16,10 @@
         "isolatedModules": true,
         "moduleDetection": "force",
         "strict": true,
-        "lib": ["ESNext", "DOM"]
+        "lib": ["ESNext", "DOM"],
+        "outDir": "./dist"
     },
     "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
-    "exclude": ["src/wasm/**"],
+    "exclude": ["src/wasm/*.js"],
     "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -17,7 +17,6 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.7.0",
-        "@swc/core": "~1.6.13",
         "@sveltejs/vite-plugin-svelte": "^3.1.1",
         "@testing-library/jest-dom": "^6.4.6",
         "@testing-library/svelte": "^5.2.0",
@@ -41,5 +40,10 @@
     },
     "dependencies": {
         "katex": "^0.16.11"
+    },
+    "pnpm": {
+        "override": {
+            "@swc/core": "~1.6.13"
+        }
     }
 }
