@@ -1,23 +1,26 @@
 use std::sync::Mutex;
 
 use parser::{ast::{simplify::Simplify, Ast}, error::{AstError, EvalError}, parse, prelude::{Evaluation, Evaluator}};
-use lazy_static::lazy_static;
-lazy_static!{
-    pub static ref API: JsAPI = JsAPI::standard_math();
-} 
+use wasm_bindgen::prelude::wasm_bindgen;
 
+use crate::RT;
+#[wasm_bindgen]
 pub struct JsAPI(Mutex<Evaluator>);
+#[wasm_bindgen]
 impl JsAPI{
-    pub fn standard_math()->Self{
+    #[wasm_bindgen(constructor)]
+    pub fn standard_math()->JsAPI{
         JsAPI(Mutex::new(Evaluator::standard_math()))
     }
-    pub fn eval_ast(&self,ast:Ast)->Result<Evaluation,EvalError>{
+    fn eval_ast(&self,ast:Ast)->Result<Evaluation,EvalError>{
         let mut lock=self.0.lock().expect("Failed to get lock");
         let simple=ast.simple(lock.context())?;
         lock.eval_ast(simple)
     }
-    pub async fn parse(&self,text:String)->Result<Ast, AstError>{
+    pub fn parse(&self,text:String)->Result<String,String>{
         let guard=self.0.lock().expect("Failed to get lock");
-        parse(&text, guard.context()).await
+        let res=RT.block_on(parse(&text, guard.context())).map_err(|v|format!("{v}"))?;
+        drop(guard);
+        self.eval_ast(res).map(|v|v.to_string()).map_err(|v|v.to_string())
     }
 }
