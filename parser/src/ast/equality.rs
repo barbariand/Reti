@@ -1,31 +1,17 @@
 //!Tries to find out if they are the same
 use crate::prelude::*;
 
-use super::{
-    helper::{NumberCompare, Simple},
-    simplify::Simplify,
-};
+use super::{helper::Simple, simplify::Simplify};
 ///the implementation part
 #[allow(private_bounds)]
-pub trait MathEquality<T = Self>: PrivateMathEquality<T>
-where
-    T: Simplify<T> + Into<MathExpr>,
-{
-    ///the user part of the trait
-    fn equivalent(&self, other: &Self, cont: &MathContext) -> bool {
-        self.private_equals(other, cont)
-    }
-}
-impl MathEquality<MathExpr> for Simple<MathExpr> {}
-impl MathEquality<Term> for Simple<Term> {}
-impl MathEquality<Factor> for Simple<Factor> {}
+
 ///tries to see if they are mathematically the same
-trait PrivateMathEquality<T = Self>: Simplify<T> + Clone + Into<MathExpr>
+pub trait MathEquality<T = Self>: Simplify<T> + Clone + Into<MathExpr>
 where
     T: Simplify<T> + Into<MathExpr>,
 {
     ///The implementation part
-    fn private_equals(&self, other: &Self, cont: &MathContext) -> bool {
+    fn equivalent(&self, other: &Self, cont: &MathContext) -> bool {
         self.clone().into().simple(cont).is_ok_and(|s| {
             other
                 .clone()
@@ -40,7 +26,7 @@ where
     fn equals(&self, other: &Self, cont: &MathContext) -> bool;
 }
 
-impl PrivateMathEquality<MathExpr> for Simple<MathExpr> {
+impl MathEquality<MathExpr> for Simple<MathExpr> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
         match (self.ref_inner(), other.ref_inner()) {
             (
@@ -52,7 +38,7 @@ impl PrivateMathEquality<MathExpr> for Simple<MathExpr> {
         }
     }
 }
-impl PrivateMathEquality<Term> for Simple<Term> {
+impl MathEquality<Term> for Simple<Term> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
         match (self.ref_inner(), other.ref_inner()) {
             (Term::Factor(a), Term::Factor(b)) => a.equals(b, cont),
@@ -60,29 +46,38 @@ impl PrivateMathEquality<Term> for Simple<Term> {
         }
     }
 }
-impl PrivateMathEquality<Factor> for Simple<Factor> {
+impl MathEquality<Factor> for Simple<Factor> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
-        self.ref_inner().equals(&other.0, cont)
+        self.ref_inner().equals(&other.value, cont)
     }
 }
 
-impl PrivateMathEquality for MathExpr {
+impl MathEquality for MathExpr {
     fn equals(&self, other: &MathExpr, cont: &MathContext) -> bool {
-        match (self,other){
-            (MathExpr::Term(_), MathExpr::Term(_)) => unreachable!("The Simple structs implementations should ensure that this is working"),
-            (MathExpr::Add(lhs_1, rhs_1), MathExpr::Add(lhs_2, rhs_2)) =>
-            (lhs_1.equals(lhs_2,cont)&&rhs_1.equals(rhs_2,cont))||
-            (lhs_1.term().map_or(false,|f|f.equals(rhs_2,cont))&&
-            lhs_2.term().map_or(false, |f|f.equals(rhs_1,cont))),
-            (MathExpr::Subtract(lhs_1, rhs_1), MathExpr::Subtract(lhs_2, rhs_2)) =>
-            (lhs_1.equals(lhs_2,cont)&&rhs_1.equals(rhs_2,cont))||
-            (lhs_1.term().map_or(false,|f|f.equals(rhs_2,cont))&&
-            lhs_2.term().map_or(false, |f|f.equals(rhs_1,cont))),
-            _=>false
+        match (self, other) {
+            (MathExpr::Term(t_1), MathExpr::Term(t_2)) => t_1.equals(t_2, cont),
+            (MathExpr::Add(lhs_1, rhs_1), MathExpr::Add(lhs_2, rhs_2)) => {
+                (lhs_1.equals(lhs_2, cont) && rhs_1.equals(rhs_2, cont))
+                    || (lhs_1.term().map_or(false, |f| f.equals(rhs_2, cont))
+                        && lhs_2
+                            .term()
+                            .map_or(false, |f| f.equals(rhs_1, cont)))
+            }
+            (
+                MathExpr::Subtract(lhs_1, rhs_1),
+                MathExpr::Subtract(lhs_2, rhs_2),
+            ) => {
+                (lhs_1.equals(lhs_2, cont) && rhs_1.equals(rhs_2, cont))
+                    || (lhs_1.term().map_or(false, |f| f.equals(rhs_2, cont))
+                        && lhs_2
+                            .term()
+                            .map_or(false, |f| f.equals(rhs_1, cont)))
+            }
+            _ => false,
         }
     }
 }
-impl PrivateMathEquality for Term {
+impl MathEquality for Term {
     fn equals(&self, other: &Term, cont: &MathContext) -> bool {
         match (self,other){
             (Term::Factor(_), Term::Factor(_)) => unreachable!("The Simple structs implementations should ensure that this is working"),
@@ -109,10 +104,10 @@ impl PrivateMathEquality for Term {
         }
     }
 }
-impl PrivateMathEquality for Factor {
+impl MathEquality for Factor {
     fn equals(&self, other: &Factor, cont: &MathContext) -> bool {
         match (self, other) {
-            (Factor::Constant(c_1), Factor::Constant(c_2)) => c_1.equals(c_2),
+            (Factor::Constant(c_1), Factor::Constant(c_2)) => c_1 == c_2,
             (Factor::Parenthesis(p_1), Factor::Parenthesis(p_2)) => {
                 p_1.equals(p_2, cont)
             }

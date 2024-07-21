@@ -74,7 +74,9 @@ impl<'a> Approximator<'a> {
         factor: Simple<Factor>,
     ) -> Result<Value, EvalError> {
         Ok(match factor.inner() {
-            Factor::Constant(c) => Value::Scalar(c),
+            Factor::Constant(c) => {
+                Value::Scalar(c.0.parse().expect("NumberLiteral corrupted"))
+            }
             Factor::Parenthesis(expr) => {
                 self.approximate_expr(expr.simple(self.context)?)?
             }
@@ -118,7 +120,7 @@ impl<'a> Approximator<'a> {
                 let exp_val = self
                     .approximate_expr(exponent.simple(self.context)?)?
                     .scalar()?;
-                Value::Scalar(base_val.powf(exp_val))
+                Value::Scalar(base_val.pow(&exp_val))
             }
             Factor::Root { degree, radicand } => Value::Scalar(
                 match degree.as_ref().map(|expr| {
@@ -133,7 +135,7 @@ impl<'a> Approximator<'a> {
                             .approximate_expr(radicand.simple(self.context)?)?
                             .scalar()?;
                         let degree_val = degree?.scalar()?;
-                        radicand_val.powf(1.0 / degree_val)
+                        radicand_val.pow(&(&1.0.into() / &degree_val))
                     }
                 },
             ),
@@ -158,15 +160,14 @@ impl<'a> Approximator<'a> {
 mod tests {
     use super::Approximator;
     use crate::{
-        ast::{helper::NumberCompare, simplify::Simplify},
-        prelude::*,
+        ast::simplify::Simplify, number_literal::NumberLiteral, prelude::*,
     };
     use tokio::{
         join,
         sync::mpsc::{self},
     };
 
-    fn eval_test_from_ast(expected: f64, ast: Ast) {
+    fn eval_test_from_ast(expected: NumberLiteral, ast: Ast) {
         let context = MathContext::new();
         let approximator = Approximator::new(&context);
 
@@ -187,12 +188,15 @@ mod tests {
             Value::Matrix(m) => panic!("Unexpected matrix {m:?}"),
         };
 
-        if !found.equals(&expected) {
+        if found != expected {
             panic!("Found {} expected {}", found, expected);
         }
     }
 
-    async fn eval_test_from_str(expected: f64, text: &str) {
+    async fn eval_test_from_str(
+        expected: impl Into<NumberLiteral>,
+        text: &str,
+    ) {
         let (tx, rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
 
         let context = MathContext::new();
@@ -206,13 +210,13 @@ mod tests {
         let ((), ast) = join!(future1, future2);
         let ast = ast.unwrap();
 
-        eval_test_from_ast(expected, ast);
+        eval_test_from_ast(expected.into(), ast);
     }
 
     #[test]
     fn eval_1_plus_1() {
         eval_test_from_ast(
-            2.0,
+            2.0.into(),
             Ast::Expression(MathExpr::Add(Box::new(1.0.into()), 1.0.into())),
         );
     }
@@ -220,7 +224,7 @@ mod tests {
     #[test]
     fn eval_multiplication() {
         eval_test_from_ast(
-            17.0,
+            17.0.into(),
             // 2+3*5
             Ast::Expression(MathExpr::Add(
                 Box::new(2.0.into()),

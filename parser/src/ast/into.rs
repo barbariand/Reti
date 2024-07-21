@@ -8,8 +8,8 @@ impl From<Term> for MathExpr {
     }
 }
 impl<T: Simplify + Into<MathExpr>> From<Simple<T>> for MathExpr {
-    fn from(value: Simple<T>) -> Self {
-        value.0.into()
+    fn from(simple: Simple<T>) -> Self {
+        simple.value.into()
     }
 }
 
@@ -56,7 +56,7 @@ impl From<Factor> for Term {
 }
 impl From<f64> for Term {
     fn from(value: f64) -> Self {
-        Term::Factor(Factor::Constant(value))
+        Term::Factor(Factor::Constant(value.into()))
     }
 }
 impl From<MathIdentifier> for Term {
@@ -76,7 +76,7 @@ impl From<Factor> for Box<Term> {
 }
 impl From<f64> for Factor {
     fn from(value: f64) -> Self {
-        Factor::Constant(value)
+        Factor::Constant(value.into())
     }
 }
 impl From<MathIdentifier> for Factor {

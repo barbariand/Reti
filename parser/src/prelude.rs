@@ -244,9 +244,9 @@ mod tests {
             "2^{3}",
             Ast::Expression(
                 Factor::Power {
-                    base: Box::new(Factor::Constant(2.0)),
+                    base: Box::new(Factor::Constant(2.0.into())),
                     exponent: Box::new(MathExpr::Term(Term::Factor(
-                        Factor::Constant(3.0),
+                        Factor::Constant(3.0.into()),
                     ))),
                 }
                 .into(),
@@ -283,13 +283,13 @@ mod tests {
                 MulType::Implicit,
                 //2^0
                 Box::new(Term::Factor(Factor::Power {
-                    base: Box::new(Factor::Constant(2.0)),
+                    base: Box::new(Factor::Constant(2.0.into())),
                     exponent: Box::new(MathExpr::Term(Term::Factor(
-                        Factor::Constant(0.0),
+                        Factor::Constant(0.0.into()),
                     ))),
                 })),
                 // 25
-                Factor::Constant(25.0),
+                Factor::Constant(25.0.into()),
             ))),
         )
         .await;
@@ -322,14 +322,14 @@ mod tests {
                 Box::new(MathExpr::Term(Term::Multiply(
                     MulType::Implicit,
                     // 2
-                    Box::new(Term::Factor(Factor::Constant(2.0))),
+                    Box::new(Term::Factor(Factor::Constant(2.0.into()))),
                     // x^{2}
                     Factor::Power {
                         base: Box::new(Factor::Variable(
                             MathIdentifier::from_single_ident("x"),
                         )),
                         exponent: Box::new(MathExpr::Term(Term::Factor(
-                            Factor::Constant(2.0),
+                            Factor::Constant(2.0.into()),
                         ))),
                     },
                 ))),
@@ -441,15 +441,15 @@ mod tests {
                     // 5/2
                     Box::new(Term::Divide(
                         // 5
-                        Box::new(Term::Factor(Factor::Constant(5.0))),
+                        Box::new(Term::Factor(Factor::Constant(5.0.into()))),
                         // 2
-                        Factor::Constant(2.0),
+                        Factor::Constant(2.0.into()),
                     )),
                     // x
                     Factor::Variable(MathIdentifier::from_single_ident("x")),
                 ))),
                 // 3
-                Term::Factor(Factor::Constant(3.0)),
+                Term::Factor(Factor::Constant(3.0.into())),
             )),
         )
         .await;

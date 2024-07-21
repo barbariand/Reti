@@ -1,5 +1,5 @@
 //! AST for representing Latex
-use crate::prelude::*;
+use crate::{number_literal::NumberLiteral, prelude::*};
 
 pub mod derivative;
 pub mod equality;
@@ -21,7 +21,7 @@ pub enum Ast {
 /// or subtracted.
 ///
 /// See Wikipedia article [Expression (mathematics)](https://en.wikipedia.org/wiki/Expression_(mathematics)).
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum MathExpr {
     /// A [Term] containing the rest of the syntax that go before in evaluation
     Term(Term),
@@ -73,7 +73,7 @@ pub enum MathExpr {
 /// For scalar multiplication, the type of multiplication makes no difference,
 /// but in some cases, for example when multiplying vectors, the symbol used
 /// for multiplication makes a difference.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum MulType {
     /// 2 * x
     ///
@@ -109,7 +109,7 @@ pub enum MulType {
 /// > 1 + 2x + 8yzx
 ///
 /// *1*, *2x*, and *8yzx* are three separate terms.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum Term {
     /// A [Factor] containing the rest of the syntax that go before in
     /// evaluation
@@ -167,7 +167,7 @@ pub enum Term {
 /// Factors also represent most of the mathematical syntax, like roots and
 /// functions. This is because they operate on the same level in terms of
 /// order of operations.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum Factor {
     /// Normal numbers
     /// ## Examples
@@ -189,7 +189,7 @@ pub enum Factor {
     ///     )
     /// );
     /// ```
-    Constant(f64),
+    Constant(NumberLiteral),
     /// Parenthesis with a MathExpr
     /// ## Examples
     /// ```
@@ -453,7 +453,7 @@ pub enum Factor {
 }
 
 /// an identified function
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub struct FunctionCall {
     ///The name for the function called
     pub function_name: MathIdentifier,

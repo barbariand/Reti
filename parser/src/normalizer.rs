@@ -62,11 +62,11 @@ impl Normalizer {
             }
             [Token::Caret, Token::NumberLiteral(n)] => {
                 trace!("number literal = {n}");
-                if n.raw.is_empty() {
+                if n.0.is_empty() {
                     panic!("string is weird");
                 }
-                if n.raw.len() != 1 {
-                    let mut s = n.raw.clone();
+                if n.0.len() != 1 {
+                    let mut s = n.0.clone();
                     let rest = Token::NumberLiteral(s.split_off(1).into());
                     trace!("rest = {:?}", rest);
                     let single = Token::NumberLiteral(s.into());

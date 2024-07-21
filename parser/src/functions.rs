@@ -67,7 +67,7 @@ impl NativeFunction {
 #[derive(Clone, Debug)]
 pub struct ForeignFunction {
     ///the expression that is the foreign function
-    pub expr: MathExpr,
+    pub expr: Simple<MathExpr>,
     ///the inputs
     pub input: Vec<MathIdentifier>,
 }
@@ -100,7 +100,7 @@ impl MathFunction {
     }
     /// Helper new for foreign functions
     pub const fn new_foreign(
-        expr: MathExpr,
+        expr: Simple<MathExpr>,
         input: Vec<MathIdentifier>,
     ) -> Self {
         Self::Foreign(ForeignFunction { expr, input })
@@ -123,9 +123,13 @@ impl MathFunction {
     ) -> Self {
         Self::new_native(
             Arc::new(move |v: Vec<Value>| {
-                let v_new: Result<Vec<f64>, EvalError> =
-                    v.into_iter().map(|val| val.scalar()).collect();
-                Ok(Value::Scalar(func(v_new?)))
+                let v_new: Result<Vec<f64>, EvalError> = v
+                    .into_iter()
+                    .map(|val| {
+                        val.scalar().map(|v| v.parse_or_panic("native_func"))
+                    })
+                    .collect();
+                Ok(Value::Scalar(func(v_new?).into()))
             }),
             arguments,
             derivative,
@@ -142,8 +146,8 @@ impl MathFunction {
     ) -> Self {
         Self::new_native(
             Arc::new(move |v: Vec<Value>| {
-                let s = v[0].scalar()?;
-                Ok(Value::Scalar(func(s)))
+                let s = v[0].scalar()?.parse_or_panic("native func");
+                Ok(Value::Scalar(func(s).into()))
             }),
             arguments,
             Some(single_var_derivation_function(deriv)),
@@ -159,8 +163,9 @@ impl MathFunction {
     ) -> Self {
         Self::new_native(
             Arc::new(move |v: Vec<Value>| {
-                let s = v[0].scalar()?;
-                Ok(Value::Scalar(func(s)))
+                let s =
+                    v[0].scalar()?.parse_or_panic("native func without derive");
+                Ok(Value::Scalar(func(s).into()))
             }),
             arguments,
             None,
