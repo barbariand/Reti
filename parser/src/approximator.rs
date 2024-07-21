@@ -25,7 +25,7 @@ impl<'a> Approximator<'a> {
         &self,
         expr: Simple<MathExpr>,
     ) -> Result<Value, EvalError> {
-        match expr.expr() {
+        match expr.inner() {
             MathExpr::Term(term) => {
                 self.approximate_term(term.simple(self.context)?)
             }
@@ -45,7 +45,7 @@ impl<'a> Approximator<'a> {
     /// [EvalError]
     /// This can error if it can not complete
     fn approximate_term(&self, term: Simple<Term>) -> Result<Value, EvalError> {
-        match term.expr() {
+        match term.inner() {
             Term::Factor(factor) => {
                 self.approximate_factor(factor.simple(self.context)?)
             }
@@ -73,7 +73,7 @@ impl<'a> Approximator<'a> {
         &self,
         factor: Simple<Factor>,
     ) -> Result<Value, EvalError> {
-        Ok(match factor.expr() {
+        Ok(match factor.inner() {
             Factor::Constant(c) => Value::Scalar(c),
             Factor::Parenthesis(expr) => {
                 self.approximate_expr(expr.simple(self.context)?)?

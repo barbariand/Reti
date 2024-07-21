@@ -131,11 +131,11 @@ impl SimpleCompareMathExpr for (Simple<MathExpr>, Simple<Term>) {
     }
 
     fn add(self) -> Simple<MathExpr> {
-        Simple(MathExpr::Add(self.0.boxed_inner(), self.1.expr()))
+        Simple(MathExpr::Add(self.0.boxed_inner(), self.1.inner()))
     }
 
     fn sub_wrapped(self) -> Simple<MathExpr> {
-        Simple(MathExpr::Subtract(self.0.boxed_inner(), self.1.expr()))
+        Simple(MathExpr::Subtract(self.0.boxed_inner(), self.1.inner()))
     }
 }
 impl SimpleCompareEquivalent for (Simple<MathExpr>, Simple<Term>) {
@@ -160,11 +160,11 @@ impl SimpleCompareTerm for (Simple<Term>, Simple<Factor>) {
     }
 
     fn mul_wrapped(self, m: MulType) -> Simple<Term> {
-        Simple(Term::Multiply(m, self.0.boxed_inner(), self.1.expr()))
+        Simple(Term::Multiply(m, self.0.boxed_inner(), self.1.inner()))
     }
 
     fn div_wrapped(self) -> Simple<Term> {
-        Simple(Term::Divide(self.0.boxed_inner(), self.1.expr()))
+        Simple(Term::Divide(self.0.boxed_inner(), self.1.inner()))
     }
 }
 impl SimpleCompareEquivalent for (Simple<Term>, Simple<Factor>) {
@@ -217,8 +217,8 @@ impl SimpleCompareMultipleMathExprs for (Simple<MathExpr>, Simple<MathExpr>) {
 
     fn root(self) -> Simple<Factor> {
         Simple(Factor::Root {
-            degree: Some(self.0.expr().boxed()),
-            radicand: self.1.expr().boxed(),
+            degree: Some(self.0.inner().boxed()),
+            radicand: self.1.inner().boxed(),
         })
     }
 }
@@ -244,11 +244,11 @@ impl<T: Simplify> Simple<T> {
         Simple(expr)
     }
     ///gets a ref to inner item
-    pub const fn inner(&self) -> &T {
+    pub const fn ref_inner(&self) -> &T {
         &self.0
     }
     ///gets a ref to inner item
-    pub fn expr(self) -> T {
+    pub fn inner(self) -> T {
         self.0
     }
 }
@@ -320,7 +320,7 @@ impl Simple<Factor> {
         cont: &MathContext,
     ) -> Result<Self, EvalError> {
         Ok(Simple(Factor::Matrix(
-            m.map_owned(|v| Ok(v.simple(cont)?.expr()))?,
+            m.map_owned(|v| Ok(v.simple(cont)?.inner()))?,
         )))
     }
 }

@@ -37,7 +37,7 @@ impl Simplify<Factor> for Simple<Factor> {
 
 impl Simplify for Ast {
     ///simplifies the ast as best possible
-    /// not the ö
+    /// not the lhs off equality
     fn simple(self, cont: &MathContext) -> Result<Simple<Ast>, EvalError> {
         Ok(match self {
             Ast::Expression(e) => Simple(e.simple(cont)?.expression()),
@@ -106,7 +106,7 @@ impl Simplify for MathExpr {
             }
         };
 
-        Ok(match simple.expr() {
+        Ok(match simple.inner() {
             MathExpr::Term(Term::Factor(Factor::Parenthesis(expr))) => {
                 // We can always remove a parenthesis surrounding an expression
                 // since it will never affect the order of operations.
@@ -131,7 +131,7 @@ impl FactorVec {
             vec: self
                 .vec
                 .into_iter()
-                .map(|factor| factor.simple(cont).map(|simple| simple.expr()))
+                .map(|factor| factor.simple(cont).map(|simple| simple.inner()))
                 .collect::<Result<Vec<Factor>, EvalError>>()?,
         })
     }
@@ -195,7 +195,7 @@ impl Term {
 
 impl Simplify for Term {
     fn simple(self, cont: &MathContext) -> Result<Simple<Term>, EvalError> {
-        let factors = self.simple_inner(cont)?.expr().factorize();
+        let factors = self.simple_inner(cont)?.inner().factorize();
 
         let factors_num = factors.factors_num.simplify_factors(cont)?.simple();
 
@@ -223,7 +223,7 @@ impl Simplify for Term {
 
         let factors_den = factors_den.simplify_factors(cont)?.simple();
 
-        if let Term::Factor(Factor::Constant(c)) = numerator.inner() {
+        if let Term::Factor(Factor::Constant(c)) = numerator.ref_inner() {
             if c.is_zero() {
                 // The numerator is 0, everything is zero.
                 return Ok(Factor::Constant(0.0).simple(cont)?.into());
@@ -238,8 +238,8 @@ impl Simplify for Term {
             simplify_parenthesis(denominator.clone().into());
 
         Ok(Simple::new_unchecked(Term::Divide(
-            numerator.expr().boxed(),
-            denominator_factor.expr(),
+            numerator.inner().boxed(),
+            denominator_factor.inner(),
         )))
     }
 }
@@ -255,7 +255,7 @@ impl Simplify for Factor {
                     .get(&m)
                     .map(|v| {
                         Ok(Simple(Factor::Parenthesis(Box::new(
-                            v.clone().simple(cont)?.expr(),
+                            v.clone().simple(cont)?.inner(),
                         ))))
                     })
                     .unwrap_or(Ok(Simple::variable(m)))
@@ -292,7 +292,7 @@ impl Simplify for Factor {
                                         f.expr
                                             .clone()
                                             .simple(&new_cont)?
-                                            .expr(),
+                                            .inner(),
                                     ),
                                 )));
                             }
@@ -337,7 +337,7 @@ impl Simplify for Factor {
                         _ => simple.root(),
                     }
                 }
-                None => match radicand.simple(cont)?.expr() {
+                None => match radicand.simple(cont)?.inner() {
                     MathExpr::Term(Term::Factor(Factor::Constant(rad))) => {
                         Simple::constant(rad.sqrt())
                     }
@@ -395,7 +395,7 @@ fn simplify_fraction_or_div(
 }
 /// simplifying all the things we can in parenthesis
 pub fn simplify_parenthesis(p: Simple<MathExpr>) -> Simple<Factor> {
-    Simple(match p.expr() {
+    Simple(match p.inner() {
         MathExpr::Term(Term::Factor(Factor::Abs(a))) => Factor::Abs(a),
         MathExpr::Term(Term::Factor(Factor::Variable(a))) => {
             Factor::Variable(a)

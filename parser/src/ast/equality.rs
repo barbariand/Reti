@@ -42,7 +42,7 @@ where
 
 impl PrivateMathEquality<MathExpr> for Simple<MathExpr> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
-        match (self.inner(), other.inner()) {
+        match (self.ref_inner(), other.ref_inner()) {
             (
                 MathExpr::Term(Term::Factor(a)),
                 MathExpr::Term(Term::Factor(b)),
@@ -54,7 +54,7 @@ impl PrivateMathEquality<MathExpr> for Simple<MathExpr> {
 }
 impl PrivateMathEquality<Term> for Simple<Term> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
-        match (self.inner(), other.inner()) {
+        match (self.ref_inner(), other.ref_inner()) {
             (Term::Factor(a), Term::Factor(b)) => a.equals(b, cont),
             (a, b) => a.equals(b, cont),
         }
@@ -62,7 +62,7 @@ impl PrivateMathEquality<Term> for Simple<Term> {
 }
 impl PrivateMathEquality<Factor> for Simple<Factor> {
     fn equals(&self, other: &Self, cont: &MathContext) -> bool {
-        self.inner().equals(&other.0, cont)
+        self.ref_inner().equals(&other.0, cont)
     }
 }
 
