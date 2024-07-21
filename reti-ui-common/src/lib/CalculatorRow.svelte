@@ -3,8 +3,8 @@
     import { RetiJS } from "../wasm/reti_js";
     export let reti: RetiJS;
     function parse_secure(text: string): string {
-        if (text==""){
-            return ""
+        if (text == "") {
+            return "";
         }
         try {
             return reti.parse(text);
