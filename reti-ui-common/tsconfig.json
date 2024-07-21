@@ -16,7 +16,7 @@
         "isolatedModules": true,
         "moduleDetection": "force",
         "strict": true,
-        "lib": ["ESNext", "DOM"],
+        "lib": ["ESNext", "DOM"]
     },
     "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
     "exclude": ["src/wasm/*.js"],
