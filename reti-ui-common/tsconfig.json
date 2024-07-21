@@ -19,6 +19,6 @@
         "lib": ["ESNext", "DOM"]
     },
     "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
-    "exclude": ["src/wasm/**"],
+    "exclude": ["src/wasm/*.js"],
     "references": [{ "path": "./tsconfig.node.json" }]
 }

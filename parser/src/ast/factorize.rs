@@ -3,6 +3,11 @@ use crate::prelude::*;
 use std::fmt::Debug;
 use tracing::trace;
 
+use super::{
+    helper::{Simple, SimpleCompareTerm},
+    simplify::Simplify,
+};
+
 /// A vector of factors. They are usually intended to be multiplied together.
 #[derive(Debug, Default)]
 pub struct FactorVec {
@@ -14,25 +19,34 @@ impl FactorVec {
     /// Convert this array of factors into an AST in the form of a [Term].
     ///
     /// Returns `None` if the vector is empty.
-    pub fn to_term_ast(self) -> Option<Term> {
+    pub fn to_term_ast(
+        self,
+        cont: &MathContext,
+    ) -> Option<Result<Simple<Term>, EvalError>> {
         if self.vec.is_empty() {
             None
         } else if self.vec.len() == 2 {
             let mut vec = self.vec;
-            let left = vec.remove(0);
-            let right = vec.remove(0);
-            Some(Term::Multiply(
-                MulType::Implicit,
-                Term::Factor(left).boxed(),
-                right,
-            ))
+            let left = Into::<Term>::into(vec.remove(0)).simple(cont);
+            let right = vec.remove(0).simple(cont);
+            let simples: (Simple<Term>, Simple<Factor>) = (
+                match left {
+                    Ok(v) => v,
+                    e => return Some(e),
+                },
+                match right {
+                    Ok(v) => v,
+                    Err(e) => return Some(Err(e)),
+                },
+            );
+            Some(Ok(simples.mul_wrapped(MulType::Implicit)))
         } else {
             let mut iter = self.vec.into_iter();
             let mut term = Term::Factor(iter.next().expect("Not empty."));
             for next in iter {
                 term = Term::Multiply(MulType::Implicit, term.boxed(), next);
             }
-            Some(term)
+            Some(Ok(Simple(term)))
         }
     }
 }

@@ -31,7 +31,7 @@ impl Debug for NativeFunction {
 }
 impl NativeFunction {
     ///New native function
-    fn new(
+    pub(crate) const fn new(
         approximate: InnerMathFunction,
         arguments: usize,
         derivative: InnerDeriveFunction,
@@ -172,7 +172,7 @@ impl MathFunction {
         val: Vec<MathExpr>,
         cont: &MathContext,
         _dependant: MathIdentifier,
-    ) -> Result<Simple, EvalError> {
+    ) -> Result<Simple<MathExpr>, EvalError> {
         match self {
             MathFunction::Native(n) => {
                 n.derivate(val).map(|v| v.simple(cont))?

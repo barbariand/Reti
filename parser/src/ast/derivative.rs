@@ -218,7 +218,10 @@ impl Factor {
 
 #[cfg(test)]
 mod test {
-    use crate::{ast::to_latex::ToLaTeX, prelude::*};
+    use crate::{
+        ast::{simplify::Simplify, to_latex::ToLaTeX},
+        prelude::*,
+    };
     use pretty_assertions::assert_eq;
     async fn ast_test_derive(
         text: &str,
@@ -232,12 +235,12 @@ mod test {
             .derivative(dependent)
             .expect("Failed ");
 
-        let found_simple = found_ast.simplify(&context).unwrap();
+        let found_simple = found_ast.simple(&context).unwrap();
         println!("found simple {}", found_simple.to_latex());
         let expected_ast = parse(expected_to_ast, &context)
             .await
             .expect("could not parse the expected ast");
-        let expected_simple = expected_ast.simplify(&context).unwrap();
+        let expected_simple = expected_ast.simple(&context).unwrap();
         // Compare and print with debug and formatting otherwise.
         assert_eq!(
             found_simple.to_latex(),

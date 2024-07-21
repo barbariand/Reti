@@ -1,77 +1,92 @@
 //! the implementations of simplification
 
-use crate::prelude::*;
+use crate::{ast::helper::SimpleCompareMultipleMathExprs, prelude::*};
 use tracing::trace;
 
 use super::{
     factorize::{FactorVec, Factorize},
-    helper::{NumberCompare, Simple, SimpleCompare},
+    helper::{
+        NumberCompare, Simple, SimpleCompareEquivalent, SimpleCompareFactor,
+        SimpleCompareMathExpr, SimpleCompareTerm, SimpleMathExprs,
+    },
 };
 
-impl Simplify for Simple {
-    fn simple(self, _: &MathContext) -> Result<Simple, EvalError> {
+///helper trait to make it easier to change stuff
+pub trait Simplify<Res = Self>: Sized
+where
+    Res: Simplify,
+{
+    ///Simplifies as best as it can
+    fn simple(self, cont: &MathContext) -> Result<Simple<Res>, EvalError>;
+}
+impl Simplify<MathExpr> for Simple<MathExpr> {
+    fn simple(self, _: &MathContext) -> Result<Simple<MathExpr>, EvalError> {
         Ok(self)
     }
 }
-///helper trait to make it easier to change stuff
-pub trait Simplify {
-    ///Simplifies as best as it can
-    fn simple(self, cont: &MathContext) -> Result<Simple, EvalError>;
+impl Simplify<Term> for Simple<Term> {
+    fn simple(self, _: &MathContext) -> Result<Simple<Term>, EvalError> {
+        Ok(self)
+    }
+}
+impl Simplify<Factor> for Simple<Factor> {
+    fn simple(self, _: &MathContext) -> Result<Simple<Factor>, EvalError> {
+        Ok(self)
+    }
 }
 
-impl Ast {
+impl Simplify for Ast {
     ///simplifies the ast as best possible
-    pub fn simplify(self, cont: &MathContext) -> Result<Ast, EvalError> {
+    /// not the lhs off equality
+    fn simple(self, cont: &MathContext) -> Result<Simple<Ast>, EvalError> {
         Ok(match self {
-            Ast::Expression(e) => e.simple(cont)?.expression(),
-            Ast::Equality(a, b) => {
-                (a.simple(cont)?, b.simple(cont)?).ast_equals()
-            }
+            Ast::Expression(e) => Simple(e.simple(cont)?.expression()),
+            Ast::Equality(a, b) => (a, b.simple(cont)?).ast_equals(),
         })
     }
 }
 
 impl Simplify for MathExpr {
     ///Tries to simplify this
-    fn simple(self, cont: &MathContext) -> Result<Simple, EvalError> {
-        Ok(match self {
-            MathExpr::Term(t) => return t.simple(cont),
+    fn simple(self, cont: &MathContext) -> Result<Simple<Self>, EvalError> {
+        let simple = match self {
+            MathExpr::Term(t) => t.simple(cont)?.into(),
             MathExpr::Add(lhs, rhs) => {
                 let simple = (lhs.simple(cont)?, rhs.simple(cont)?);
-                match simple.to_math_expr() {
+                match simple.to_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(a))),
-                        MathExpr::Term(Term::Factor(Factor::Constant(b))),
-                    ) => Simple::add(*a, *b),
+                        Term::Factor(Factor::Constant(b)),
+                    ) => Simple::<Factor>::add(*a, *b).into(),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
                         println!("first");
                         if a.is_zero() {
-                            simple.1
+                            simple.1.into()
                         } else {
-                            simple.add_wrapped()
+                            simple.add()
                         }
                     }
-                    (_, MathExpr::Term(Term::Factor(Factor::Constant(b)))) => {
+                    (_, Term::Factor(Factor::Constant(b))) => {
                         println!("second");
                         if b.is_zero() {
                             simple.0
                         } else {
-                            simple.add_wrapped()
+                            simple.add()
                         }
                     }
-                    _ => simple.add_wrapped(),
+                    _ => simple.add(),
                 }
             }
             MathExpr::Subtract(lhs, rhs) => {
                 let simple = (lhs.simple(cont)?, rhs.simple(cont)?);
                 if simple.equivalent(cont) {
-                    return Ok(Simple::constant(0.0));
+                    return Ok(Simple::<Factor>::constant(0.0).into());
                 }
-                match simple.to_math_expr() {
+                match simple.to_expr() {
                     (
                         MathExpr::Term(Term::Factor(Factor::Constant(a))),
-                        MathExpr::Term(Term::Factor(Factor::Constant(b))),
-                    ) => Simple::sub(*a, *b),
+                        Term::Factor(Factor::Constant(b)),
+                    ) => Simple::<Factor>::sub(*a, *b).into(),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
                         if a < &f64::EPSILON {
                             simple.0
@@ -79,9 +94,9 @@ impl Simplify for MathExpr {
                             simple.sub_wrapped()
                         }
                     }
-                    (_, MathExpr::Term(Term::Factor(Factor::Constant(b)))) => {
+                    (_, Term::Factor(Factor::Constant(b))) => {
                         if b < &f64::EPSILON {
-                            simple.1
+                            simple.1.into()
                         } else {
                             simple.sub_wrapped()
                         }
@@ -89,6 +104,15 @@ impl Simplify for MathExpr {
                     _ => simple.sub_wrapped(),
                 }
             }
+        };
+
+        Ok(match simple.inner() {
+            MathExpr::Term(Term::Factor(Factor::Parenthesis(expr))) => {
+                // We can always remove a parenthesis surrounding an expression
+                // since it will never affect the order of operations.
+                Simple(*expr)
+            }
+            expr => Simple(expr),
         })
     }
 }
@@ -107,11 +131,7 @@ impl FactorVec {
             vec: self
                 .vec
                 .into_iter()
-                .map(|factor| {
-                    factor
-                        .simple(cont)
-                        .map(|simple| simple.get_factor_or_wrap())
-                })
+                .map(|factor| factor.simple(cont).map(|simple| simple.inner()))
                 .collect::<Result<Vec<Factor>, EvalError>>()?,
         })
     }
@@ -157,28 +177,31 @@ impl FactorVec {
 
 impl Term {
     /// Simplify the inner parts of the Term, but not the term itself.
-    pub fn simple_inner(self, cont: &MathContext) -> Result<Simple, EvalError> {
-        match self {
-            Term::Factor(f) => f.simple(cont),
+    pub fn simple_inner(
+        self,
+        cont: &MathContext,
+    ) -> Result<Simple<Term>, EvalError> {
+        Ok(match self {
+            Term::Factor(f) => f.simple(cont)?.into(),
             Term::Multiply(m, lhs, rhs) => {
-                Ok((lhs.simple_inner(cont)?, rhs.simple(cont)?).mul_wrapped(m))
+                (lhs.simple_inner(cont)?, rhs.simple(cont)?).mul_wrapped(m)
             }
             Term::Divide(num, den) => {
-                Ok((num.simple_inner(cont)?, den.simple(cont)?).div_wrapped())
+                (num.simple_inner(cont)?, den.simple(cont)?).div_wrapped()
             }
-        }
+        })
     }
 }
 
 impl Simplify for Term {
-    fn simple(self, cont: &MathContext) -> Result<Simple, EvalError> {
-        let factors = self.simple_inner(cont)?.get_term_or_wrap().factorize();
+    fn simple(self, cont: &MathContext) -> Result<Simple<Term>, EvalError> {
+        let factors = self.simple_inner(cont)?.inner().factorize();
 
         let factors_num = factors.factors_num.simplify_factors(cont)?.simple();
 
         let numerator = factors_num
-            .to_term_ast()
-            .expect("simplify_factors does not return empty factors");
+            .to_term_ast(cont)
+            .expect("simplify_factors does not return empty factors")?;
 
         let mut factors_den = factors.factors_den;
         if factors_den.vec.len() == 1 {
@@ -195,44 +218,46 @@ impl Simplify for Term {
         if factors_den.vec.is_empty() {
             // No denominator means we don't need to express this as a
             // fraction.
-            return Ok(Simple::new_unchecked(MathExpr::Term(numerator)));
+            return Ok(numerator);
         }
 
         let factors_den = factors_den.simplify_factors(cont)?.simple();
 
-        if let Term::Factor(Factor::Constant(c)) = numerator {
+        if let Term::Factor(Factor::Constant(c)) = numerator.ref_inner() {
             if c.is_zero() {
                 // The numerator is 0, everything is zero.
-                return Factor::Constant(0.0).simple(cont);
+                return Ok(Factor::Constant(0.0).simple(cont)?.into());
             }
         }
 
         let denominator = factors_den
-            .to_term_ast()
-            .expect("simplify_factors does not return empty factors");
+            .to_term_ast(cont)
+            .expect("simplify_factors does not return empty factors")?;
 
-        let denominator_factor = match denominator {
-            Term::Factor(f) => f,
-            _ => Factor::Parenthesis(MathExpr::Term(denominator).boxed()),
-        };
+        let denominator_factor =
+            simplify_parenthesis(denominator.clone().into());
 
-        Ok(Simple::new_unchecked(MathExpr::Term(Term::Divide(
-            numerator.boxed(),
-            denominator_factor,
-        ))))
+        Ok(Simple::new_unchecked(Term::Divide(
+            numerator.inner().boxed(),
+            denominator_factor.inner(),
+        )))
     }
 }
 
 impl Simplify for Factor {
-    fn simple(self, cont: &MathContext) -> Result<Simple, EvalError> {
+    fn simple(self, cont: &MathContext) -> Result<Simple<Factor>, EvalError> {
         Ok(match self {
             Factor::Constant(c) => Simple::constant(c),
-            Factor::Parenthesis(p) => p.simple(cont)?,
+            Factor::Parenthesis(p) => simplify_parenthesis(p.simple(cont)?),
             Factor::Variable(m) => {
                 return cont
                     .variables
                     .get(&m)
-                    .map(|v| v.clone().simple(cont))
+                    .map(|v| {
+                        Ok(Simple(Factor::Parenthesis(Box::new(
+                            v.clone().simple(cont)?.inner(),
+                        ))))
+                    })
                     .unwrap_or(Ok(Simple::variable(m)))
             }
             Factor::FunctionCall(func_call) => {
@@ -262,7 +287,14 @@ impl Simplify for Factor {
                                             context.variables.insert(ident.clone(), expr.clone());
                                             context}))?;
                                 new_cont.merge(cont);
-                                return f.expr.clone().simple(&new_cont);
+                                return Ok(Simple(Factor::Parenthesis(
+                                    Box::new(
+                                        f.expr
+                                            .clone()
+                                            .simple(&new_cont)?
+                                            .inner(),
+                                    ),
+                                )));
                             }
                         }
                     }
@@ -270,9 +302,9 @@ impl Simplify for Factor {
             }
             Factor::Power { base, exponent } => {
                 let simple = (base.simple(cont)?, exponent.simple(cont)?);
-                match simple.to_math_expr() {
+                match simple.to_expr() {
                     (
-                        MathExpr::Term(Term::Factor(Factor::Constant(base))),
+                        Factor::Constant(base),
                         MathExpr::Term(Term::Factor(Factor::Constant(
                             exponent,
                         ))),
@@ -294,20 +326,36 @@ impl Simplify for Factor {
                     _ => simple.pow_wrapped(),
                 }
             }
-            Factor::Root {
-                degree: _,
-                radicand: _,
-            } => Simple::new_unchecked(MathExpr::Term(Term::Factor(self))), /* TODO */
+            Factor::Root { degree, radicand } => match degree {
+                Some(deg) => {
+                    let simple = (deg.simple(cont)?, radicand.simple(cont)?);
+                    match simple.to_expr() {
+                        (
+                            MathExpr::Term(Term::Factor(Factor::Constant(deg))),
+                            MathExpr::Term(Term::Factor(Factor::Constant(rad))),
+                        ) => Simple::constant(rad.powf(1.0 / deg)),
+                        _ => simple.root(),
+                    }
+                }
+                None => match radicand.simple(cont)?.inner() {
+                    MathExpr::Term(Term::Factor(Factor::Constant(rad))) => {
+                        Simple::constant(rad.sqrt())
+                    }
+                    v => Simple::new_unchecked(Factor::Root {
+                        degree: None,
+                        radicand: v.boxed(),
+                    }),
+                },
+            },
             Factor::Fraction(numerator, denominator) => {
                 simplify_fraction_or_div(
-                    numerator.simple(cont)?,
-                    denominator.simple(cont)?,
+                    Term::Factor(Factor::Parenthesis(numerator))
+                        .simple(cont)?,
+                    Factor::Parenthesis(denominator).simple(cont)?,
                     cont,
                 )
             }
-            Factor::Abs(_) => {
-                Simple::new_unchecked(MathExpr::Term(Term::Factor(self)))
-            } // TODO
+            Factor::Abs(_) => Simple::new_unchecked(self), // TODO
             Factor::Matrix(m) => Simple::matrix(m, cont)?,
         })
     }
@@ -318,51 +366,72 @@ impl Simplify for Factor {
 /// ensured that
 
 fn simplify_fraction_or_div(
-    numerator: Simple,
-    denominator: Simple,
+    numerator: Simple<Term>,
+    denominator: Simple<Factor>,
     cont: &MathContext,
-) -> Simple {
+) -> Simple<Factor> {
     // TODO simplify fraction, aka factor a and b and cancel common
     // factors, remove fraction of b==1, etc.
     let simple = (numerator, denominator);
     if simple.equivalent(cont) {
         Simple::constant(1.0)
     } else {
-        match simple.to_math_expr() {
-            (
-                MathExpr::Term(Term::Factor(Factor::Constant(num))),
-                MathExpr::Term(Term::Factor(Factor::Constant(den))),
-            ) => Simple::divide(*num, *den),
-            (_, MathExpr::Term(Term::Factor(Factor::Constant(c)))) => {
+        match simple.to_expr() {
+            (Term::Factor(Factor::Constant(num)), Factor::Constant(den)) => {
+                Simple::divide(*num, *den)
+            }
+            (_, Factor::Constant(c)) => {
                 if c.is_one() {
-                    simple.0
+                    simplify_parenthesis(simple.0.into())
                 } else if c.is_zero() {
                     Simple::constant(f64::NAN)
                 } else {
-                    simple.div_wrapped()
+                    simplify_parenthesis(simple.div_wrapped().into())
                 }
             }
-            _ => simple.div_wrapped(),
+            _ => simplify_parenthesis(simple.div_wrapped().into()),
         }
     }
+}
+/// simplifying all the things we can in parenthesis
+pub fn simplify_parenthesis(p: Simple<MathExpr>) -> Simple<Factor> {
+    Simple(match p.inner() {
+        MathExpr::Term(Term::Factor(Factor::Abs(a))) => Factor::Abs(a),
+        MathExpr::Term(Term::Factor(Factor::Variable(a))) => {
+            Factor::Variable(a)
+        }
+        MathExpr::Term(Term::Factor(Factor::Constant(a))) => {
+            Factor::Constant(a)
+        }
+        MathExpr::Term(Term::Factor(Factor::Matrix(a))) => Factor::Matrix(a),
+        MathExpr::Term(Term::Factor(Factor::Parenthesis(p_2))) => {
+            Factor::Parenthesis(p_2)
+        }
+        v => Factor::Parenthesis(v.boxed()),
+    })
 }
 
 #[cfg(test)]
 mod test {
-    use crate::prelude::*;
+    use crate::{ast::simplify::Simplify, ast::to_latex::ToLaTeX, prelude::*};
     use pretty_assertions::assert_eq;
     async fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
             .await
             .expect("failed to parse AST")
-            .simplify(&context)
+            .simple(&context)
             .unwrap();
         let expected_ast = parse(expected_latex, &context)
             .await
-            .expect("failed to parse latex to ast");
+            .expect("failed to parse latex to ast")
+            .simple(&context)
+            .unwrap();
+        let found = format!("{}\nAST:\n{:#?}", found_ast.to_latex(), found_ast);
+        let expected =
+            format!("{}\nAST:\n{:#?}", expected_ast.to_latex(), expected_ast);
         // Compare and print with debug and formatting otherwise.
-        assert_eq!(found_ast, expected_ast, "found/expected")
+        assert_eq!(found, expected, "\nfound/expected")
     }
     #[tokio::test]
     async fn one_minus_one() {
@@ -403,5 +472,9 @@ mod test {
     #[tokio::test]
     async fn multiply_remove_parenthesis_2() {
         ast_test_simplify("3(2x)+2", "6x+2").await;
+    }
+    #[tokio::test]
+    async fn simple_test() {
+        ast_test_simplify("((1)+(2x))", "1+2x").await;
     }
 }

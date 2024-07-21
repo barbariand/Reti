@@ -7,9 +7,10 @@
 
 pub mod approximator;
 pub mod ast;
+pub mod consts;
 pub mod context;
-
 pub mod error;
+pub mod evaluator;
 pub mod functions;
 pub mod identifier;
 pub mod lexer;

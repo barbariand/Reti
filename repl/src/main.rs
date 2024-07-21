@@ -43,18 +43,17 @@ impl Prompt {
 struct Repl {
     ast_mode: bool,
     simple_ast_mode: bool,
-    approximator: Approximator,
+    evaluator: Evaluator,
     rl: Editor<(), FileHistory>,
     time_it: bool,
 }
 impl Repl {
     fn new(ast_start: bool) -> Repl {
-        let context = MathContext::standard_math();
         Repl {
             simple_ast_mode: false,
             time_it: false,
             ast_mode: ast_start,
-            approximator: Approximator::new(context),
+            evaluator: Evaluator::standard_math(),
             rl: DefaultEditor::new().expect("could not use as a terminal"), /* TODO manage this
                                                                              * so we just accept
                                                                              * stdin instead */
@@ -175,120 +174,18 @@ impl Repl {
         Ok(())
     }
     async fn parse(&mut self, line: &str) -> Result<Ast, AstError> {
-        parse(line, self.approximator.context()).await
+        parse(line, self.evaluator.context()).await
     }
     fn eval(&mut self, ast: Ast) -> Result<String, EvalError> {
         if self.ast_mode {
             println!("{:#?}", ast); //TODO fix some display for the tree
         };
-
-        match ast {
-            Ast::Expression(expr) => {
-                let simple_expr = expr.simple(self.approximator.context())?;
-                if self.simple_ast_mode {
-                    println!("{:#?}", simple_expr)
-                }
-                Ok(value_res_to_string(
-                    self.approximator.eval_expr(simple_expr),
-                ))
-            }
-            Ast::Equality(lhs, rhs) => {
-                let rhs_simple =
-                    rhs.clone().simple(self.approximator.context())?;
-                if self.simple_ast_mode {
-                    println!("{:#?}={:#?}", lhs, rhs_simple);
-                }
-                ast_equality_to_string(
-                    self.approximator.context_mut(),
-                    lhs,
-                    rhs,
-                )
-            }
+        let simple_ast = ast.simple(self.evaluator.context())?;
+        if self.simple_ast_mode {
+            println!("{:#?}", simple_ast)
         }
-    }
-}
-
-fn ast_equality_to_string(
-    cont: &mut MathContext,
-    lhs: MathExpr,
-    rhs: MathExpr,
-) -> Result<String, EvalError> {
-    if let MathExpr::Term(Term::Multiply(
-        parser::ast::MulType::Implicit,
-        var,
-        factor,
-    )) = lhs
-    {
-        if let Term::Factor(Factor::Variable(function_name)) = &*var {
-            match factor {
-                Factor::Parenthesis(f) => {
-                    if let MathExpr::Term(Term::Factor(Factor::Variable(arg))) =
-                        *f
-                    {
-                        let variable_name = arg.clone();
-                        cont.add_function(
-                            function_name.clone(),
-                            MathFunction::new_foreign(rhs, vec![variable_name]),
-                        );
-                        Ok("added function:".to_owned())
-                    } else {
-                        todo!("you cant have anything but a variable in a function definition")
-                    }
-                }
-                Factor::Matrix(matrix) => {
-                    if matrix.is_vector() {
-                        let vec = matrix.get_all_vector_elements();
-                        let args: Option<Vec<MathIdentifier>> = vec
-                            .iter()
-                            .cloned()
-                            .map(|v| match v {
-                                MathExpr::Term(Term::Factor(
-                                    Factor::Variable(var),
-                                )) => Some(var),
-                                _ => None,
-                            })
-                            .collect();
-                        cont.add_function(
-                            function_name.clone(),
-                            MathFunction::new_foreign(
-                                rhs,
-                                args.expect(
-                                    "The values uses was not identifiers only",
-                                ),
-                            ),
-                        );
-                        Ok("added function:".to_owned())
-                    } else {
-                        todo!("Could not understand equals. is it a 2d matrix as input?")
-                    }
-                }
-                e => {
-                    todo!("Could not understand equals: got factor:{:#?}", e)
-                }
-            }
-        } else {
-            todo!(
-                "Could not understand equals. got:{:#?}",
-                MathExpr::Term(Term::Multiply(
-                    parser::ast::MulType::Implicit,
-                    var,
-                    factor,
-                ))
-            );
-        }
-    } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) = lhs {
-        cont.variables.insert(ident, rhs);
-        Ok("added variable".to_owned())
-    } else {
-        todo!("Could not understand equals. got:{:#?}", lhs);
-    }
-}
-fn value_res_to_string(result: Result<Value, EvalError>) -> String {
-    match result {
-        Ok(v) => format!("> {}", v),
-        Err(e) => {
-            error!("Could not evaluate {:?}", e);
-            format!("Could not evaluate {:?}", e)
-        }
+        self.evaluator
+            .eval_ast(simple_ast)
+            .map(|v| format!("> {}", v))
     }
 }

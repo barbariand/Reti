@@ -4,15 +4,18 @@ use crate::{
     identifier::{MathLetter, MathString},
     prelude::*,
 };
+/// type alias for convenience, i would rather this be a newtype pattern but it
+/// is hard
+pub type LaTeX = String;
 
 ///Converting the AST to latex
 pub trait ToLaTeX {
     ///The function to convert it back to latex
-    fn to_latex(&self) -> String;
+    fn to_latex(&self) -> LaTeX;
 }
 
 impl ToLaTeX for Ast {
-    fn to_latex(&self) -> String {
+    fn to_latex(&self) -> LaTeX {
         match self {
             Ast::Expression(e) => e.to_latex(),
             Ast::Equality(a, b) => format!("{}={}", a.to_latex(), b.to_latex()),
@@ -20,7 +23,7 @@ impl ToLaTeX for Ast {
     }
 }
 impl ToLaTeX for MathExpr {
-    fn to_latex(&self) -> String {
+    fn to_latex(&self) -> LaTeX {
         match self {
             MathExpr::Term(term) => term.to_latex(),
             MathExpr::Add(a, b) => format!("{}+{}", a.to_latex(), b.to_latex()),
@@ -32,7 +35,7 @@ impl ToLaTeX for MathExpr {
 }
 
 impl ToLaTeX for Term {
-    fn to_latex(&self) -> String {
+    fn to_latex(&self) -> LaTeX {
         match self {
             Term::Factor(factor) => factor.to_latex(),
             Term::Multiply(mul_type, a, b) => {
@@ -60,9 +63,9 @@ impl ToLaTeX for Term {
 }
 
 impl ToLaTeX for Factor {
-    fn to_latex(&self) -> String {
+    fn to_latex(&self) -> LaTeX {
         match self {
-            Factor::Constant(c) => format!("{}", c),
+            Factor::Constant(c) => c.to_string(),
             Factor::Parenthesis(expr) => {
                 format!("\\left({}\\right)", expr.to_latex())
             }
