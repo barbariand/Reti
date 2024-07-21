@@ -17,7 +17,7 @@
         "moduleDetection": "force",
         "strict": true,
         "lib": ["ESNext", "DOM"],
-        "outDir": "./dist"
+        "noEmit": true
     },
     "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
     "exclude": ["src/wasm/*.js"],
