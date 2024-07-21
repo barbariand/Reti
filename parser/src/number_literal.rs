@@ -8,7 +8,7 @@ use std::{
 };
 
 ///The number representation
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NumberLiteral(
     ///the raw string without being parsed as a number
@@ -42,6 +42,15 @@ impl NumberLiteral {
             .parse_or_panic("sub")
             .powf(exponent.parse_or_panic("sub")))
         .into()
+    }
+}
+impl PartialEq for NumberLiteral {
+    fn eq(&self, other: &Self) -> bool {
+        match (&*self.0, &*other.0) {
+            ("-0", "0") => true,
+            ("0", "-0") => true,
+            (l, r) => l.eq(r),
+        }
     }
 }
 impl Sub for &NumberLiteral {

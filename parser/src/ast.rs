@@ -37,9 +37,9 @@ pub enum MathExpr {
     ///     Ast::Expression(
     ///         MathExpr::Add(
     ///             Box::new(
-    ///                 Factor::Constant(2.0).into()
+    ///                 Factor::Constant(2.0.into()).into()
     ///             ),
-    ///             Factor::Constant(2.0).into()
+    ///             Factor::Constant(2.0.into()).into()
     ///         )
     ///     )
     /// );
@@ -57,9 +57,9 @@ pub enum MathExpr {
     ///     Ast::Expression(
     ///         MathExpr::Subtract(
     ///             Box::new(
-    ///                 Factor::Constant(2.0).into()
+    ///                 Factor::Constant(2.0.into()).into()
     ///             ),
-    ///             Factor::Constant(2.0).into()
+    ///             Factor::Constant(2.0.into()).into()
     ///         )
     ///     )
     /// );
@@ -127,9 +127,9 @@ pub enum Term {
     ///         Term::Multiply(
     ///             MulType::Asterisk,
     ///             Box::new(Term::Factor(
-    ///                 Factor::Constant(2.0)
+    ///                 Factor::Constant(2.0.into())
     ///             )),
-    ///             Factor::Constant(2.0)
+    ///             Factor::Constant(2.0.into())
     ///         ).into()
     ///     )
     /// );
@@ -148,9 +148,9 @@ pub enum Term {
     ///     Ast::Expression(
     ///         Term::Divide(
     ///             Box::new(Term::Factor(
-    ///                 Factor::Constant(2.0)
+    ///                 Factor::Constant(2.0.into())
     ///             )),
-    ///             Factor::Constant(2.0)
+    ///             Factor::Constant(2.0.into())
     ///         ).into()
     ///     )
     /// );
@@ -179,13 +179,13 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("2", &context),
     ///     Ast::Expression(
-    ///         Factor::Constant(2.0).into()
+    ///         Factor::Constant(2.0.into()).into()
     ///     )
     /// );
     /// assert_eq!(
     ///     parse("1.1", &context),
     ///     Ast::Expression(
-    ///         Factor::Constant(1.1).into()
+    ///         Factor::Constant(1.1.into()).into()
     ///     )
     /// );
     /// ```
@@ -202,7 +202,7 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("(1)", &context),
     ///     Ast::Expression(
-    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0).into())).into()
+    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0.into()).into())).into()
     ///     )
     /// );
 
@@ -281,8 +281,8 @@ pub enum Factor {
     ///     parse("3^2", &context),
     ///     Ast::Expression(
     ///         Factor::Power {
-    ///             base: Box::new(Factor::Constant(3.0)),
-    ///             exponent: Box::new(Factor::Constant(2.0).into())
+    ///             base: Box::new(Factor::Constant(3.0.into())),
+    ///             exponent: Box::new(Factor::Constant(2.0.into()).into())
     ///         }
     ///         .into()
     ///     )
@@ -309,8 +309,8 @@ pub enum Factor {
     ///     parse("\\sqrt[3]{2}", &context),
     ///     Ast::Expression(
     ///         Factor::Root {
-    ///             degree: Some(Box::new(Factor::Constant(3.0).into())),
-    ///             radicand: Box::new(Factor::Constant(2.0).into()),
+    ///             degree: Some(Box::new(Factor::Constant(3.0.into()).into())),
+    ///             radicand: Box::new(Factor::Constant(2.0.into()).into()),
     ///         }
     ///         .into()
     ///     )
@@ -345,8 +345,8 @@ pub enum Factor {
     ///     parse("\\frac{1}{2}", &context),
     ///     Ast::Expression(
     ///         Factor::Fraction(
-    ///             Box::new(Factor::Constant(1.0).into()),
-    ///             Box::new(Factor::Constant(2.0).into()),
+    ///             Box::new(Factor::Constant(1.0.into()).into()),
+    ///             Box::new(Factor::Constant(2.0.into()).into()),
     ///         )
     ///         .into()
     ///     )
@@ -365,7 +365,7 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("|3|", &context),
     ///     Ast::Expression(
-    ///         Factor::Abs(Box::new(Factor::Constant(3.0).into())).into()
+    ///         Factor::Abs(Box::new(Factor::Constant(3.0.into()).into())).into()
     ///     )
     /// );
     /// ```
@@ -387,8 +387,8 @@ pub enum Factor {
     ///     Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
-    ///                 Factor::Constant(1.0).into(),
-    ///                 Factor::Constant(1.0).into()
+    ///                 Factor::Constant(1.0.into()).into(),
+    ///                 Factor::Constant(1.0.into()).into()
     ///             ],
     ///             1,
     ///             2
@@ -411,8 +411,8 @@ pub enum Factor {
     ///     Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
-    ///                 Factor::Constant(1.0).into(),
-    ///                 Factor::Constant(1.0).into()
+    ///                 Factor::Constant(1.0.into()).into(),
+    ///                 Factor::Constant(1.0.into()).into()
     ///             ],
     ///             1,
     ///             2
@@ -437,8 +437,8 @@ pub enum Factor {
     ///         Factor::Abs(Box::new(
     ///             Factor::Matrix(Matrix::new(
     ///                 vec![
-    ///                     Factor::Constant(1.0).into(),
-    ///                     Factor::Constant(1.0).into()
+    ///                     Factor::Constant(1.0.into()).into(),
+    ///                     Factor::Constant(1.0.into()).into()
     ///                 ],
     ///                 1,
     ///                 2
