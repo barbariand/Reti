@@ -1,60 +1,41 @@
 <script lang="ts">
-    import svelteLogo from "./assets/svelte.svg";
-    import viteLogo from "/vite.svg";
-    import Counter from "./lib/Counter.svelte";
+    import type { ComponentType } from "svelte";
     import KaTeX from "./lib/KaTeX.svelte";
     import CalculatorView from "./lib/CalculatorView.svelte";
+
+    const components = { KaTeX, CalculatorView };
+    let component: ComponentType | null = null;
 </script>
 
-<main>
-    <div>
-        <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-            <img src={viteLogo} class="logo" alt="Vite Logo" />
-        </a>
-        <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-            <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-        </a>
+<div>
+    <header>
+        <h1>reti-common-ui component viewer</h1>
+        <select bind:value={component}>
+            <option value={null}>Select a component</option>
+            {#each Object.entries(components) as [name, option]}
+                <option value={option}>{name}</option>
+            {/each}
+        </select>
+    </header>
+    <div class="content">
+        {#if component == null}
+            <p>Select a component.</p>
+        {:else if component == KaTeX}
+            <KaTeX display latex={"\\int_1^2f(x)\\,\\mathrm{d}x"} />
+        {:else}
+            <svelte:component this={component} />
+        {/if}
     </div>
-    <h1>Vite + Svelte</h1>
-
-    <div class="card">
-        <Counter />
-    </div>
-
-    <p>
-        Check out <a
-            href="https://github.com/sveltejs/kit#readme"
-            target="_blank"
-            rel="noreferrer">SvelteKit</a
-        >, the official Svelte app framework powered by Vite!
-    </p>
-
-    <p class="read-the-docs">
-        Click on the Vite and Svelte logos to learn more
-    </p>
-    <p>Test update content. again.</p>
-    <p>
-        This is a test. Assuming <KaTeX latex="\phi" /> is the golden ratio.
-        <span>Change</span>
-    </p>
-    <hr />
-    <CalculatorView />
-</main>
+</div>
 
 <style>
-    .logo {
-        height: 6em;
-        padding: 1.5em;
-        will-change: filter;
-        transition: filter 300ms;
+    header {
+        height: 100px;
     }
-    .logo:hover {
-        filter: drop-shadow(0 0 2em #646cffaa);
-    }
-    .logo.svelte:hover {
-        filter: drop-shadow(0 0 2em #ff3e00aa);
-    }
-    .read-the-docs {
-        color: #888;
+    .content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: calc(100vh - 100px);
     }
 </style>
