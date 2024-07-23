@@ -22,3 +22,5 @@ Cargo.lock
 /target
 /reti-js/wasm/**
 !/reti-js/wasm/.gitkeep
+
+node_modules

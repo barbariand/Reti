@@ -5,13 +5,13 @@ import topLevelAwait from "vite-plugin-top-level-await";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [svelte(), wasm(), topLevelAwait()],
-  server: {
-    fs: { allow: ["../reti-js/wasm", "./"] },
-  },
-  test: {
-    environment: "happy-dom",
-    globals: true,
-    setupFiles: ["./src/vitest-setup.ts"],
-  },
+    plugins: [svelte(), wasm(), topLevelAwait()],
+    server: {
+        fs: { allow: ["../reti-js/wasm", "./"] },
+    },
+    test: {
+        environment: "happy-dom",
+        globals: true,
+        setupFiles: ["./src/vitest-setup.ts"],
+    },
 });
