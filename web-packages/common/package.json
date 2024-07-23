@@ -29,10 +29,5 @@
     },
     "dependencies": {
         "katex": "^0.16.11"
-    },
-    "pnpm": {
-        "override": {
-            "@swc/core": "~1.6.13"
-        }
     }
 }

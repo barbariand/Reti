@@ -33,7 +33,7 @@ importers:
         specifier: 8.0.0-alpha.44
         version: 8.0.0-alpha.44(eslint@9.7.0)(typescript@5.5.4)
 
-  web-apps/calculator-ui:
+  web-apps/calculator:
     dependencies:
       reti-ui-common:
         specifier: workspace:*
