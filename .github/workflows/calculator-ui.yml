@@ -31,8 +31,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Install wasm-bindgen
-        run: cargo install -f wasm-bindgen-cli
-        working-directory: reti-js
+        uses: jetli/wasm-bindgen-action@v0.2.0
       - name: Check
         run: pnpm run check
         working-directory: web-apps/calculator
@@ -56,8 +55,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Install wasm-bindgen
-        run: cargo install -f wasm-bindgen-cli
-        working-directory: reti-js
+        uses: jetli/wasm-bindgen-action@v0.2.0
       - name: Build
         run: pnpm run build
         working-directory: web-apps/calculator

@@ -32,8 +32,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Install wasm-bindgen
-        run: cargo install -f wasm-bindgen-cli
-        working-directory: reti-js
+        uses: jetli/wasm-bindgen-action@v0.2.0
       - name: Lint
         run: pnpm run lint
       - name: fmt check
