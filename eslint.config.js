@@ -17,6 +17,7 @@ export default tseslint.config(
                 ...globals.browser,
             },
         },
+        ignores: ["**/dist/**"],
         rules: {
             // override/add rules settings here, such as:
             // 'svelte/rule-name': 'error'
