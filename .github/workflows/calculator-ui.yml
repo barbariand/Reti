@@ -14,6 +14,31 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
+      - name: Install wasm-bindgen
+        run: cargo install -f wasm-bindgen-cli
+        working-directory: reti-js
+      # - name: Check
+      #   run: pnpm run check
+      #   working-directory: web-apps/calculator
+      - name: Test
+        run: pnpm run test
+        working-directory: web-apps/calculator
   build:
     runs-on: ubuntu-latest
 
@@ -41,7 +66,7 @@ jobs:
         with:
             path: web-apps/calculator/dist
   deploy:
-    needs: build
+    needs: [test, build]
 
     permissions:
       pages: write      # to deploy to Pages
