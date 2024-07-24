@@ -67,7 +67,7 @@ jobs:
             path: web-apps/calculator/dist
   deploy:
     needs: [test, build]
-
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'  # Only run on dev or main branch
     permissions:
       pages: write      # to deploy to Pages
       id-token: write   # to verify the deployment originates from an appropriate source
