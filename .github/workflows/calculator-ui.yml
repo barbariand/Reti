@@ -33,9 +33,9 @@ jobs:
       - name: Install wasm-bindgen
         run: cargo install -f wasm-bindgen-cli
         working-directory: reti-js
-      # - name: Check
-      #   run: pnpm run check
-      #   working-directory: web-apps/calculator
+      - name: Check
+        run: pnpm run check
+        working-directory: web-apps/calculator
       - name: Test
         run: pnpm run test
         working-directory: web-apps/calculator
@@ -67,6 +67,9 @@ jobs:
             path: web-apps/calculator/dist
   deploy:
     needs: [test, build]
+    runs-on: ubuntu-latest
+    # Only deploy if pushing to dev
+    if: github.ref == 'refs/heads/dev'
 
     permissions:
       pages: write      # to deploy to Pages
@@ -77,7 +80,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    runs-on: ubuntu-latest
 
     steps:
       - name: Deploy to GitHub Pages
