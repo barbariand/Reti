@@ -1,12 +1,13 @@
-name: reti-ui-common
+name: ui-common
 
 on:
   push:
     paths:
-      - reti-ui-common/**
+      - web-packages/common/**
   pull_request:
     branches:
       - main
+      - dev
 
 env:
   CARGO_TERM_COLOR: always
@@ -32,7 +33,7 @@ jobs:
         uses: jetli/wasm-bindgen-action@v0.2.0
       - name: Check
         run: pnpm run check
-        working-directory: web-packages/reti-ui-common
+        working-directory: web-packages/common
   test:
     runs-on: ubuntu-latest
 
@@ -53,7 +54,7 @@ jobs:
         uses: jetli/wasm-bindgen-action@v0.2.0
       - name: Test
         run: pnpm run test
-        working-directory: web-packages/reti-ui-common
+        working-directory: web-packages/common
   build:
     runs-on: ubuntu-latest
 
@@ -74,4 +75,4 @@ jobs:
         uses: jetli/wasm-bindgen-action@v0.2.0
       - name: Build
         run: pnpm run build
-        working-directory: web-packages/reti-ui-common
+        working-directory: web-packages/common
