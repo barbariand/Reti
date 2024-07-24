@@ -16,10 +16,5 @@
         "prettier-plugin-svelte": "^3.2.6",
         "typescript": "^5.5.3",
         "typescript-eslint": "8.0.0-alpha.44"
-    },
-    "pnpm": {
-        "override": {
-            "@swc/core": "~1.6.13"
-        }
     }
 }
