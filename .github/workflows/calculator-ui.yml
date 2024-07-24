@@ -3,8 +3,8 @@ name: calculator-ui
 on:
   push:
     paths:
-      - web-apps/calculator-ui
-      - web-packages/common
+      - web-apps/calculator/**
+      - web-packages/common/**
   pull_request:
     branches:
       - main
@@ -35,11 +35,11 @@ jobs:
         working-directory: reti-js
       - name: Build
         run: pnpm run build
-        working-directory: web-apps/calculator-ui
+        working-directory: web-apps/calculator
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-            path: web-apps/calculator-ui/dist
+            path: web-apps/calculator/dist
   deploy:
     needs: build
 
