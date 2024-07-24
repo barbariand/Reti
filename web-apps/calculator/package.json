@@ -4,12 +4,13 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build",
-        "preview": "vite preview",
-        "check": "svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
-        "test": "vitest run",
-        "test:watch": "vitest"
+        "build_wasm": "bash ../../reti-js/init_test.sh",
+        "dev": "pnpm build_wasm && vite",
+        "build": "pnpm build_wasm && vite build",
+        "preview": "pnpm build_wasm && vite preview",
+        "check": "pnpm build_wasm && svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
+        "test": "pnpm build_wasm && vitest run",
+        "test:watch": "pnpm build_wasm && vitest"
     },
     "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^3.1.1",
