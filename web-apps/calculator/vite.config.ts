@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { searchForWorkspaceRoot } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
@@ -7,7 +8,13 @@ import topLevelAwait from "vite-plugin-top-level-await";
 export default defineConfig({
     plugins: [svelte(), wasm(), topLevelAwait()],
     server: {
-        fs: { allow: ["../reti-js/wasm", "./"] },
+        fs: {
+            allow: [
+                searchForWorkspaceRoot(process.cwd()),
+                "../reti-js/wasm",
+                "./",
+            ],
+        },
     },
     test: {
         environment: "happy-dom",

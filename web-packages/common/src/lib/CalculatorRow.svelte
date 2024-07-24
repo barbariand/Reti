@@ -1,7 +1,10 @@
 <script lang="ts">
     import KaTeX from "./KaTeX.svelte";
     import { RetiJS } from "../wasm/reti_js";
+
     export let reti: RetiJS;
+    export let rowNumber: number;
+
     function parse_secure(text: string): string {
         if (text == "") {
             return "";
@@ -9,17 +12,19 @@
         try {
             return reti.parse(text);
         } catch (e: unknown) {
-            console.error(e);
             if (typeof e === "string") {
                 return e.toString();
-            } else return "unknown error occurred, check console";
+            } else {
+                console.error(e);
+                return "unknown error occurred, check console";
+            }
         }
     }
     let latex = "";
 </script>
 
 <div class="calculator-row">
-    <div class="number">(1)</div>
+    <div class="number">({rowNumber})</div>
     <div class="calculator-row-main">
         <div class="input-container">
             <textarea class="input" bind:value={latex} rows="1" />
