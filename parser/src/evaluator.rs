@@ -1,6 +1,8 @@
 //!A robust single threaded evaluator for [Ast]
 use std::fmt::Display;
 
+use serde::Serialize;
+
 use crate::{
     ast::{
         helper::Simple,
@@ -127,7 +129,7 @@ impl Evaluator {
     }
 }
 ///The response for the Approximator
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Serialize)]
 pub enum Evaluation {
     ///Added a function to the context
     AddedFunction,

@@ -2,25 +2,32 @@
     import KaTeX from "./KaTeX.svelte";
     import { RetiJS } from "../wasm/reti_js";
 
+    type RetiResult = {
+        LaTeX?: string;
+        Error?: string;
+        // TODO better types for AddedFunction and such.
+    };
+
     export let reti: RetiJS;
     export let rowNumber: number;
+    let latex = "";
+    $: result = parse(latex);
 
-    function parse_secure(text: string): string {
-        if (text == "") {
-            return "";
+    function parse(latex: string): RetiResult | null {
+        if (latex == "") {
+            return null;
         }
         try {
-            return reti.parse(text);
+            return reti.parse(latex) as RetiResult;
         } catch (e: unknown) {
             if (typeof e === "string") {
-                return e.toString();
+                return { Error: e };
             } else {
                 console.error(e);
-                return "unknown error occurred, check console";
+                return { Error: "Unknown error occurred, check console" };
             }
         }
     }
-    let latex = "";
 </script>
 
 <div class="calculator-row">
@@ -34,7 +41,11 @@
                 <KaTeX display {latex} />
             </div>
             <div class="math-output">
-                <KaTeX display latex={parse_secure(latex)} />
+                {#if result?.LaTeX}
+                    <KaTeX display latex={result.LaTeX} />
+                {:else if result?.Error}
+                    <span class="error">{result.Error}</span>
+                {/if}
             </div>
         </div>
     </div>
@@ -73,5 +84,8 @@
     }
     .math-output {
         justify-self: end, flex-end;
+    }
+    .error {
+        color: red;
     }
 </style>

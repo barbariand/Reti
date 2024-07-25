@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
 use parser::{ast::simplify::Simplify, prelude::*};
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::RT;
 #[wasm_bindgen(js_name = "RetiJS")]
@@ -18,14 +18,14 @@ impl JsAPI {
         lock.eval_ast(simple)
     }
 
-    pub fn parse(&self, text: String) -> Result<String, String> {
+    pub fn parse(&self, text: String) -> Result<JsValue, String> {
         let guard = self.0.lock().expect("Failed to get lock");
         let res = RT
             .block_on(parse(&text, guard.context()))
             .map_err(|v| format!("{v}"))?;
         drop(guard);
         self.eval_ast(res)
-            .map(|v| v.to_string())
+            .map(|v| serde_wasm_bindgen::to_value(&v).unwrap())
             .map_err(|v| v.to_string())
     }
 }
