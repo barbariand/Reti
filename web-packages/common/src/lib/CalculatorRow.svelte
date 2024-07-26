@@ -1,6 +1,6 @@
 <script lang="ts">
     import KaTeX from "./KaTeX.svelte";
-    import { RetiJS } from "../wasm/reti_js";
+    import { RetiJS } from "reti-js";
 
     type RetiResult = {
         LaTeX?: string;

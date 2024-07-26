@@ -4,13 +4,12 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build_wasm": "bash ../../reti-js/init_test.sh",
-        "dev": "pnpm build_wasm && vite",
-        "build": "pnpm build_wasm && vite build",
-        "preview": "pnpm build_wasm && vite preview",
-        "check": "pnpm build_wasm && svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
-        "test": "pnpm build_wasm && vitest run",
-        "test:watch": "pnpm build_wasm && vitest"
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "check": "svelte-check --tsconfig ./tsconfig.json tsc -p tsconfig.node.json",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^3.1.1",
@@ -25,9 +24,11 @@
         "vite": "^5.3.4",
         "vite-plugin-top-level-await": "^1.4.2",
         "vite-plugin-wasm": "^3.3.0",
+        "vite-plugin-wasm-pack": "^0.1.12",
         "vitest": "^2.0.3"
     },
     "dependencies": {
-        "katex": "^0.16.11"
+        "katex": "^0.16.11",
+        "reti-js": "link:../../reti-js"
     }
 }
