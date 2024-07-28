@@ -1,0 +1,29 @@
+{
+    "name": "reti-js",
+    "version": "1.0.0",
+    "description": "",
+    "main": "./pkg/reti_js.js",
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "wasm-pack": "^0.13.0"
+    },
+    "scripts": {
+        "build": "wasm-pack build",
+        "prepare": "pnpm run build --force"
+    },
+    "files": [
+        "./pkg/",
+        "./pkg/reti_js_bg.wasm",
+        "./pkg/reti_js.js",
+        "./pkg/reti_js.d.ts"
+    ],
+    "exports": [
+        "./pkg/reti_js.js",
+        "./pkg/reti_js_bg.wasm",
+        "./pkg/reti_js.d.ts"
+    ],
+    "module": "./pkg/reti_js.js",
+    "types": "./pkg/reti_js.d.ts"
+}

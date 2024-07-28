@@ -1,0 +1,4 @@
+packages:
+  - 'web-packages/*'
+  - 'web-apps/*'
+  - 'reti-js/*'

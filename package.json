@@ -1,0 +1,20 @@
+{
+    "name": "reti",
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "lint": "eslint './{web-apps,web-packages}/**/*.{js,ts,svelte}'",
+        "fmt": "prettier './{web-apps,web-packages}/**/*.{js,ts,svelte}' --write",
+        "fmt:check": "prettier './{web-apps,web-packages}/**/*.{js,ts,svelte}' --check"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.7.0",
+        "eslint": "^9.7.0",
+        "eslint-plugin-svelte": "^2.43.0",
+        "globals": "^15.8.0",
+        "prettier": "3.3.3",
+        "prettier-plugin-svelte": "^3.2.6",
+        "typescript": "^5.5.3",
+        "typescript-eslint": "8.0.0-alpha.44"
+    }
+}

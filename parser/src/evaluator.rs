@@ -128,6 +128,7 @@ impl Evaluator {
 }
 ///The response for the Approximator
 #[derive(PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Evaluation {
     ///Added a function to the context
     AddedFunction,
