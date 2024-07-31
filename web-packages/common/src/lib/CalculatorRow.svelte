@@ -1,31 +1,81 @@
 <script lang="ts">
     import KaTeX from "./KaTeX.svelte";
-    import { RetiJS } from "reti-js";
 
-    type RetiResult = {
-        LaTeX?: string;
-        Error?: string;
-        // TODO better types for AddedFunction and such.
+    import {
+        RetiJS,
+        type AstError,
+        type Evaluation,
+        type RetiJsError,
+    } from "reti-js";
+
+    type RetiJsResult = {
+        Evaluation?: Evaluation;
+        Error?: RetiJsError | string;
     };
-
     export let reti: RetiJS;
     export let rowNumber: number;
+    export let on_first_input: () => void = () => {};
     let latex = "";
     $: result = parse(latex);
 
-    function parse(latex: string): RetiResult | null {
+    function parse(latex: string): RetiJsResult | null {
         if (latex == "") {
             return null;
         }
         try {
-            return reti.parse(latex) as RetiResult;
+            let res = reti.parse(latex);
+            console.log("res:" + res, "typeof:" + typeof res);
+            return { Evaluation: res };
         } catch (e: unknown) {
-            if (typeof e === "string") {
+            if (isRetiJsError(e)) {
                 return { Error: e };
             } else {
                 console.error(e);
                 return { Error: "Unknown error occurred, check console" };
             }
+        }
+    }
+    export function isRetiJsError(error: unknown): error is RetiJsError {
+        return (
+            typeof error === "object" &&
+            error !== null &&
+            (("EvalError" in error && isEvalError(error.EvalError)) ||
+                ("AstError" in error && isAstError(error.AstError)))
+        );
+    }
+
+    function isEvalError(error: unknown): error is EvalError {
+        if (typeof error === "string") {
+            return ["ExpectedScalar", "NotDefined", "DivideByZero"].includes(
+                error,
+            );
+        }
+
+        if (typeof error === "object" && error !== null) {
+            return (
+                "IncompatibleTypes" in error ||
+                "IncompatibleMatrixSizes" in error ||
+                "AmbiguousMulType" in error ||
+                "ArgumentLengthMismatch" in error ||
+                "DeriveError" in error
+            );
+        }
+
+        return false;
+    }
+
+    function isAstError(error: unknown): error is AstError {
+        if (typeof error === "object" && error !== null) {
+            return "Join" in error || "Panic" in error || "ParseError" in error;
+        }
+
+        return false;
+    }
+    let is_first = true;
+    function handleInput() {
+        if (is_first) {
+            on_first_input();
+            is_first = false;
         }
     }
 </script>
@@ -34,17 +84,22 @@
     <div class="number">({rowNumber})</div>
     <div class="calculator-row-main">
         <div class="input-container">
-            <textarea class="input" bind:value={latex} rows="1" />
+            <textarea
+                class="input"
+                bind:value={latex}
+                on:input={handleInput}
+                rows="1"
+            />
         </div>
         <div class="math-container">
             <div class="math-input">
                 <KaTeX display {latex} />
             </div>
             <div class="math-output">
-                {#if result?.LaTeX}
-                    <KaTeX display latex={result.LaTeX} />
+                {#if result?.Evaluation}
+                    <KaTeX display latex={result.Evaluation.toString()} />
                 {:else if result?.Error}
-                    <span class="error">{result.Error}</span>
+                    <span class="error">{result.Error.toString()}</span>
                 {/if}
             </div>
         </div>

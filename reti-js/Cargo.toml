@@ -5,15 +5,18 @@ edition = "2021"
 
 [dependencies]
 wasm-bindgen = "0.2.92"
-parser = { path = "../parser/", features = ["wasm"], default-features = false }
+parser = { path = "../parser/", features = ["wasm"] }
 wasm-bindgen-futures = "0.4.42"
 js-sys = "0.3.69"
 serde = { version = "1.0.204", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 web-sys = "0.3.69"
 console_error_panic_hook = "0.1.7"
-tokio = { version = "1.38.0", features = ["rt"] }
+tokio = { version = "1.38.0", default-features = false, features = ["rt"] }
 lazy_static = "1.5.0"
+tsify-next = "0.5.3"
+tracing = "0.1.40"
+tracing-wasm = "0.2.1"
 
 [lib]
 crate-type = ["cdylib"]
