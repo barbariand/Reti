@@ -4,6 +4,10 @@
     clippy::missing_docs_in_private_items,
     clippy::missing_const_for_fn
 )]
+#![allow(non_snake_case)]
+//enabeling the doc_test feature when running doc tests so that we can have a
+// usable parse function in the thingy
+#![cfg_attr(doc, feature = "doc_test")]
 
 pub mod approximator;
 pub mod ast;

@@ -74,6 +74,12 @@ pub enum MathExpr {
 /// but in some cases, for example when multiplying vectors, the symbol used
 /// for multiplication makes a difference.
 #[derive(PartialEq, Debug, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum MulType {
     /// 2 * x
     ///

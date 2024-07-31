@@ -129,13 +129,18 @@ impl Evaluator {
 ///The response for the Approximator
 #[derive(PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum Evaluation {
     ///Added a function to the context
     AddedFunction,
     ///Added a variable to the context
     AddedVariable,
     ///Got a value from it
-    LaTeX(LaTeX),
+    LaTeX(String),
 }
 impl Display for Evaluation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

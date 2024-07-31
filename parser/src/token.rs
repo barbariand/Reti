@@ -4,6 +4,12 @@ use std::{fmt::Display, hash::Hash};
 use crate::number_literal::NumberLiteral;
 /// All the accepted tokens
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum Token {
     /// Any other unknown chars not identified under
     Identifier(String),

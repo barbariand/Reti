@@ -10,6 +10,11 @@ use std::{
 ///The number representation
 #[derive(Debug, Clone, Hash, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub struct NumberLiteral(
     ///the raw string without being parsed as a number
     pub String,

@@ -13,13 +13,15 @@ tracing = { version = "0.1.40", features = ["async-await"] }
 futures = "0.3.30"
 slicedisplay = "0.2.2"
 snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
+tsify-next = { version = "0.5.3", optional = true }
+wasm-bindgen = { version = "0.2.92", optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
 tracing-test = "0.2.5"
 
 [features]
-default = ["tokio/test-util", "tokio/rt-multi-thread", "doc_test"]
+default = ["tokio/test-util"]
 serde = ["dep:serde"]
-doc_test = []
-wasm = ["serde", "tokio/rt", "tokio/sync"]
+doc_test = ["tokio/rt-multi-thread"]
+wasm = ["dep:wasm-bindgen", "dep:tsify-next", "serde", "tokio/rt", "tokio/sync"]
