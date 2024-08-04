@@ -11,7 +11,7 @@
     },
     "scripts": {
         "build": "wasm-pack build",
-        "prepare": "pnpm run build --force"
+        "prepare": "pnpm run build"
     },
     "files": [
         "./pkg/",
