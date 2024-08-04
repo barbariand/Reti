@@ -2,6 +2,7 @@
     import type { ComponentType } from "svelte";
     import KaTeX from "./lib/KaTeX.svelte";
     import CalculatorView from "./lib/CalculatorView.svelte";
+    import "./colors.css";
 
     const components = { KaTeX, CalculatorView };
     let component: ComponentType | null = null;

@@ -31,7 +31,7 @@
 </script>
 
 <div class="calculator-row">
-    <div class="number">({rowNumber})</div>
+    <div class="row-number">({rowNumber})</div>
     <div class="calculator-row-main">
         <div class="input-container">
             <textarea class="input" bind:value={latex} rows="1" />
@@ -42,7 +42,7 @@
             </div>
             <div class="math-output">
                 {#if result?.LaTeX}
-                    <KaTeX display latex={result.LaTeX} />
+                    <KaTeX display latex={"=" + result.LaTeX} />
                 {:else if result?.Error}
                     <span class="error">{result.Error}</span>
                 {/if}
@@ -55,6 +55,7 @@
     .calculator-row {
         display: flex;
         gap: 10px;
+        padding: 10px;
     }
     .calculator-row-main {
         width: 100%;
@@ -66,10 +67,14 @@
         display: flex;
         justify-content: stretch;
     }
+    .row-number {
+        font-family: sans-serif;
+    }
     .input {
         padding: 8px;
         border-radius: 5px;
-        border: 1px solid #7dedc4;
+        border: 1px solid var(--springgreen-300);
+        outline: 0;
         font-family: monospace;
         line-height: 15px;
         font-size: 14px;
@@ -81,6 +86,7 @@
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
+        min-height: 55px;
     }
     .math-output {
         justify-self: end, flex-end;
