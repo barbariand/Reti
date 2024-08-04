@@ -1,6 +1,6 @@
 use parser::{ast::simplify::Simplify, prelude::*};
 use std::sync::Mutex;
-use tracing::info;
+use tracing::{debug, info};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::RT;
@@ -30,10 +30,12 @@ impl JsAPI {
         JsAPI(Mutex::new(Evaluator::standard_math()))
     }
     pub fn parse(&mut self, text: String) -> Result<Evaluation, RetiJsError> {
-        info!("starting parse");
+        debug!("starting parse");
         let lock = self.0.lock().expect("Failed to get lock");
-        info!("got mutex for parse");
-        let res = RT.block_on(parse(&text, lock.context()))?;
+        debug!("got mutex for parse");
+        let func = parse(&text, lock.context());
+        debug!("got function, now executing it");
+        let res = RT.block_on(func)?;
         info!("parsed to ast");
         drop(lock);
         Ok(self.eval_ast(res)?)

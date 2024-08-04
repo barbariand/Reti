@@ -7,7 +7,10 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0.204", optional = true }
-tokio = { version = "1.37.0", features = ["tracing", "macros"] }
+tokio = { version = "1.37.0", features = [
+    "tracing",
+    "macros",
+], default-features = false }
 async-recursion = "1.1.0"
 tracing = { version = "0.1.40", features = ["async-await"] }
 futures = "0.3.30"
@@ -19,9 +22,9 @@ wasm-bindgen = { version = "0.2.92", optional = true }
 [dev-dependencies]
 pretty_assertions = "1.4.0"
 tracing-test = "0.2.5"
+tokio = { version = "*", features = ["test-util"] }
 
 [features]
-default = ["tokio/test-util"]
 serde = ["dep:serde"]
 doc_test = ["tokio/rt-multi-thread"]
 wasm = ["dep:wasm-bindgen", "dep:tsify-next", "serde", "tokio/rt", "tokio/sync"]

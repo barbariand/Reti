@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 wasm-bindgen = "0.2.92"
-parser = { path = "../parser/", features = ["wasm"] }
+parser = { path = "../parser/", features = ["wasm"], default-features = false }
 wasm-bindgen-futures = "0.4.42"
 js-sys = "0.3.69"
 serde = { version = "1.0.204", features = ["derive"] }
