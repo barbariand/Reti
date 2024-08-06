@@ -227,6 +227,7 @@ pub enum IncompatibleMatrixSizes {
     derive(tsify_next::Tsify),
     tsify(into_wasm_abi, from_wasm_abi)
 )]
+///All the errrors that can hapen when you derive, this is non at the moment
 pub enum DeriveError {
     ///So it don't complain
     #[snafu(whatever, display("The types are not compatible: {message}"))]

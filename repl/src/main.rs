@@ -3,11 +3,7 @@ use std::ops::ControlFlow;
 use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
-use parser::{
-    ast::{simplify::Simplify, Factor, MathExpr, Term},
-    identifier::MathIdentifier,
-    prelude::*,
-};
+use parser::{ast::simplify::Simplify, prelude::*};
 use rustyline::{
     error::ReadlineError, history::FileHistory, DefaultEditor, Editor,
 };
@@ -15,7 +11,6 @@ use tokio::time::Instant;
 use tracing::{debug, error, info, trace_span};
 use tracing_subscriber::filter::LevelFilter;
 
-use parser::functions::MathFunction;
 #[tokio::main]
 pub async fn main() {
     let project_dirs = ProjectDirs::from("", "", "Reti");

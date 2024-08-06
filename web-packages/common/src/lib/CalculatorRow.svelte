@@ -4,13 +4,13 @@
     import {
         RetiJS,
         type AstError,
-        type Evaluation,
         type RetiJsError,
+        type RetiJsEValuation,
     } from "reti-js";
 
     type RetiJsResult = {
-        Evaluation?: Evaluation;
-        Error?: RetiJsError | string;
+        Evaluation?: RetiJsEValuation;
+        Error?: RetiJsError;
     };
     export let reti: RetiJS;
     export let rowNumber: number;
@@ -23,15 +23,20 @@
             return null;
         }
         try {
-            let res = reti.parse(latex);
-            console.log("res:" + res, "typeof:" + typeof res);
+            let res: RetiJsEValuation = reti.parse(latex);
+            console.log("res:", res, "typeof:", typeof res);
             return { Evaluation: res };
         } catch (e: unknown) {
             if (isRetiJsError(e)) {
                 return { Error: e };
             } else {
                 console.error(e);
-                return { Error: "Unknown error occurred, check console" };
+                return {
+                    Error: {
+                        display: "Unknown error occurred, check console",
+                        error: "Unknown",
+                    },
+                };
             }
         }
     }
@@ -99,7 +104,7 @@
                 {#if result?.Evaluation}
                     <KaTeX display latex={result.Evaluation.toString()} />
                 {:else if result?.Error}
-                    <span class="error">{result.Error.toString()}</span>
+                    <span class="error">{result.Error.display}</span>
                 {/if}
             </div>
         </div>

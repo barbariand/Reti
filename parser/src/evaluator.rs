@@ -2,11 +2,7 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{
-        helper::Simple,
-        simplify::Simplify,
-        to_latex::{LaTeX, ToLaTeX},
-    },
+    ast::{helper::Simple, simplify::Simplify, to_latex::ToLaTeX},
     prelude::*,
 };
 
@@ -60,14 +56,18 @@ impl Evaluator {
                         ))) = *f
                         {
                             let variable_name = arg.clone();
+                            let rhs_simple = rhs.simple(self.context())?;
+                            let res = Evaluation::AddedFunction(
+                                rhs_simple.to_latex(),
+                            );
                             self.0.add_function(
                                 function_name.clone(),
                                 MathFunction::new_foreign(
-                                    rhs.simple(self.context())?,
+                                    rhs_simple,
                                     vec![variable_name],
                                 ),
                             );
-                            Ok(Evaluation::AddedFunction)
+                            Ok(res)
                         } else {
                             todo!("you cant have anything but a variable in a function definition")
                         }
@@ -85,16 +85,20 @@ impl Evaluator {
                                     _ => None,
                                 })
                                 .collect();
+                            let rhs_simple = rhs.simple(self.context())?;
+                            let res = Evaluation::AddedFunction(
+                                rhs_simple.to_latex(),
+                            );
                             self.0.add_function(
                                 function_name.clone(),
                                 MathFunction::new_foreign(
-                                    rhs.simple(self.context())?,
+                                    rhs_simple,
                                     args.expect(
                                         "The values uses was not identifiers only",
                                     ),
                                 ),
                             );
-                            Ok(Evaluation::AddedFunction)
+                            Ok(res)
                         } else {
                             todo!("Could not understand equals. is it a 2d matrix as input?")
                         }
@@ -119,8 +123,10 @@ impl Evaluator {
         } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) =
             lhs
         {
-            self.0.variables.insert(ident, rhs.simple(self.context())?);
-            Ok(Evaluation::AddedVariable)
+            let rhs_simple = rhs.simple(self.context())?;
+            let res = Evaluation::AddedVariable(rhs_simple.to_latex());
+            self.0.variables.insert(ident, rhs_simple);
+            return Ok(res);
         } else {
             todo!("Could not understand equals. got:{:#?}", lhs);
         }
@@ -136,23 +142,19 @@ impl Evaluator {
 )]
 pub enum Evaluation {
     ///Added a function to the context
-    AddedFunction,
+    AddedFunction(String),
     ///Added a variable to the context
-    AddedVariable,
+    AddedVariable(String),
     ///Got a value from it
     LaTeX(String),
 }
 impl Display for Evaluation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Evaluation::AddedFunction => "Added a function".to_owned(),
-                Evaluation::AddedVariable => "Added a variable".to_owned(),
-                Evaluation::LaTeX(v) => v.clone(),
-            }
-        )
+        match self {
+            Evaluation::AddedFunction(s) => write!(f, "Added Function: {}", s),
+            Evaluation::AddedVariable(s) => write!(f, "Added variable: {}", s),
+            Evaluation::LaTeX(s) => write!(f, "{}", s),
+        }
     }
 }
 impl From<&str> for Evaluation {

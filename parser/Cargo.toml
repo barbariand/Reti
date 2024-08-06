@@ -10,6 +10,7 @@ serde = { version = "1.0.204", optional = true }
 tokio = { version = "1.37.0", features = [
     "tracing",
     "macros",
+    "sync",
 ], default-features = false }
 async-recursion = "1.1.0"
 tracing = { version = "0.1.40", features = ["async-await"] }
@@ -18,6 +19,7 @@ slicedisplay = "0.2.2"
 snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
 tsify-next = { version = "0.5.3", optional = true }
 wasm-bindgen = { version = "0.2.92", optional = true }
+wasm-bindgen-futures = { version = "0.4.42", optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
@@ -27,4 +29,10 @@ tokio = { version = "*", features = ["test-util"] }
 [features]
 serde = ["dep:serde"]
 doc_test = ["tokio/rt-multi-thread"]
-wasm = ["dep:wasm-bindgen", "dep:tsify-next", "serde", "tokio/rt", "tokio/sync"]
+wasm = [
+    "dep:wasm-bindgen",
+    "dep:tsify-next",
+    "serde",
+    "tokio/sync",
+    "dep:wasm-bindgen-futures",
+]

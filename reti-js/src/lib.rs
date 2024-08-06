@@ -4,7 +4,6 @@ mod api;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub use api::JsAPI;
-use console_error_panic_hook;
 use lazy_static::lazy_static;
 lazy_static! {
     pub static ref RT: Runtime = Builder::new_current_thread().build().unwrap();

@@ -42,15 +42,13 @@ impl FactorVec {
             Some(Ok(simples.mul(MulType::Implicit)))
         } else {
             let cap = self.vec.capacity();
-            let (mut iter, dependants) = match self.vec.into_iter().fold(
-                Ok((Vec::with_capacity(cap), Vec::new())),
-                |acc: Result<(Vec<Factor>, Vec<u32>), EvalError>, v| {
-                    acc.and_then(|(mut vals, mut deps)| {
-                        let (val, dep) = v.simple(cont)?.destruct();
-                        vals.push(val);
-                        deps.extend(dep);
-                        Ok((vals, deps))
-                    })
+            let (mut iter, dependants) = match self.vec.into_iter().try_fold(
+                (Vec::with_capacity(cap), Vec::new()),
+                |(mut vals, mut deps): (Vec<Factor>, Vec<u32>), v: Factor| {
+                    let (val, dep) = v.simple(cont)?.destruct();
+                    vals.push(val);
+                    deps.extend(dep);
+                    Ok((vals, deps))
                 },
             ) {
                 Ok((v_1, v_2)) => (v_1.into_iter(), v_2),

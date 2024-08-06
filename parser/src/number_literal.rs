@@ -2,13 +2,14 @@
 
 use std::{
     fmt::Display,
+    hash::Hash,
     num::ParseFloatError,
     ops::{Add, Div, Mul, MulAssign, Sub},
     str::FromStr,
 };
 
 ///The number representation
-#[derive(Debug, Clone, Hash, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
     feature = "wasm",
@@ -20,28 +21,32 @@ pub struct NumberLiteral(
     pub String,
 );
 impl NumberLiteral {
+    ///Checks if it is zero
     pub fn is_zero(&self) -> bool {
         self.parse_or_panic("is zero check").abs() < f64::EPSILON
     }
-
+    ///Checks if it is one
     pub fn is_one(&self) -> bool {
         (self.parse_or_panic("is one check") - 1.0).abs() < f64::EPSILON
     }
-
+    ///checks if they are equal to another
     pub fn equals(&self, other: &Self) -> bool {
         (self.parse_or_panic("equals") - other.parse_or_panic("equals")).abs()
             < f64::EPSILON
     }
+    ///Gets the absolute value of it
     pub fn abs(&self) -> NumberLiteral {
         self.parse_or_panic("abs").abs().into()
     }
+    ///Gets the Sqrt of the number
     pub fn sqrt(&self) -> NumberLiteral {
         self.parse_or_panic("sqrt").sqrt().into()
     }
-    pub fn parse_or_panic(&self, msg: &'static str) -> f64 {
+    /// parses the number or panics
+    pub(crate) fn parse_or_panic(&self, msg: &'static str) -> f64 {
         self.0.parse().expect(msg)
     }
-
+    /// Raise a numberliteral to another numberliteral
     pub(crate) fn pow(&self, exponent: &NumberLiteral) -> NumberLiteral {
         (self
             .parse_or_panic("sub")
@@ -55,6 +60,16 @@ impl PartialEq for NumberLiteral {
             ("-0", "0") => true,
             ("0", "-0") => true,
             (l, r) => l.eq(r),
+        }
+    }
+}
+
+impl Hash for NumberLiteral {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Making sure that the hash implementation agrees with the PartialEq
+        match &*self.0 {
+            "-0" => "0".hash(state),
+            other => other.hash(state),
         }
     }
 }

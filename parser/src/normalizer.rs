@@ -153,7 +153,6 @@ mod tests {
             normalize(vec![
                 Token::NumberLiteral(2.into()),
                 Token::Caret,
-                ///we need to make it like this because
                 Token::NumberLiteral(NumberLiteral("025".to_owned())),
                 Token::EndOfContent,
             ])
