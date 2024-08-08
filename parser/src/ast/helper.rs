@@ -79,10 +79,10 @@ impl FunctionCall {
 ///combines the dependants into one vec
 trait SimpleDependantDrain {
     ///drain dependants to one vec
-    fn concat_dependant(&self) -> Vec<u32>;
+    fn concat_dependant(&self) -> Vec<u64>;
 }
 impl<U: Simplify, V: Simplify> SimpleDependantDrain for (Simple<U>, Simple<V>) {
-    fn concat_dependant(&self) -> Vec<u32> {
+    fn concat_dependant(&self) -> Vec<u64> {
         [&self.0.dependents[..], &self.1.dependents[..]].concat()
     }
 }
@@ -246,7 +246,7 @@ pub struct Simple<T: Simplify> {
     ///The value that is simplified
     pub(crate) value: T,
     ///The dependants of the simplified values
-    dependents: Vec<u32>,
+    dependents: Vec<u64>,
 }
 impl<T: Simplify> Simple<T> {
     ///returns the inner T in a box
@@ -254,11 +254,11 @@ impl<T: Simplify> Simple<T> {
         Box::new(self.inner())
     }
     /// Gets the dependants
-    pub const fn dependant(&self) -> &Vec<u32> {
+    pub const fn dependant(&self) -> &Vec<u64> {
         &self.dependents
     }
     /// Gets the inner value with dependants
-    pub fn destruct(self) -> (T, Vec<u32>) {
+    pub fn destruct(self) -> (T, Vec<u64>) {
         (self.value, self.dependents)
     }
     ///Constructs a Simple from a MathExpr
@@ -270,7 +270,7 @@ impl<T: Simplify> Simple<T> {
     }
     /// Construct a Simple without actually checking
     /// that it's simplified.
-    pub(super) const fn new_unchecked(value: T, dependants: Vec<u32>) -> Self {
+    pub(super) const fn new_unchecked(value: T, dependants: Vec<u64>) -> Self {
         Self {
             value,
             dependents: dependants,

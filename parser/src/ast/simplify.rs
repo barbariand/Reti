@@ -1,6 +1,11 @@
 //! the implementations of simplification
 
-use crate::{ast::helper::SimpleCompareMultipleMathExprs, number_literal::NumberLiteral, prelude::*};
+use std::hash::{DefaultHasher, Hash, Hasher};
+
+use crate::{
+    ast::helper::SimpleCompareMultipleMathExprs, number_literal::NumberLiteral,
+    prelude::*,
+};
 use tracing::trace;
 
 use super::{
@@ -59,7 +64,6 @@ impl Simplify for MathExpr {
                         Term::Factor(Factor::Constant(b)),
                     ) => Simple::<Factor>::add(a, b).into(),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
-                        println!("first");
                         if a.is_zero() {
                             simple.1.into()
                         } else {
@@ -67,7 +71,6 @@ impl Simplify for MathExpr {
                         }
                     }
                     (_, Term::Factor(Factor::Constant(b))) => {
-                        println!("second");
                         if b.is_zero() {
                             simple.0
                         } else {
@@ -143,7 +146,7 @@ impl FactorVec {
         }
         trace!("simple, before: {:?}", self.vec);
         let mut result = Vec::with_capacity(self.vec.len());
-        let mut constant_term:NumberLiteral = 1.0.into();
+        let mut constant_term: NumberLiteral = 1.0.into();
         for factor in self.vec {
             if let Factor::Constant(c) = factor {
                 if c.is_one() {
@@ -191,9 +194,8 @@ impl Term {
 
 impl Simplify for Term {
     fn simple(self, cont: &MathContext) -> Result<Simple<Term>, EvalError> {
-        println!("hello");
         let factors = self.simple_inner(cont)?.inner().factorize();
-        
+
         let factors_num = factors.factors_num.simplify_factors(cont)?.simple();
         let numerator = factors_num
             .to_term_ast(cont)
@@ -246,10 +248,14 @@ impl Simplify for Factor {
                     .variables
                     .get(&m)
                     .map(|v| {
-                        let (val,dependants)=v.clone().destruct();
-                        Ok(Simple::new_unchecked(Factor::Parenthesis(
-                            Box::new(val),
-                        ),dependants))
+                        let (val, mut dependants) = v.clone().destruct();
+                        let mut hasher = DefaultHasher::default();
+                        val.hash(&mut hasher);
+                        dependants.push(hasher.finish());
+                        Ok(Simple::new_unchecked(
+                            Factor::Parenthesis(Box::new(val)),
+                            dependants,
+                        ))
                     })
                     .unwrap_or(Ok(Simple::variable(m)))
             }
@@ -276,7 +282,6 @@ impl Simplify for Factor {
                                         f.input.iter().zip(func_call.arguments.iter())
                                         .try_fold(MathContext::new(),
                                         |mut context:MathContext,(ident,expr)|
-                                        
                                         Ok::<MathContext,EvalError>({
                                             context.variables.insert(ident.clone(), expr.clone().simple(cont)?);
                                             context}))?;
@@ -455,7 +460,6 @@ mod test {
     }
     #[tokio::test]
     async fn simplify_one() {
-        println!("hello 1");
         io::stdout().flush().unwrap();
         ast_test_simplify("1", "1").await;
     }

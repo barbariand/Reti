@@ -105,8 +105,8 @@ impl Repl {
                 })?;
                 let time_eval = start_eval.elapsed();
                 if self.time_it {
-                    println!("Parsing took:{}ns", time_parse.as_nanos());
-                    println!("Evaluating took:{}ns", time_eval.as_nanos());
+                    println!("Parsing took:{}s", time_parse.as_secs_f64());
+                    println!("Evaluating took:{}s", time_eval.as_secs_f64());
                 }
                 println!("{}", s);
             }

@@ -113,22 +113,9 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {
         Ok(Ok(ast)) => ast.map_err(|e| e.into()),
     }
 }
-/// functions for doc testing and other things that need to be public only for
-/// tests
-#[cfg(feature = "doc_test")]
-pub mod _private {
-    use super::*;
-
-    ///function for parsing in sync doc tests
-    pub fn parse_sync_doc_test(text: &str, context: &MathContext) -> Ast {
-        tokio::runtime::Runtime::new()
-            .unwrap()
-            .block_on(parse(text, context))
-            .unwrap()
-    }
-}
 ///starting a task that has a certain output and returning the JoinHandle
 /// making sure to catch panics as results
+
 fn spawn_logging_task<F, T>(
     future: F,
 ) -> tokio::task::JoinHandle<Result<T, &'static str>>

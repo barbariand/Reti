@@ -10,7 +10,7 @@
         "wasm-pack": "^0.13.0"
     },
     "scripts": {
-        "build": "wasm-pack build --dev",
+        "build": "wasm-pack build",
         "prepare": "pnpm run build"
     },
     "files": [

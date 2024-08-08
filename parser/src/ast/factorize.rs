@@ -44,7 +44,7 @@ impl FactorVec {
             let cap = self.vec.capacity();
             let (mut iter, dependants) = match self.vec.into_iter().try_fold(
                 (Vec::with_capacity(cap), Vec::new()),
-                |(mut vals, mut deps): (Vec<Factor>, Vec<u32>), v: Factor| {
+                |(mut vals, mut deps): (Vec<Factor>, Vec<u64>), v: Factor| {
                     let (val, dep) = v.simple(cont)?.destruct();
                     vals.push(val);
                     deps.extend(dep);

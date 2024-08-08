@@ -4,7 +4,7 @@ use slicedisplay::SliceDisplay;
 use snafu::Snafu;
 use tokio::task::JoinError;
 ///The errors that can happen while parsing latex
-#[derive(Debug, Snafu)]
+#[derive(Debug, Snafu, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
     feature = "wasm",
@@ -79,6 +79,7 @@ pub enum ParseError {
     derive(tsify_next::Tsify),
     tsify(into_wasm_abi, from_wasm_abi)
 )]
+#[derive(PartialEq)]
 pub enum AstError {
     ///could not join the threads
     #[snafu(display("Could not join threads {joined}"))]

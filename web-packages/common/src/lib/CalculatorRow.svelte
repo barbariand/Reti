@@ -5,11 +5,12 @@
         RetiJS,
         type AstError,
         type RetiJsError,
-        type RetiJsEValuation,
+        type RetiJsErrorEnum,
+        type RetiJsEvaluation,
     } from "reti-js";
 
     type RetiJsResult = {
-        Evaluation?: RetiJsEValuation;
+        Evaluation?: RetiJsEvaluation;
         Error?: RetiJsError;
     };
     export let reti: RetiJS;
@@ -23,7 +24,7 @@
             return null;
         }
         try {
-            let res: RetiJsEValuation = reti.parse(latex);
+            let res: RetiJsEvaluation = reti.parse(latex);
             console.log("res:", res, "typeof:", typeof res);
             return { Evaluation: res };
         } catch (e: unknown) {
@@ -33,19 +34,30 @@
                 console.error(e);
                 return {
                     Error: {
-                        display: "Unknown error occurred, check console",
+                        display: "Evaluation probably paniced",
                         error: "Unknown",
                     },
                 };
             }
         }
     }
-    export function isRetiJsError(error: unknown): error is RetiJsError {
+    function isRetiJsError(error: unknown): error is RetiJsError {
         return (
             typeof error === "object" &&
             error !== null &&
-            (("EvalError" in error && isEvalError(error.EvalError)) ||
-                ("AstError" in error && isAstError(error.AstError)))
+            "display" in error &&
+            typeof error.display === "string" &&
+            "error" in error &&
+            isRetiJsErrorEnum(error.error)
+        );
+    }
+    function isRetiJsErrorEnum(error: unknown): error is RetiJsErrorEnum {
+        return (
+            (typeof error === "object" &&
+                error !== null &&
+                (("EvalError" in error && isEvalError(error.EvalError)) ||
+                    ("AstError" in error && isAstError(error.AstError)))) ||
+            error == "Unknown"
         );
     }
 
@@ -102,7 +114,14 @@
             </div>
             <div class="math-output">
                 {#if result?.Evaluation}
-                    <KaTeX display latex={result.Evaluation.toString()} />
+                    <p>
+                        {#if result.Evaluation.tag === "AddedFunction"}
+                            Added Function:
+                        {:else if result.Evaluation.tag === "AddedVariable"}
+                            Added Variable:
+                        {/if}
+                    </p>
+                    <KaTeX display latex={result.Evaluation.latex} />
                 {:else if result?.Error}
                     <span class="error">{result.Error.display}</span>
                 {/if}
@@ -144,7 +163,10 @@
     }
     .math-output {
         justify-self: end, flex-end;
+        display: flex;
+        justify-content: center;
     }
+
     .error {
         color: red;
     }

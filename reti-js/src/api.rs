@@ -45,7 +45,7 @@ impl JsAPI {
     pub fn parse(
         &mut self,
         text: String,
-    ) -> Result<RetiJsEValuation, RetiJsError> {
+    ) -> Result<RetiJsEvaluation, RetiJsError> {
         debug!("starting parse");
         let lock = self.0.lock().expect("Failed to get lock");
         debug!("got mutex for parse");
@@ -56,7 +56,7 @@ impl JsAPI {
         drop(lock);
         Ok(self.eval_ast(res)?)
     }
-    fn eval_ast(&self, ast: Ast) -> Result<RetiJsEValuation, EvalError> {
+    fn eval_ast(&self, ast: Ast) -> Result<RetiJsEvaluation, EvalError> {
         info!("starting evaluation");
         let mut lock = self.0.lock().expect("Failed to get lock");
         info!("got mutex for evaluation");
@@ -67,23 +67,23 @@ impl JsAPI {
 }
 #[derive(serde::Serialize, serde::Deserialize, tsify_next::Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-pub struct RetiJsEValuation {
-    tag: RetiJsEValuationTag,
+pub struct RetiJsEvaluation {
+    tag: RetiJsEvaluationTag,
     latex: String,
 }
-impl From<Evaluation> for RetiJsEValuation {
+impl From<Evaluation> for RetiJsEvaluation {
     fn from(value: Evaluation) -> Self {
         match value {
             Evaluation::AddedFunction(v) => Self {
-                tag: RetiJsEValuationTag::AddedFunction,
+                tag: RetiJsEvaluationTag::AddedFunction,
                 latex: v,
             },
             Evaluation::AddedVariable(v) => Self {
-                tag: RetiJsEValuationTag::AddedVariable,
+                tag: RetiJsEvaluationTag::AddedVariable,
                 latex: v,
             },
             Evaluation::LaTeX(v) => Self {
-                tag: RetiJsEValuationTag::Evaluation,
+                tag: RetiJsEvaluationTag::Evaluation,
                 latex: v,
             },
         }
@@ -91,7 +91,7 @@ impl From<Evaluation> for RetiJsEValuation {
 }
 #[derive(serde::Serialize, serde::Deserialize, tsify_next::Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-pub enum RetiJsEValuationTag {
+pub enum RetiJsEvaluationTag {
     AddedFunction,
     AddedVariable,
     Evaluation,

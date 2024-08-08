@@ -108,9 +108,7 @@ impl Display for NumberLiteral {
 }
 impl MulAssign<&Self> for NumberLiteral {
     fn mul_assign(&mut self, rhs: &Self) {
-        println!("input self:{}, rhs:{}", self, rhs);
         let mut awns = &*self * rhs;
-        println!("awns:{}", awns);
         std::mem::swap(self, &mut awns);
     }
 }
