@@ -19,6 +19,10 @@ impl Evaluator {
     pub fn new_empty() -> Self {
         Self(MathContext::new())
     }
+    /// from math_context
+    pub fn with_context(context: MathContext) -> Self {
+        Self(context)
+    }
     ///Get the context to it
     pub const fn context(&self) -> &MathContext {
         &self.0

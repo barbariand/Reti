@@ -25,6 +25,7 @@ wasm-bindgen-futures = { version = "0.4.42", optional = true }
 pretty_assertions = "1.4.0"
 tracing-test = "0.2.5"
 tokio = { version = "*", features = ["test-util", "rt-multi-thread"] }
+criterion = { version = "0.5", features = ["html_reports","stable","async_tokio"] }
 
 [features]
 serde = ["dep:serde"]
@@ -35,3 +36,6 @@ wasm = [
     "tokio/sync",
     "dep:wasm-bindgen-futures",
 ]
+[[bench]]
+name = "parser"
+harness = false

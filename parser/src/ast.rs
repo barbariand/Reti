@@ -9,7 +9,7 @@ pub mod into;
 pub mod simplify;
 pub mod to_latex;
 ///The root of the AST that is non recursive
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Ast {
     /// A mathematical expression that can be evaluated.
     Expression(MathExpr),
