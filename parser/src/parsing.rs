@@ -343,7 +343,7 @@ where
             let inner = self.parse_inner_math_identifier()?;
             MathIdentifier::Modifier(modifier, Box::new(inner))
         } else {
-            return Err(ParseError::InvalidIdentifierCommmand {
+            return Err(ParseError::InvalidIdentifierCommand {
                 command: command.to_string(),
             });
         };

@@ -29,7 +29,7 @@ pub(crate) use crate::{
     token_reader::TokenReader,
 };
 
-use tracing::{debug, error, trace, trace_span};
+use tracing::{debug, error, trace_span};
 ///The parse function central to the parsing functionality, and outputs an AST
 /// that can be evaluated using
 pub fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {

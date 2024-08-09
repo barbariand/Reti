@@ -1,6 +1,6 @@
 //! Creating a token stream from a string
 use crate::{number_literal::NumberLiteral, prelude::*};
-use std::{fmt::Debug, iter::Peekable, mem::take, str::Chars};
+use std::{fmt::Debug, iter::Peekable, mem::take};
 use tracing::{debug, trace, trace_span};
 ///The lexer creating tokens from a string
 pub struct Lexer<I>

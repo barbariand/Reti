@@ -13,8 +13,6 @@ where
     tokens: I::IntoIter,
     ///The cached tokens
     next: VecDeque<Token>,
-    /// if the stream has reached EOF
-    eof: bool,
 }
 
 impl<I> TokenReader<I>
@@ -26,7 +24,6 @@ where
         TokenReader {
             tokens: tokens.into_iter(),
             next: VecDeque::new(),
-            eof: false,
         }
     }
 

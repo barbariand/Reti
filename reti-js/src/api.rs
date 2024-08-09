@@ -1,5 +1,4 @@
 use parser::{ast::simplify::Simplify, prelude::*};
-use std::sync::Mutex;
 use tracing::{debug, info};
 use wasm_bindgen::prelude::wasm_bindgen;
 

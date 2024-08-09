@@ -50,7 +50,7 @@ pub enum ParseError {
     /// When an unexpected command is encountered when parsing a
     /// MathIdentifier.
     #[snafu(display("Unexpected command {{{command}}}, I expected either a greek letter like \\alpha or a modifier like \\overline{{x}}"))]
-    InvalidIdentifierCommmand {
+    InvalidIdentifierCommand {
         /// The command that was unexpected.
         command: String,
     },
@@ -227,7 +227,7 @@ pub enum IncompatibleMatrixSizes {
     derive(tsify_next::Tsify),
     tsify(into_wasm_abi, from_wasm_abi)
 )]
-///All the errrors that can hapen when you derive, this is non at the moment
+///All the errors that can happen when you derive, this is non at the moment
 pub enum DeriveError {
     ///So it don't complain
     #[snafu(whatever, display("The types are not compatible: {message}"))]
