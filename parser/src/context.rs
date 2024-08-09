@@ -136,10 +136,12 @@ impl MathContext {
 #[cfg(test)]
 mod test {
     use snafu::whatever;
+    use tracing_test::traced_test;
 
     use crate::identifier::OtherSymbol;
     use crate::prelude::*;
 
+    #[traced_test]
     #[test]
     pub fn merging_functions() {
         let mut c = MathContext::new();
@@ -150,6 +152,7 @@ mod test {
             OtherSymbol::Sin
         )))
     }
+    #[traced_test]
     #[test]
     pub fn overloading_functions() {
         let mut c2 = MathContext::new();

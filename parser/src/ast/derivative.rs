@@ -223,14 +223,14 @@ mod test {
         prelude::*,
     };
     use pretty_assertions::assert_eq;
-    async fn ast_test_derive(
+    use tracing_test::traced_test;
+    fn ast_test_derive(
         text: &str,
         dependent: &MathIdentifier,
         expected_to_ast: &str,
     ) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
-            .await
             .expect("failed to parse AST")
             .derivative(dependent)
             .expect("Failed ");
@@ -238,7 +238,6 @@ mod test {
         let found_simple = found_ast.simple(&context).unwrap();
         println!("found simple {}", found_simple.to_latex());
         let expected_ast = parse(expected_to_ast, &context)
-            .await
             .expect("could not parse the expected ast");
         let expected_simple = expected_ast.simple(&context).unwrap();
         // Compare and print with debug and formatting otherwise.
@@ -248,28 +247,27 @@ mod test {
             "\n\nfound / expected"
         )
     }
-
-    #[tokio::test]
-    async fn x_squared_derivative() {
-        ast_test_derive("x^2", &MathIdentifier::from_single_ident("x"), "2x")
-            .await;
+    #[traced_test]
+    #[test]
+    fn x_squared_derivative() {
+        ast_test_derive("x^2", &MathIdentifier::from_single_ident("x"), "2x");
     }
-    #[tokio::test]
-    async fn polynomial_1() {
+    #[traced_test]
+    #[test]
+    fn polynomial_1() {
         ast_test_derive(
             "3x^2+2x+1",
             &MathIdentifier::from_single_ident("x"),
             "3(2x)+2",
-        )
-        .await;
+        );
     }
-    #[tokio::test]
-    async fn test() {
+    #[traced_test]
+    #[test]
+    fn test() {
         ast_test_derive(
             "(3x^2 + 2x)",
             &MathIdentifier::from_single_ident("x"),
             "6x+2",
-        )
-        .await;
+        );
     }
 }

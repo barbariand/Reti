@@ -169,7 +169,7 @@ impl Repl {
         Ok(())
     }
     async fn parse(&mut self, line: &str) -> Result<Ast, AstError> {
-        parse(line, self.evaluator.context()).await
+        parse(line, self.evaluator.context())
     }
     fn eval(&mut self, ast: Ast) -> Result<String, EvalError> {
         if self.ast_mode {

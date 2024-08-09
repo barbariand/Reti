@@ -174,6 +174,8 @@ impl From<f64> for Evaluation {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use super::Evaluator;
     use crate::{ast::simplify::Simplify, prelude::*};
 
@@ -190,12 +192,13 @@ mod tests {
         assert_eq!(expected.into(), value);
     }
 
-    async fn eval_test_from_str(expected: impl Into<Evaluation>, text: &str) {
-        let ast = parse(text, &MathContext::new()).await.unwrap();
+    fn eval_test_from_str(expected: impl Into<Evaluation>, text: &str) {
+        let ast = parse(text, &MathContext::new()).unwrap();
 
         eval_test_from_ast(expected, ast);
     }
 
+    #[traced_test]
     #[test]
     fn eval_1_plus_1() {
         eval_test_from_ast(
@@ -204,6 +207,7 @@ mod tests {
         );
     }
 
+    #[traced_test]
     #[test]
     fn eval_multiplication() {
         eval_test_from_ast(
@@ -220,17 +224,18 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn parenthesis_and_exponent() {
-        eval_test_from_str(54.0, "2(3)^3").await;
+    #[traced_test]
+    #[test]
+    fn parenthesis_and_exponent() {
+        eval_test_from_str(54.0, "2(3)^3");
     }
 
-    #[tokio::test]
-    async fn fraction_sqrt_cube_root() {
+    #[traced_test]
+    #[test]
+    fn fraction_sqrt_cube_root() {
         eval_test_from_str(
             3.0,
             "\\frac{2( 1+1)^{3} +5}{\\sqrt{\\frac{49}{3}\\sqrt[3]{27}}}",
-        )
-        .await;
+        );
     }
 }

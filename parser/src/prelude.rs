@@ -16,11 +16,6 @@ pub use crate::{
     functions::MathFunction,
     value::Value,
 };
-/// An alias for `Receiver<Token>` to receive tokens
-pub(crate) type TokenReceiver = Receiver<Token>;
-pub(crate) use tokio::sync::mpsc;
-/// An alias for `Sender<Token>` to send tokens
-pub(crate) type TokenSender = Sender<Token>;
 
 pub(crate) use crate::{
     ast::{Factor, FunctionCall, MathExpr, MulType, Term},
@@ -34,36 +29,18 @@ pub(crate) use crate::{
     token_reader::TokenReader,
 };
 
-use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, error, trace, trace_span};
 ///The parse function central to the parsing functionality, and outputs an AST
 /// that can be evaluated using
-pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {
+pub fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {
     let span = trace_span!("parsing");
     let _enter = span.enter();
     debug!(text);
-    let channel_buffer_size = 32;
-
-    let (normalizer_in, normalizer_out): (TokenSender, TokenReceiver) =
-        mpsc::channel(channel_buffer_size);
-    debug!(
-        "successfully created channel for normalizer with {} long buffer",
-        channel_buffer_size
-    );
-
     let lexer = Lexer::new(text.chars());
     let normalizer = Normalizer::new(lexer);
-    let parser = Parser::new(normalizer_out, context.clone());
-    trace!("cloned text");
-    let parser_future = async move { parser.parse().await };
-    let normalizer_future = async move {
-        for t in normalizer {
-            normalizer_in.send(t).await.unwrap()
-        }
-    };
-    let (_, parser_result) = tokio::join!(normalizer_future, parser_future);
+    let parser = Parser::new(normalizer, context.clone());
 
-    match parser_result {
+    match parser.parse() {
         Err(e) => {
             error!("parser task failed");
             Err(e.into())
@@ -80,32 +57,34 @@ mod tests {
         prelude::*,
     };
     use pretty_assertions::assert_eq;
-    async fn parse_test(text: &str, expected_ast: Ast) {
-        let found_ast =
-            parse(text, &MathContext::standard_math()).await.unwrap();
+    use tracing_test::traced_test;
+    fn parse_test(text: &str, expected_ast: Ast) {
+        let found_ast = parse(text, &MathContext::standard_math()).unwrap();
         // Compare and print with debug and formatting otherwise.
         assert_eq!(found_ast, expected_ast)
     }
 
-    #[tokio::test]
-    async fn constant() {
-        parse_test("1", Ast::Expression(1f64.into())).await;
+    #[traced_test]
+    #[test]
+    fn constant() {
+        parse_test("1", Ast::Expression(1f64.into()));
     }
 
-    #[tokio::test]
-    async fn addition() {
+    #[traced_test]
+    #[test]
+    fn addition() {
         parse_test(
             "1+2+3",
             Ast::Expression(MathExpr::Add(
                 Box::new(MathExpr::Add(Box::new(1f64.into()), 2f64.into())),
                 3f64.into(),
             )),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn addition_multiplication_order_of_operations() {
+    #[traced_test]
+    #[test]
+    fn addition_multiplication_order_of_operations() {
         parse_test(
             "1+2+3+(4+5)*6",
             Ast::Expression(MathExpr::Add(
@@ -121,11 +100,11 @@ mod tests {
                     6f64.into(),
                 ),
             )),
-        )
-        .await;
+        );
     }
-    #[tokio::test]
-    async fn sqrt() {
+    #[traced_test]
+    #[test]
+    fn sqrt() {
         parse_test(
             "\\sqrt{9}",
             Ast::Expression(
@@ -135,12 +114,12 @@ mod tests {
                 }
                 .into(),
             ),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn cube_root() {
+    #[traced_test]
+    #[test]
+    fn cube_root() {
         parse_test(
             "\\sqrt[3]{27}",
             Ast::Expression(
@@ -150,12 +129,12 @@ mod tests {
                 }
                 .into(),
             ),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn exponent() {
+    #[traced_test]
+    #[test]
+    fn exponent() {
         parse_test(
             "2^{3}",
             Ast::Expression(
@@ -167,12 +146,12 @@ mod tests {
                 }
                 .into(),
             ),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn exponent_command() {
+    #[traced_test]
+    #[test]
+    fn exponent_command() {
         parse_test(
             "2^\\pi",
             Ast::Expression(
@@ -187,12 +166,12 @@ mod tests {
                 }
                 .into(),
             ),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn exponent_split_token() {
+    #[traced_test]
+    #[test]
+    fn exponent_split_token() {
         parse_test(
             "2^025", // this is 2^0 * 25
             Ast::Expression(MathExpr::Term(Term::Multiply(
@@ -207,12 +186,12 @@ mod tests {
                 // 25
                 Factor::Constant(25.0.into()),
             ))),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn parenthesis_and_exponent() {
+    #[traced_test]
+    #[test]
+    fn parenthesis_and_exponent() {
         parse_test(
             "2(3)^3",
             Ast::Expression(MathExpr::Term(Term::Multiply(
@@ -225,12 +204,12 @@ mod tests {
                     exponent: Box::new(3f64.into()),
                 },
             ))),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn implicit_multiplication_and_exponent_order_of_operations() {
+    #[traced_test]
+    #[test]
+    fn implicit_multiplication_and_exponent_order_of_operations() {
         parse_test(
             "2x^{2} + 5xy",
             Ast::Expression(MathExpr::Add(
@@ -266,12 +245,12 @@ mod tests {
                     Factor::Variable(MathIdentifier::from_single_ident("y")),
                 ),
             )),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn implicit_multiplication_single_identifier_token() {
+    #[traced_test]
+    #[test]
+    fn implicit_multiplication_single_identifier_token() {
         parse_test(
             "2xy^2",
             Ast::Expression(MathExpr::Term(Term::Multiply(
@@ -292,23 +271,23 @@ mod tests {
                     exponent: 2f64.into(),
                 },
             ))),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn pi() {
+    #[traced_test]
+    #[test]
+    fn pi() {
         parse_test(
             "\\pi",
             Ast::Expression(MathExpr::Term(Term::Factor(Factor::Variable(
                 MathIdentifier::from_single_greek(GreekLetter::LowercasePi),
             )))),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn implicit_multiplication_vs_function_call() {
+    #[traced_test]
+    #[test]
+    fn implicit_multiplication_vs_function_call() {
         parse_test(
             "\\pi(x)\\ln(x)", // this is pi * x * ln(x)
             Ast::Expression(MathExpr::Term(Term::Multiply(
@@ -339,12 +318,12 @@ mod tests {
                     .into()],
                 }),
             ))),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn division_order_of_operations() {
+    #[traced_test]
+    #[test]
+    fn division_order_of_operations() {
         parse_test(
             "5/2x + 3",
             // This is a bit mathematically ambiguous, but it means
@@ -367,21 +346,21 @@ mod tests {
                 // 3
                 Term::Factor(Factor::Constant(3.0.into())),
             )),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn fraction() {
+    #[traced_test]
+    #[test]
+    fn fraction() {
         parse_test(
             "\\frac{1}{2}",
             Ast::Expression(Factor::Fraction(1f64.into(), 2f64.into()).into()),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn abs() {
+    #[traced_test]
+    #[test]
+    fn abs() {
         parse_test(
             "|-3|",
             Ast::Expression(
@@ -392,19 +371,18 @@ mod tests {
                 ))))
                 .into(),
             ),
-        )
-        .await;
+        );
     }
 
-    #[tokio::test]
-    async fn equality() {
+    #[traced_test]
+    #[test]
+    fn equality() {
         parse_test(
             "x=2",
             Ast::Equality(
                 Factor::Variable(MathIdentifier::from_single_ident("x")).into(),
                 2f64.into(),
             ),
-        )
-        .await;
+        );
     }
 }

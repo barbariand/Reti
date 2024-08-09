@@ -71,9 +71,6 @@ pub enum Token {
 
     /// String representation:`=`
     Equals,
-
-    /// No string representation
-    EndOfContent,
 }
 
 impl Display for Token {
@@ -103,7 +100,6 @@ impl Display for Token {
                 Token::VerticalPipe => "|",
                 Token::Comma => ",",
                 Token::Ampersand => "&",
-                Token::EndOfContent => "EOF",
                 Token::Equals => "=",
             }
         )

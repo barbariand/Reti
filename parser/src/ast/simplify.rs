@@ -440,15 +440,14 @@ mod test {
 
     use crate::{ast::simplify::Simplify, ast::to_latex::ToLaTeX, prelude::*};
     use pretty_assertions::assert_eq;
-    async fn ast_test_simplify(text: &str, expected_latex: &str) {
+    use tracing_test::traced_test;
+    fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
-            .await
             .expect("failed to parse AST")
             .simple(&context)
             .unwrap();
         let expected_ast = parse(expected_latex, &context)
-            .await
             .expect("failed to parse latex to ast")
             .simple(&context)
             .unwrap();
@@ -458,53 +457,65 @@ mod test {
         // Compare and print with debug and formatting otherwise.
         assert_eq!(found, expected, "\nfound/expected")
     }
-    #[tokio::test]
-    async fn simplify_one() {
+    #[traced_test]
+    #[test]
+    fn simplify_one() {
         io::stdout().flush().unwrap();
-        ast_test_simplify("1", "1").await;
+        ast_test_simplify("1", "1");
     }
-    #[tokio::test]
-    async fn one_minus_one() {
-        ast_test_simplify("1-1", "0").await;
+    #[traced_test]
+    #[test]
+    fn one_minus_one() {
+        ast_test_simplify("1-1", "0");
     }
-    #[tokio::test]
-    async fn one_plus_one() {
-        ast_test_simplify("1+1", "2").await;
+    #[traced_test]
+    #[test]
+    fn one_plus_one() {
+        ast_test_simplify("1+1", "2");
     }
-    #[tokio::test]
-    async fn one_times_one() {
-        ast_test_simplify("1*1", "1").await;
+    #[traced_test]
+    #[test]
+    fn one_times_one() {
+        ast_test_simplify("1*1", "1");
     }
-    #[tokio::test]
-    async fn one_times_zero() {
-        ast_test_simplify("1*0", "0").await;
+    #[traced_test]
+    #[test]
+    fn one_times_zero() {
+        ast_test_simplify("1*0", "0");
     }
-    #[tokio::test]
-    async fn zero_times_parenthesis() {
-        ast_test_simplify("0*(1+1+1+1+1*2)", "0").await;
+    #[traced_test]
+    #[test]
+    fn zero_times_parenthesis() {
+        ast_test_simplify("0*(1+1+1+1+1*2)", "0");
     }
-    #[tokio::test]
-    async fn two_minus_one() {
-        ast_test_simplify("2-1", "1").await;
+    #[traced_test]
+    #[test]
+    fn two_minus_one() {
+        ast_test_simplify("2-1", "1");
     }
-    #[tokio::test]
-    async fn two_x_minus_two_x() {
-        ast_test_simplify("2x-2x", "0").await;
+    #[traced_test]
+    #[test]
+    fn two_x_minus_two_x() {
+        ast_test_simplify("2x-2x", "0");
     }
-    #[tokio::test]
-    async fn test() {
-        ast_test_simplify("2x^{2-1}1+\\ln(2)x^{2}0", "2x").await;
+    #[traced_test]
+    #[test]
+    fn test() {
+        ast_test_simplify("2x^{2-1}1+\\ln(2)x^{2}0", "2x");
     }
-    #[tokio::test]
-    async fn multiply_remove_parenthesis() {
-        ast_test_simplify("2(2x)", "4x").await;
+    #[traced_test]
+    #[test]
+    fn multiply_remove_parenthesis() {
+        ast_test_simplify("2(2x)", "4x");
     }
-    #[tokio::test]
-    async fn multiply_remove_parenthesis_2() {
-        ast_test_simplify("3(2x)+2", "6x+2").await;
+    #[traced_test]
+    #[test]
+    fn multiply_remove_parenthesis_2() {
+        ast_test_simplify("3(2x)+2", "6x+2");
     }
-    #[tokio::test]
-    async fn simple_test() {
-        ast_test_simplify("((1)+(2x))", "1+2x").await;
+    #[traced_test]
+    #[test]
+    fn simple_test() {
+        ast_test_simplify("((1)+(2x))", "1+2x");
     }
 }

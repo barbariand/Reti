@@ -4,10 +4,6 @@ mod api;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub use api::JsAPI;
-use lazy_static::lazy_static;
-lazy_static! {
-    pub static ref RT: Runtime = Builder::new_current_thread().build().unwrap();
-}
 pub static STARTED: AtomicBool = AtomicBool::new(false);
 
 #[wasm_bindgen]
@@ -32,5 +28,5 @@ pub fn start() {
     tracing_wasm::set_as_global_default();
     STARTED.store(true, SeqCst)
 }
-use tokio::runtime::{Builder, Runtime};
+
 use wasm_bindgen::prelude::wasm_bindgen;

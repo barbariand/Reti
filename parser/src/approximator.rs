@@ -191,17 +191,15 @@ mod tests {
         }
     }
 
-    async fn eval_test_from_str(
-        expected: impl Into<NumberLiteral>,
-        text: &str,
-    ) {
+    fn eval_test_from_str(expected: impl Into<NumberLiteral>, text: &str) {
         let context = MathContext::new();
-        let ast = parse(text, &context).await;
+        let ast = parse(text, &context);
         let ast = ast.unwrap();
 
         eval_test_from_ast(expected.into(), ast);
     }
 
+    #[traced_test]
     #[test]
     fn eval_1_plus_1() {
         eval_test_from_ast(
@@ -210,6 +208,7 @@ mod tests {
         );
     }
 
+    #[traced_test]
     #[test]
     fn eval_multiplication() {
         eval_test_from_ast(
@@ -226,21 +225,22 @@ mod tests {
         );
     }
     #[traced_test]
-    #[tokio::test]
-    async fn aprox_parenthesis_and_exponent() {
-        eval_test_from_str(54.0, "2(3)^3").await;
+    #[test]
+    fn aprox_parenthesis_and_exponent() {
+        eval_test_from_str(54.0, "2(3)^3");
     }
 
-    #[tokio::test]
-    async fn fraction_sqrt_cube_root() {
+    #[traced_test]
+    #[test]
+    fn fraction_sqrt_cube_root() {
         eval_test_from_str(
             3.0,
             "\\frac{2( 1+1)^{3} +5}{\\sqrt{\\frac{49}{3}\\sqrt[3]{27}}}",
-        )
-        .await;
+        );
     }
-    #[tokio::test]
-    async fn markdown_example() {
-        eval_test_from_str(0.5, "\\frac{2\\sqrt{9}+5}{3(3+4)+1}").await;
+    #[traced_test]
+    #[test]
+    fn markdown_example() {
+        eval_test_from_str(0.5, "\\frac{2\\sqrt{9}+5}{3(3+4)+1}");
     }
 }

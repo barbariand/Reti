@@ -250,8 +250,11 @@ enum_with_latex!(OtherSymbol {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use crate::identifier::GreekLetter;
 
+    #[traced_test]
     #[test]
     fn greek_letters_to_latex() {
         assert_eq!(GreekLetter::LowercaseAlpha.latex_code(), "alpha");
@@ -264,6 +267,7 @@ mod tests {
         assert_eq!(GreekLetter::from_latex(latex).unwrap(), letter);
     }
 
+    #[traced_test]
     #[test]
     fn greek_letters_from_latex() {
         from_latex_test("alpha", GreekLetter::LowercaseAlpha);

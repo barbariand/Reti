@@ -179,37 +179,46 @@ impl From<usize> for NumberLiteral {
 mod test {
     use crate::number_literal::NumberLiteral;
     use pretty_assertions::assert_eq;
+    use tracing_test::traced_test;
     fn num(f: impl Into<NumberLiteral>) -> NumberLiteral {
         f.into()
     }
+    #[traced_test]
     #[test]
     fn from_f64_is_zero() {
         assert!(num(0.0).is_zero())
     }
+    #[traced_test]
     #[test]
     fn addition() {
         assert_eq!(num(2.0) + num(3.0), num(5.0))
     }
+    #[traced_test]
     #[test]
     fn subtraction() {
         assert_eq!(num(2.0) - num(3.0), num(-1.0))
     }
+    #[traced_test]
     #[test]
     fn mul() {
         assert_eq!(num(2.0) * num(3.0), num(6.0))
     }
+    #[traced_test]
     #[test]
     fn div() {
         assert_eq!(num(2.0) / num(3.0), num(2.0 / 3.0))
     }
+    #[traced_test]
     #[test]
     fn abs() {
         assert_eq!(num(-2.0).abs(), num(2.0))
     }
+    #[traced_test]
     #[test]
     fn pow() {
         assert_eq!(num(2.0).pow(&num(3.0)), num(8.0))
     }
+    #[traced_test]
     #[test]
     fn sqrt() {
         assert_eq!(num(16.0).sqrt(), num(4.0))

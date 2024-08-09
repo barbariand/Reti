@@ -28,13 +28,12 @@ pub enum MathExpr {
     /// Addition between a MathExpr and a Term.
     ///  ## Examples
     ///  ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
-    ///     parse("2+2", &context).await,
+    ///     parse("2+2", &context),
     ///     Ok(Ast::Expression(
     ///         MathExpr::Add(
     ///             Box::new(
@@ -44,19 +43,18 @@ pub enum MathExpr {
     ///         )
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Add(Box<MathExpr>, Term),
     /// Subtraction between a MathExpr and a Term.
     /// ## Examples
     ///  ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
-    ///     parse("2-2", &context).await,
+    ///     parse("2-2", &context),
     ///     Ok(Ast::Expression(
     ///         MathExpr::Subtract(
     ///             Box::new(
@@ -66,7 +64,7 @@ pub enum MathExpr {
     ///         )
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Subtract(Box<MathExpr>, Term),
 }
@@ -126,13 +124,12 @@ pub enum Term {
     ///Multiplication of Term and Factor
     /// ## Examples
     ///  ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
-    ///     parse("2*2", &context).await,
+    ///     parse("2*2", &context),
     ///     Ok(Ast::Expression(
     ///         Term::Multiply(
     ///             MulType::Asterisk,
@@ -143,20 +140,18 @@ pub enum Term {
     ///         ).into()
     ///     ))
     /// );
-    /// # }
 
     /// ```
     Multiply(MulType, Box<Term>, Factor),
     /// Division between a Term and Factor.
     /// ## Examples
     ///  ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
-    ///     parse("2/2", &context).await,
+    ///     parse("2/2", &context),
     ///     Ok(Ast::Expression(
     ///         Term::Divide(
     ///             Box::new(Term::Factor(
@@ -166,7 +161,6 @@ pub enum Term {
     ///         ).into()
     ///     ))
     /// );
-    /// # }
 
     /// ```
     Divide(Box<Term>, Factor),
@@ -185,43 +179,40 @@ pub enum Factor {
     /// Normal numbers
     /// ## Examples
     ///  ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
-    ///     parse("2", &context).await,
+    ///     parse("2", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Constant(2.0.into()).into()
     ///     ))
     /// );
     /// assert_eq!(
-    ///     parse("1.1", &context).await,
+    ///     parse("1.1", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Constant(1.1.into()).into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Constant(NumberLiteral),
     /// Parenthesis with a MathExpr
     /// ## Examples
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing `(1)`
     /// assert_eq!(
-    ///     parse("(1)", &context).await,
+    ///     parse("(1)", &context),
     ///     Ok(Ast::Expression(
-    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0.into()).into())).into()
-    ///     ))
+    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0.into()).
+    /// into())).into()     ))
     /// );
-    /// # }
 
     /// ```
     Parenthesis(Box<MathExpr>),
@@ -238,8 +229,7 @@ pub enum Factor {
     /// Variables are identified using the [MathIdentifier] struct.
     /// ## Examples
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
@@ -249,19 +239,18 @@ pub enum Factor {
     /// // parsing x
     ///
     /// assert_eq!(
-    ///     parse("x", &context).await,
+    ///     parse("x", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Variable(MathIdentifier::from_single_ident("x")).into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Variable(MathIdentifier),
     /// An expression that represents a function that is being invoked.
     /// ## Examples
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
@@ -271,20 +260,22 @@ pub enum Factor {
     /// # let mut context=MathContext::standard_math();
     /// # context.add_ident_function("f", |_x:f64|{2.0});
     /// // parsing f(x)
-    /// // where f needs to be defined for it to be interpreted as a function call
+    /// // where f needs to be defined for it to be interpreted as a function
+    /// //call
     ///
     /// assert_eq!(
-    ///     parse("f(x)", &context).await,
+    ///     parse("f(x)", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::FunctionCall(FunctionCall::new(
     ///             MathIdentifier::from_single_ident("f"),
-    ///             vec![Factor::Variable(MathIdentifier::from_single_ident("x"))
+    ///             
+    /// vec![Factor::Variable(MathIdentifier::from_single_ident("x"))
     ///                 .into()],
     ///         ))
     ///         .into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     FunctionCall(FunctionCall),
 
@@ -292,15 +283,13 @@ pub enum Factor {
     /// the power of an exponent.
     /// ## Examples
     /// ```
-    /// #[tokio::main]
-    /// # async fn main() {
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing 3^2
     /// assert_eq!(
-    ///     parse("3^2", &context).await,
+    ///     parse("3^2", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Power {
     ///             base: Box::new(Factor::Constant(3.0.into())),
@@ -309,7 +298,7 @@ pub enum Factor {
     ///         .into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Power {
         /// The base of the ^ so in our example about it would be 3.0 for
@@ -322,24 +311,23 @@ pub enum Factor {
     /// The root of a MathExpr
     /// ## Examples
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing \sqrt[3]{2}
     /// assert_eq!(
-    ///     parse("\\sqrt[3]{2}", &context).await,
+    ///     parse("\\sqrt[3]{2}", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Root {
-    ///             degree: Some(Box::new(Factor::Constant(3.0.into()).into())),
-    ///             radicand: Box::new(Factor::Constant(2.0.into()).into()),
-    ///         }
+    ///             degree:
+    /// Some(Box::new(Factor::Constant(3.0.into()).into())),             
+    /// radicand: Box::new(Factor::Constant(2.0.into()).into()),         }
     ///         .into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Root {
         ///Optional degree of the root, otherwise understood as sqrt
@@ -360,15 +348,14 @@ pub enum Factor {
     ///
     /// ## Examples
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing \frac{1}{2}
     /// assert_eq!(
-    ///     parse("\\frac{1}{2}", &context).await,
+    ///     parse("\\frac{1}{2}", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Fraction(
     ///             Box::new(Factor::Constant(1.0.into()).into()),
@@ -377,26 +364,24 @@ pub enum Factor {
     ///         .into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Fraction(Box<MathExpr>, Box<MathExpr>),
     /// Take the absolute value of an expression.
     /// ## Examples
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing |3|
     /// assert_eq!(
-    ///     parse("|3|", &context).await,
+    ///     parse("|3|", &context),
     ///     Ok(Ast::Expression(
-    ///         Factor::Abs(Box::new(Factor::Constant(3.0.into()).into())).into()
-    ///     ))
+    ///         Factor::Abs(Box::new(Factor::Constant(3.0.into()).into())).
+    /// into()     ))
     /// );
-    /// # }
     /// ```
     Abs(Box<MathExpr>),
     /// A Matrix
@@ -404,8 +389,6 @@ pub enum Factor {
     /// ## Examples
     /// Vector matrixes:
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
@@ -413,7 +396,7 @@ pub enum Factor {
     /// # let mut context=MathContext::standard_math();
     /// // parsing (1,1)
     /// assert_eq!(
-    ///     parse("(1,1)", &context).await,
+    ///     parse("(1,1)", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
@@ -426,12 +409,9 @@ pub enum Factor {
     ///         .into()
     ///     ))
     /// );
-    /// # }
     /// ```
     /// "Normal" matrix
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
@@ -439,7 +419,7 @@ pub enum Factor {
     /// # let mut context=MathContext::standard_math();
     /// // parsing \begin{bmatrix}1\\1\end{bmatrix}
     /// assert_eq!(
-    ///     parse("\\begin{bmatrix}1&1\\end{bmatrix}", &context).await,
+    ///     parse("\\begin{bmatrix}1&1\\end{bmatrix}", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
@@ -452,13 +432,12 @@ pub enum Factor {
     ///         .into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     /// Vmatrix means it is a determinant for witch absolute is wrapping the
     /// matrix
     /// ```
-    /// # #[tokio::main]
-    /// # async fn main() {
+
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
@@ -466,7 +445,7 @@ pub enum Factor {
     /// # let mut context=MathContext::standard_math();
     /// // parsing \begin{Vmatrix}1\\1\end{Vmatrix}
     /// assert_eq!(
-    ///     parse("\\begin{Vmatrix}1&1\\end{Vmatrix}", &context).await,
+    ///     parse("\\begin{Vmatrix}1&1\\end{Vmatrix}", &context),
     ///     Ok(Ast::Expression(
     ///         Factor::Abs(Box::new(
     ///             Factor::Matrix(Matrix::new(
@@ -482,7 +461,7 @@ pub enum Factor {
     ///         .into()
     ///     ))
     /// );
-    /// # }
+
     /// ```
     Matrix(Matrix<MathExpr>),
 }

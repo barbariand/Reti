@@ -3,7 +3,6 @@ use std::sync::Mutex;
 use tracing::{debug, info};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::RT;
 #[derive(serde::Serialize, serde::Deserialize, tsify_next::Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct RetiJsError {
@@ -35,34 +34,27 @@ impl From<EvalError> for RetiJsError {
 }
 
 #[wasm_bindgen(js_name = "RetiJS")]
-pub struct JsAPI(Mutex<Evaluator>);
+pub struct JsAPI(Evaluator);
 #[wasm_bindgen(js_class = RetiJS)]
 impl JsAPI {
     #[wasm_bindgen(constructor)]
     pub fn standard_math() -> JsAPI {
-        JsAPI(Mutex::new(Evaluator::standard_math()))
+        JsAPI(Evaluator::standard_math())
     }
     pub fn parse(
         &mut self,
         text: String,
     ) -> Result<RetiJsEvaluation, RetiJsError> {
-        debug!("starting parse");
-        let lock = self.0.lock().expect("Failed to get lock");
         debug!("got mutex for parse");
-        let func = parse(&text, lock.context());
-        debug!("got function, now executing it");
-        let res = RT.block_on(func)?;
+        let res = parse(&text, self.0.context())?;
         info!("parsed to ast");
-        drop(lock);
         Ok(self.eval_ast(res)?)
     }
-    fn eval_ast(&self, ast: Ast) -> Result<RetiJsEvaluation, EvalError> {
+    fn eval_ast(&mut self, ast: Ast) -> Result<RetiJsEvaluation, EvalError> {
         info!("starting evaluation");
-        let mut lock = self.0.lock().expect("Failed to get lock");
-        info!("got mutex for evaluation");
-        let simple = ast.simple(lock.context())?;
+        let simple = ast.simple(self.0.context())?;
         info!("got simple for evaluation");
-        lock.eval_ast(simple).map(|v| v.into())
+        self.0.eval_ast(simple).map(|v| v.into())
     }
 }
 #[derive(serde::Serialize, serde::Deserialize, tsify_next::Tsify)]

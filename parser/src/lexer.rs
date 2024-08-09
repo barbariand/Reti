@@ -10,7 +10,6 @@ where
     input: Peekable<I::IntoIter>,
     temp_ident: String,
     temp_number: String,
-    done: bool,
 }
 impl<I> Lexer<I>
 where
@@ -26,7 +25,6 @@ where
             input: s.into_iter().peekable(),
             temp_ident: String::new(),
             temp_number: String::new(),
-            done: false,
         }
     }
 }
@@ -40,7 +38,6 @@ where
     I: IntoIterator<Item = char>,
 {
     type Item = Token;
-
     fn next(&mut self) -> Option<Self::Item> {
         let span = trace_span!("lexer::tokenize");
         let _enter = span.enter();
@@ -115,10 +112,6 @@ where
         if !self.temp_ident.is_empty() {
             return Some(Token::Identifier(take(&mut self.temp_ident)));
         }
-        if !self.done {
-            self.done = true;
-            return Some(Token::EndOfContent);
-        }
         trace!("returning none");
         None
     }
@@ -128,11 +121,13 @@ mod tests {
 
     use crate::{number_literal::NumberLiteral, prelude::*};
     use pretty_assertions::assert_eq;
+    use tracing_test::traced_test;
     fn tokenize(text: &str) -> Vec<Token> {
         let lexer = Lexer::new(text.chars());
         lexer.collect()
     }
 
+    #[traced_test]
     #[test]
     fn test_simple_sqrt() {
         assert_eq!(
@@ -146,24 +141,19 @@ mod tests {
                 Token::NumberLiteral(2.into()),
                 Token::Identifier("x".to_string()),
                 Token::RightCurlyBracket,
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_all_simple_operations() {
         assert_eq!(
             tokenize("-+*/"),
-            vec![
-                Token::Minus,
-                Token::Plus,
-                Token::Asterisk,
-                Token::Slash,
-                Token::EndOfContent
-            ]
+            vec![Token::Minus, Token::Plus, Token::Asterisk, Token::Slash,]
         );
     }
 
+    #[traced_test]
     #[test]
     fn test_single_character_tokens() {
         assert_eq!(
@@ -178,10 +168,10 @@ mod tests {
                 Token::Caret,
                 Token::Apostrophe,
                 Token::VerticalPipe,
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_number_literals() {
         assert_eq!(
@@ -189,10 +179,10 @@ mod tests {
             vec![
                 Token::NumberLiteral("3.14".to_owned().into()),
                 Token::NumberLiteral(42.into()),
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_identifiers_and_commands() {
         assert_eq!(
@@ -201,10 +191,10 @@ mod tests {
                 Token::Backslash,
                 Token::Identifier("pi".to_string()),
                 Token::Identifier("R".to_string()),
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_complex_expressions() {
         assert_eq!(
@@ -217,10 +207,10 @@ mod tests {
                 Token::Caret,
                 Token::NumberLiteral(2.into()),
                 Token::RightCurlyBracket,
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_number_followed_by_identifier() {
         assert_eq!(
@@ -231,10 +221,10 @@ mod tests {
                 Token::Plus,
                 Token::NumberLiteral("3.14".to_owned().into()),
                 Token::Identifier("y".to_string()),
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_number_followed_by_command() {
         assert_eq!(
@@ -243,10 +233,10 @@ mod tests {
                 Token::NumberLiteral("3.14".to_owned().into()),
                 Token::Backslash,
                 Token::Identifier("piR".to_string()),
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_mixed_number_and_text_sequences() {
         assert_eq!(
@@ -264,10 +254,10 @@ mod tests {
                 Token::LeftCurlyBracket,
                 Token::Identifier("c".to_string()),
                 Token::RightCurlyBracket,
-                Token::EndOfContent
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn test_space_priority() {
         assert_eq!(
@@ -278,7 +268,6 @@ mod tests {
                 Token::NumberLiteral(NumberLiteral::checked_new_unchanged_str(
                     "025".to_owned()
                 )),
-                Token::EndOfContent
             ]
         )
     }

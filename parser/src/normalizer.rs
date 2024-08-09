@@ -109,14 +109,15 @@ mod tests {
     fn normalize(tokens: Vec<Token>) -> Vec<Token> {
         Normalizer::new(tokens).collect()
     }
+    #[traced_test]
     #[test]
     fn direct_eof() {
-        black_box(normalize(vec![Token::EndOfContent]));
+        black_box(normalize(vec![]));
     }
     #[traced_test]
     #[test]
     fn second_is_eof() {
-        black_box(normalize(vec![Token::Backslash, Token::EndOfContent]));
+        black_box(normalize(vec![Token::Backslash]));
     }
     #[traced_test]
     #[test]
@@ -131,7 +132,6 @@ mod tests {
                 Token::NumberLiteral(2.into()),
                 Token::Identifier("x".to_string()),
                 Token::RightCurlyBracket,
-                Token::EndOfContent,
             ]),
             vec![
                 Token::Backslash,
@@ -142,7 +142,6 @@ mod tests {
                 Token::NumberLiteral(2.into()),
                 Token::Identifier("x".to_string()),
                 Token::RightCurlyBracket,
-                Token::EndOfContent,
             ]
         );
     }
@@ -154,18 +153,17 @@ mod tests {
                 Token::NumberLiteral(2.into()),
                 Token::Caret,
                 Token::NumberLiteral(NumberLiteral("025".to_owned())),
-                Token::EndOfContent,
             ]),
             vec![
                 Token::NumberLiteral(2.into()),
                 Token::Caret,
                 Token::NumberLiteral(0.into()),
                 Token::NumberLiteral("25".to_owned().into()),
-                Token::EndOfContent,
             ]
         );
     }
 
+    #[traced_test]
     #[test]
     fn remove_left_middle_right() {
         assert_eq!(
@@ -181,7 +179,6 @@ mod tests {
                 Token::Backslash,
                 Token::Identifier("right".to_string()),
                 Token::RightParenthesis,
-                Token::EndOfContent,
             ]),
             vec![
                 Token::LeftParenthesis,
@@ -189,10 +186,10 @@ mod tests {
                 Token::Slash,
                 Token::NumberLiteral("1".to_owned().into()),
                 Token::RightParenthesis,
-                Token::EndOfContent,
             ]
         );
     }
+    #[traced_test]
     #[test]
     fn parenthasis_and_carret() {
         assert_eq!(
@@ -207,7 +204,6 @@ mod tests {
                 Token::Plus,
                 Token::NumberLiteral("5".into()),
                 Token::Identifier("xy".to_owned()),
-                Token::EndOfContent
             ]
         );
     }

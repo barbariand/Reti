@@ -2,7 +2,6 @@
 use crate::prelude::{MulType, Token};
 use slicedisplay::SliceDisplay;
 use snafu::Snafu;
-use tokio::task::JoinError;
 ///The errors that can happen while parsing latex
 #[derive(Debug, Snafu, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -21,6 +20,14 @@ pub enum ParseError {
         expected: Vec<Token>,
         ///but found this one instead
         found: Token,
+    },
+    #[snafu(display(
+        "Expected one of Tokens:\"{}\" found End", expected.display()
+    ))]
+    ///Unexpected end of content
+    UnexpectedEndOfContent {
+        ///Expected one of tokens
+        expected: Vec<Token>,
     },
     ///Invalid token
     #[snafu(display("Got invalid token:\"{token}\""))]
@@ -99,14 +106,6 @@ pub enum AstError {
         ///The ParseError
         source: ParseError,
     },
-}
-///this needs to be custom beacuse it does not serialize
-impl From<JoinError> for AstError {
-    fn from(value: JoinError) -> Self {
-        Self::Join {
-            joined: value.to_string(),
-        }
-    }
 }
 /// The errors that can happen when evaluating a AST
 #[derive(Debug, Snafu)]
