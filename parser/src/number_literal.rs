@@ -53,6 +53,12 @@ impl NumberLiteral {
             .powf(exponent.parse_or_panic("sub")))
         .into()
     }
+    ///checks that the number is actually a correct number BUUUT that it but
+    /// does not use the display value of this number
+    pub fn checked_new_unchanged_str(s: String) -> Self {
+        assert!(s.parse::<f64>().is_ok());
+        Self(s.to_owned())
+    }
 }
 impl PartialEq for NumberLiteral {
     fn eq(&self, other: &Self) -> bool {
@@ -121,6 +127,7 @@ impl FromStr for NumberLiteral {
     type Err = ParseFloatError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<f64>()?;
         Ok(Self(s.to_owned()))
     }
 }

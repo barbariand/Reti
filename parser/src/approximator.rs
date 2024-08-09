@@ -162,10 +162,6 @@ mod tests {
     use crate::{
         ast::simplify::Simplify, number_literal::NumberLiteral, prelude::*,
     };
-    use tokio::{
-        join,
-        sync::mpsc::{self},
-    };
 
     fn eval_test_from_ast(expected: NumberLiteral, ast: Ast) {
         let context = MathContext::new();
@@ -197,17 +193,8 @@ mod tests {
         expected: impl Into<NumberLiteral>,
         text: &str,
     ) {
-        let (tx, rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
-
         let context = MathContext::new();
-        let lexer = Lexer::new(tx);
-
-        let parser = Parser::new(rx, context);
-
-        let future1 = lexer.tokenize(text);
-        let future2 = parser.parse();
-
-        let ((), ast) = join!(future1, future2);
+        let ast = parse(text, &context).await;
         let ast = ast.unwrap();
 
         eval_test_from_ast(expected.into(), ast);
