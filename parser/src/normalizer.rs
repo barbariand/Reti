@@ -31,7 +31,6 @@ impl<T: IntoIterator<Item = Token>> Iterator for Normalizer<T> {
     fn next(&mut self) -> Option<Self::Item> {
         let span = trace_span!("normalize_tokens");
         let _enter = span.enter();
-        trace!("normalize_tokens");
 
         loop {
             let first =
@@ -64,19 +63,27 @@ impl<T: IntoIterator<Item = Token>> Iterator for Normalizer<T> {
                         }
                         [Token::Caret, Token::NumberLiteral(n)] => {
                             trace!("number literal = {n}");
-                            if n.0.is_empty() {
-                                panic!("string is weird");
-                            }
-                            if n.0.len() != 1 {
-                                let mut s = n.0.clone();
-                                let rest =
-                                    Token::NumberLiteral(s.split_off(1).into());
-                                trace!("rest = {:?}", rest);
-                                let single = Token::NumberLiteral(s.into());
-                                trace!("single = {:?}", single);
-                                self.remainders.push_front(rest);
-                                self.remainders.push_front(single);
-                                return Some(Token::Caret);
+                            match n.0.len() {
+                                0 => {
+                                    panic!("Empty Numberliteral")
+                                }
+                                1 => {
+                                    self.remainders
+                                        .push_front(Token::NumberLiteral(n));
+                                    return Some(Token::Caret);
+                                }
+                                _ => {
+                                    let mut s = n.0.clone();
+                                    let rest = Token::NumberLiteral(
+                                        s.split_off(1).into(),
+                                    );
+                                    trace!("rest = {:?}", rest);
+                                    let single = Token::NumberLiteral(s.into());
+                                    trace!("single = {:?}", single);
+                                    self.remainders.push_front(rest);
+                                    self.remainders.push_front(single);
+                                    return Some(Token::Caret);
+                                }
                             }
                         }
                         [first, second] => {
@@ -97,7 +104,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use tracing_test::traced_test;
     fn lex_and_normalize(s: &str) -> Vec<Token> {
-        Normalizer::new(Lexer::new(s)).collect()
+        Normalizer::new(Lexer::new(s.chars())).collect()
     }
     fn normalize(tokens: Vec<Token>) -> Vec<Token> {
         Normalizer::new(tokens).collect()
@@ -190,7 +197,18 @@ mod tests {
     fn parenthasis_and_carret() {
         assert_eq!(
             lex_and_normalize("2x^{2} + 5xy"),
-            vec![Token::NumberLiteral(2.into())]
+            vec![
+                Token::NumberLiteral(NumberLiteral("2".into()),),
+                Token::Identifier("x".to_owned(),),
+                Token::Caret,
+                Token::LeftCurlyBracket,
+                Token::NumberLiteral(NumberLiteral("2".into()),),
+                Token::RightCurlyBracket,
+                Token::Plus,
+                Token::NumberLiteral("5".into()),
+                Token::Identifier("xy".to_owned()),
+                Token::EndOfContent
+            ]
         );
     }
 }

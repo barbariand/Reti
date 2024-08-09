@@ -158,6 +158,8 @@ impl<'a> Approximator<'a> {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use super::Approximator;
     use crate::{
         ast::simplify::Simplify, number_literal::NumberLiteral, prelude::*,
@@ -223,9 +225,9 @@ mod tests {
             )),
         );
     }
-
+    #[traced_test]
     #[tokio::test]
-    async fn parenthesis_and_exponent() {
+    async fn aprox_parenthesis_and_exponent() {
         eval_test_from_str(54.0, "2(3)^3").await;
     }
 

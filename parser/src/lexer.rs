@@ -1,125 +1,50 @@
 //! Creating a token stream from a string
 use crate::{number_literal::NumberLiteral, prelude::*};
-use std::{iter::Peekable, mem::take, str::Chars};
+use std::{fmt::Debug, iter::Peekable, mem::take, str::Chars};
 use tracing::{debug, trace, trace_span};
-
-impl<'a> Lexer<'a> {
+///The lexer creating tokens from a string
+pub struct Lexer<I>
+where
+    I: IntoIterator<Item = char>,
+{
+    input: Peekable<I::IntoIter>,
+    temp_ident: String,
+    temp_number: String,
+    done: bool,
+}
+impl<I> Lexer<I>
+where
+    I: IntoIterator<Item = char>,
+{
     ///creating a new Lexer
-    pub fn new(s: &'a str) -> Self {
+    pub fn new(s: I) -> Lexer<I>
+    where
+        I: Debug,
+    {
         debug!("Creating a lexer with: {:?}", s);
-        Self {
-            input: s.chars().peekable(),
+        Lexer {
+            input: s.into_iter().peekable(),
             temp_ident: String::new(),
             temp_number: String::new(),
             done: false,
         }
     }
-    #[deprecated]
-    ///The main function of the Lexer, will create tokens and send them away
-    pub fn tokenize(self) -> Vec<Token> {
-        let mut res = Vec::new();
-        let span = trace_span!("lexer::tokenize");
-        let _enter = span.enter();
-        debug!("tokenizing: {:?}", self.input);
-        let mut temp_ident = String::new();
-        let mut temp_number = String::new();
-        for c in self.input {
-            trace!("char = {c:?}");
-            let t = match c {
-                '0'..='9' | '.' => {
-                    if !temp_ident.is_empty() {
-                        res.push(Token::Identifier(take(&mut temp_ident)))
-                    }
-                    trace!("temp_number::push char={c:?}");
-                    temp_number.push(c);
-                    continue;
-                }
-                '\\' => Token::Backslash,
-                '{' => Token::LeftCurlyBracket,
-                '}' => Token::RightCurlyBracket,
-                '[' => Token::LeftBracket,
-                ']' => Token::RightBracket,
-                '-' => Token::Minus,
-                '\'' => Token::Apostrophe,
-                '_' => Token::Underscore,
-                '^' => Token::Caret,
-                '|' => Token::VerticalPipe,
-                '*' => Token::Asterisk,
-                '+' => Token::Plus,
-                '/' => Token::Slash,
-                ',' => Token::Comma,
-                '&' => Token::Ampersand,
-                '=' => Token::Equals,
-                '(' => Token::LeftParenthesis,
-                ')' => Token::RightParenthesis,
-                ' ' => {
-                    if !temp_number.is_empty() {
-                        let num = Token::NumberLiteral(temp_number.into());
-                        temp_number = String::new();
-                        res.push(num);
-                    }
-                    if !temp_ident.is_empty() {
-                        res.push(Token::Identifier(take(&mut temp_ident)))
-                    }
-                    continue;
-                }
-                _ => {
-                    if !temp_number.is_empty() {
-                        let num = Token::NumberLiteral(temp_number.into());
-                        temp_number = String::new();
-                        res.push(num)
-                    }
-
-                    trace!("temp_ident::push char={c:?}");
-                    temp_ident.push(c);
-                    continue;
-                }
-            };
-            if !temp_number.is_empty() {
-                let num = Token::NumberLiteral(temp_number.into());
-                temp_number = String::new();
-                res.push(num)
-            }
-            if !temp_ident.is_empty() {
-                res.push(Token::Identifier(take(&mut temp_ident)));
-            }
-
-            res.push(t);
-        }
-        if !temp_number.is_empty() {
-            let num = Token::NumberLiteral(
-                temp_number
-                    .parse()
-                    .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
-            );
-
-            res.push(num);
-        }
-        if !temp_ident.is_empty() {
-            res.push(Token::Identifier(take(&mut temp_ident)));
-        }
-        res.push(Token::EndOfContent);
-        res
-    }
 }
-///The lexer creating tokens from a string
-pub struct Lexer<'a> {
-    input: Peekable<Chars<'a>>,
-    temp_ident: String,
-    temp_number: String,
-    done: bool,
-}
+
 const KNOWN_CHARS: [char; 29] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '\\', '{', '}', '[', ']',
     '-', '\'', '_', '^', '|', '*', '+', '/', ',', '&', '=', '(', ')', ' ',
 ];
-impl<'a> Iterator for Lexer<'a> {
+impl<I> Iterator for Lexer<I>
+where
+    I: IntoIterator<Item = char>,
+{
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
         let span = trace_span!("lexer::tokenize");
         let _enter = span.enter();
-        debug!("tokenizing: {:?}", self.input);
+        debug!("tokenizing: {:?}", self.input.peek());
         while let Some(c) = self.input.next() {
             trace!("char = {c:?}");
             let t = match c {
@@ -204,7 +129,7 @@ mod tests {
     use crate::{number_literal::NumberLiteral, prelude::*};
     use pretty_assertions::assert_eq;
     fn tokenize(text: &str) -> Vec<Token> {
-        let lexer = Lexer::new(text);
+        let lexer = Lexer::new(text.chars());
         lexer.collect()
     }
 

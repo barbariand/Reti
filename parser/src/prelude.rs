@@ -51,7 +51,7 @@ pub async fn parse(text: &str, context: &MathContext) -> Result<Ast, AstError> {
         channel_buffer_size
     );
 
-    let lexer = Lexer::new(text);
+    let lexer = Lexer::new(text.chars());
     let normalizer = Normalizer::new(lexer);
     let parser = Parser::new(normalizer_out, context.clone());
     trace!("cloned text");

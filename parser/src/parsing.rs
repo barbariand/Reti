@@ -563,6 +563,7 @@ mod tests {
         prelude::*,
     };
     use pretty_assertions::assert_eq;
+    use tracing_test::traced_test;
     async fn parse_test(text: &str, expected_ast: Ast) {
         let found_ast = parse(text, &MathContext::standard_math()).await;
         match found_ast {
