@@ -187,7 +187,7 @@ impl Factor {
                     radicand.derivative(dependent)?.get_factor_or_wrap(),
                 );
 
-                // Derivative of degree, for exmaple in \sqrt[x]{2}.
+                // Derivative of degree, for example in \sqrt[x]{2}.
                 let degree_deriv = Term::Multiply(
                     MulType::Implicit,
                     Term::Multiply(
