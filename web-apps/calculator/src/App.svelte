@@ -1,5 +1,6 @@
 <script lang="ts">
     import CalculatorView from "reti-ui-common/src/lib/CalculatorView.svelte";
+    import "reti-ui-common/src/colors.css";
 </script>
 
 <main>

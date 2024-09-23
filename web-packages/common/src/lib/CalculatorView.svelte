@@ -23,7 +23,9 @@
     .calculator-view {
         display: flex;
         flex-grow: 1;
-        padding: 20px 28px 0px 5px;
+        padding: 20px 28px 20px 5px;
+        max-width: 600px;
+        background-color: white;
     }
     .rows {
         display: flex;

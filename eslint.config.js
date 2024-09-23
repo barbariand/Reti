@@ -19,8 +19,15 @@ export default tseslint.config(
         },
         ignores: ["**/dist/**"],
         rules: {
-            // override/add rules settings here, such as:
-            // 'svelte/rule-name': 'error'
+            "@typescript-eslint/no-unused-vars": [
+                "error",
+                {
+                    // Allow unused variables starting with _
+                    argsIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
+                    caughtErrorsIgnorePattern: "^_",
+                },
+            ],
         },
     },
 );
