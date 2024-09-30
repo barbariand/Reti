@@ -122,6 +122,7 @@
                         {/if}
                     </p>
                     <KaTeX display latex={result.Evaluation.latex} />
+
                 {:else if result?.Error}
                     <span class="error">{result.Error.display}</span>
                 {/if}

@@ -1,4 +1,6 @@
+
 <script lang="ts">
+
     import CalculatorRow from "./CalculatorRow.svelte";
     import { start, RetiJS } from "reti-js";
     start();
@@ -13,9 +15,11 @@
 
 <div class="calculator-view">
     <div class="rows">
+
         {#each rows as row}
             <CalculatorRow {reti} rowNumber={row.id} on_first_input={addRow} />
         {/each}
+
     </div>
 </div>
 
