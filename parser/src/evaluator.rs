@@ -36,7 +36,7 @@ impl Evaluator {
         &mut self,
         ast: Simple<Ast>,
     ) -> Result<Evaluation, EvalError> {
-        Ok(match ast.0 {
+        Ok(match ast.value {
             Ast::Expression(expr) => {
                 Evaluation::LaTeX(expr.simple(self.context())?.to_latex())
             }
@@ -63,7 +63,7 @@ impl Evaluator {
                             self.0.add_function(
                                 function_name.clone(),
                                 MathFunction::new_foreign(
-                                    rhs,
+                                    rhs.simple(self.context())?,
                                     vec![variable_name],
                                 ),
                             );
@@ -88,7 +88,7 @@ impl Evaluator {
                             self.0.add_function(
                                 function_name.clone(),
                                 MathFunction::new_foreign(
-                                    rhs,
+                                    rhs.simple(self.context())?,
                                     args.expect(
                                         "The values uses was not identifiers only",
                                     ),
@@ -119,7 +119,7 @@ impl Evaluator {
         } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) =
             lhs
         {
-            self.0.variables.insert(ident, rhs);
+            self.0.variables.insert(ident, rhs.simple(self.context())?);
             Ok(Evaluation::AddedVariable)
         } else {
             todo!("Could not understand equals. got:{:#?}", lhs);

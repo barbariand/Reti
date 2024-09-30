@@ -4,13 +4,16 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
-use crate::{ast::MulType, error::EvalError, matrix::Matrix};
+use crate::{
+    ast::MulType, error::EvalError, matrix::Matrix,
+    number_literal::NumberLiteral,
+};
 ///The different types of values that can exist
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Value {
     ///A normal number
-    Scalar(f64),
+    Scalar(NumberLiteral),
     ///A matrix of Values
     Matrix(Matrix<Value>),
 }
@@ -18,9 +21,9 @@ pub enum Value {
 impl Value {
     ///returns as a scalar or fails
     #[inline(always)]
-    pub fn scalar(&self) -> Result<f64, EvalError> {
+    pub fn scalar(&self) -> Result<NumberLiteral, EvalError> {
         match self {
-            Value::Scalar(val) => Ok(*val),
+            Value::Scalar(val) => Ok(val.clone()),
             Value::Matrix(m) => {
                 // Treat a 1x1 matrix as a scalar.
                 if m.row_count() == 1 && m.column_count() == 1 {
@@ -38,7 +41,9 @@ impl Value {
         func: impl Fn(f64) -> f64,
     ) -> Result<Value, EvalError> {
         match self {
-            Value::Scalar(v) => Ok(Value::Scalar(func(*v))),
+            Value::Scalar(v) => Ok(Value::Scalar(
+                func(v.parse_or_panic("map expecting")).into(),
+            )),
             Value::Matrix(_) => Err(EvalError::ExpectedScalar),
         }
     }
@@ -113,10 +118,10 @@ impl Value {
                 }
             },
             (Value::Scalar(scalar), Value::Matrix(matrix)) => {
-                Value::Matrix((matrix.mul(*scalar))?)
+                Value::Matrix((matrix.mul(scalar))?)
             }
             (Value::Matrix(matrix), Value::Scalar(scalar)) => {
-                Value::Matrix((matrix * *scalar)?)
+                Value::Matrix((matrix * scalar)?)
             }
         })
     }
@@ -135,10 +140,10 @@ impl Div for Value {
     }
 }
 
-impl Mul<f64> for &Value {
+impl Mul<NumberLiteral> for &Value {
     type Output = Result<Value, EvalError>;
 
-    fn mul(self, rhs: f64) -> Self::Output {
+    fn mul(self, rhs: NumberLiteral) -> Self::Output {
         Value::Scalar(rhs).mul(&MulType::Implicit, self)
     }
 }

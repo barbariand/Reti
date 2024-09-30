@@ -62,11 +62,11 @@ impl Normalizer {
             }
             [Token::Caret, Token::NumberLiteral(n)] => {
                 trace!("number literal = {n}");
-                if n.raw.is_empty() {
+                if n.0.is_empty() {
                     panic!("string is weird");
                 }
-                if n.raw.len() != 1 {
-                    let mut s = n.raw.clone();
+                if n.0.len() != 1 {
+                    let mut s = n.0.clone();
                     let rest = Token::NumberLiteral(s.split_off(1).into());
                     trace!("rest = {:?}", rest);
                     let single = Token::NumberLiteral(s.into());
@@ -82,8 +82,9 @@ impl Normalizer {
 #[cfg(test)]
 mod tests {
     use std::hint::black_box;
+    use tracing_test::traced_test;
 
-    use crate::prelude::*;
+    use crate::{number_literal::NumberLiteral, prelude::*};
     use pretty_assertions::assert_eq;
     async fn normalize(tokens: Vec<Token>) -> Vec<Token> {
         let (tx1, rx1): (TokenSender, TokenReceiver) = mpsc::channel(32);
@@ -146,19 +147,21 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn exponent_split() {
         assert_eq!(
             normalize(vec![
-                Token::NumberLiteral("2".to_owned().into()),
+                Token::NumberLiteral(2.into()),
                 Token::Caret,
-                Token::NumberLiteral("025".to_owned().into()),
+                ///we need to make it like this because
+                Token::NumberLiteral(NumberLiteral("025".to_owned())),
                 Token::EndOfContent,
             ])
             .await,
             vec![
-                Token::NumberLiteral("2".to_owned().into()),
+                Token::NumberLiteral(2.into()),
                 Token::Caret,
-                Token::NumberLiteral("0".to_owned().into()),
+                Token::NumberLiteral(0.into()),
                 Token::NumberLiteral("25".to_owned().into()),
                 Token::EndOfContent,
             ]

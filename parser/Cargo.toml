@@ -16,6 +16,7 @@ snafu = { version = "0.8.2", features = ["backtrace", "futures"] }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
+tracing-test = "0.2.5"
 
 [features]
 default = ["tokio/test-util", "tokio/rt-multi-thread", "doc_test"]

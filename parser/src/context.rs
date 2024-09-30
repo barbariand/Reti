@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    ast::helper::Simple,
     identifier::{GreekLetter, OtherSymbol},
     prelude::*,
 };
@@ -12,7 +13,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct MathContext {
     ///The variables
-    pub variables: HashMap<MathIdentifier, MathExpr>,
+    pub variables: HashMap<MathIdentifier, Simple<MathExpr>>,
     /// The functions defined in this math context
     pub functions: HashMap<MathIdentifier, MathFunction>,
 }
@@ -52,12 +53,12 @@ impl MathContext {
     }
 
     /// Adding a variable that is a single greek letter.
-    fn add_greek_var(&mut self, letter: GreekLetter, value: MathExpr) {
+    fn add_greek_var(&mut self, letter: GreekLetter, value: Simple<MathExpr>) {
         self.variables
             .insert(MathIdentifier::from_single_greek(letter), value);
     }
     /// Adding a string as a single ident
-    fn add_ascii_var(&mut self, s: &str, value: MathExpr) {
+    fn add_ascii_var(&mut self, s: &str, value: Simple<MathExpr>) {
         self.variables
             .insert(MathIdentifier::from_single_ident(s), value);
     }
@@ -111,10 +112,10 @@ impl MathContext {
         // Constants
         context.add_greek_var(
             GreekLetter::LowercasePi,
-            Factor::Constant(std::f64::consts::PI).into(),
+            Simple::constant(std::f64::consts::PI).into(),
         );
         context
-            .add_ascii_var("e", Factor::Constant(std::f64::consts::E).into());
+            .add_ascii_var("e", Simple::constant(std::f64::consts::E).into());
 
         // TODO add proper functions system so we can define the definition
         //  and value sets to validate the amount of arguments, the types of
@@ -162,7 +163,8 @@ mod test {
         let f = &c1.functions
             [&MathIdentifier::from_single_symbol(OtherSymbol::Sin)];
         assert!(match f {
-            MathFunction::Native(n) => n.run(vec![Value::Scalar(1.1)]).is_err(),
+            MathFunction::Native(n) =>
+                n.run(vec![Value::Scalar(1.1.into())]).is_err(),
             MathFunction::Foreign(_) => false,
         });
     }

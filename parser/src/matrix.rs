@@ -3,10 +3,10 @@
 //! implementing all the matrix multiplication scalar or otherwise
 use std::ops::{Add, AddAssign, Mul, Sub};
 
-use crate::prelude::*;
+use crate::{number_literal::NumberLiteral, prelude::*};
 
 ///The matrix struct representing a Matrix with one or more rows and columns
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Matrix<T> {
     /// all the values stored in a Vec stored column per column so first in:
@@ -505,7 +505,7 @@ impl<T> Matrix<T> {
     /// returns an error for any of the matrix elements.
     pub fn map_owned<F, Res>(self, func: F) -> Result<Matrix<Res>, EvalError>
     where
-        F: Fn(T) -> Result<Res, EvalError>,
+        F: FnMut(T) -> Result<Res, EvalError>,
     {
         let val: Result<_, _> = self.values.into_iter().map(func).collect();
         Ok(Matrix::new(val?, self.row_count, self.column_count))
@@ -557,10 +557,11 @@ impl<T> Matrix<T> {
 #[cfg(test)]
 impl Matrix<MathExpr> {
     pub fn zero(rows: usize, cols: usize) -> Matrix<MathExpr> {
-        let values = vec![
-            MathExpr::Term(Term::Factor(Factor::Constant(0.0)));
-            rows * cols
-        ];
+        let values =
+            vec![
+                MathExpr::Term(Term::Factor(Factor::Constant(0.0.into())));
+                rows * cols
+            ];
         Self {
             values,
             row_count: rows,
@@ -586,7 +587,7 @@ impl Matrix<Value> {
         let mut result = Matrix::new_default(
             self.row_count,
             rhs.column_count,
-            Value::Scalar(0.0),
+            Value::Scalar(0.0.into()),
         );
         for i in 0..self.row_count {
             for j in 0..rhs.column_count {
@@ -681,12 +682,12 @@ impl<Lhs: Clone + Mul<Value, Output = Result<Value, EvalError>>> Mul<Value>
         self.map(|val| val.clone() * rhs.clone())
     }
 }
-impl Mul<f64> for &Matrix<Value> {
+impl Mul<&NumberLiteral> for &Matrix<Value> {
     type Output = Result<Matrix<Value>, EvalError>;
 
-    fn mul(self, rhs: f64) -> Self::Output {
+    fn mul(self, rhs: &NumberLiteral) -> Self::Output {
         // Multiply matrix components by self
-        self.map(|val| val * rhs)
+        self.map(|val| val * rhs.clone())
     }
 }
 
@@ -697,128 +698,137 @@ mod tests {
     use pretty_assertions::assert_eq;
     #[test]
     fn matrix_scalar_value_addition() {
-        let a = Matrix::new_default(2, 3, Value::Scalar(1.0));
-        let b = Matrix::new_default(2, 3, Value::Scalar(2.0));
-        let c = Matrix::new_default(2, 3, Value::Scalar(3.0));
+        let a = Matrix::new_default(2, 3, Value::Scalar(1.0.into()));
+        let b = Matrix::new_default(2, 3, Value::Scalar(2.0.into()));
+        let c = Matrix::new_default(2, 3, Value::Scalar(3.0.into()));
 
         assert_eq!((a + b).unwrap(), c);
     }
 
     #[test]
     fn matrix_scalar_value_subtraction() {
-        let a = Matrix::new_default(2, 3, Value::Scalar(3.0));
-        let b = Matrix::new_default(2, 3, Value::Scalar(1.0));
-        let c = Matrix::new_default(2, 3, Value::Scalar(2.0));
+        let a = Matrix::new_default(2, 3, Value::Scalar(3.0.into()));
+        let b = Matrix::new_default(2, 3, Value::Scalar(1.0.into()));
+        let c = Matrix::new_default(2, 3, Value::Scalar(2.0.into()));
 
         assert_eq!((a - b).unwrap(), c);
     }
 
     #[test]
     fn matrix_2x2_scalar_value_multiplication() {
-        let mut a = Matrix::new_default(2, 2, Value::Scalar(0.0));
-        a.set(0, 0, Value::Scalar(1.0));
-        a.set(0, 1, Value::Scalar(2.0));
-        a.set(1, 0, Value::Scalar(3.0));
-        a.set(1, 1, Value::Scalar(4.0));
-        let mut b = Matrix::new_default(2, 2, Value::Scalar(0.0));
-        b.set(0, 0, Value::Scalar(5.0));
-        b.set(0, 1, Value::Scalar(6.0));
-        b.set(1, 0, Value::Scalar(7.0));
-        b.set(1, 1, Value::Scalar(8.0));
-        let mut c = Matrix::new_default(2, 2, Value::Scalar(0.0));
-        c.set(0, 0, Value::Scalar(19.0));
-        c.set(0, 1, Value::Scalar(22.0));
-        c.set(1, 0, Value::Scalar(43.0));
-        c.set(1, 1, Value::Scalar(50.0));
+        let mut a = Matrix::new_default(2, 2, Value::Scalar(0.0.into()));
+        a.set(0, 0, Value::Scalar(1.0.into()));
+        a.set(0, 1, Value::Scalar(2.0.into()));
+        a.set(1, 0, Value::Scalar(3.0.into()));
+        a.set(1, 1, Value::Scalar(4.0.into()));
+        let mut b = Matrix::new_default(2, 2, Value::Scalar(0.0.into()));
+        b.set(0, 0, Value::Scalar(5.0.into()));
+        b.set(0, 1, Value::Scalar(6.0.into()));
+        b.set(1, 0, Value::Scalar(7.0.into()));
+        b.set(1, 1, Value::Scalar(8.0.into()));
+        let mut c = Matrix::new_default(2, 2, Value::Scalar(0.0.into()));
+        c.set(0, 0, Value::Scalar(19.0.into()));
+        c.set(0, 1, Value::Scalar(22.0.into()));
+        c.set(1, 0, Value::Scalar(43.0.into()));
+        c.set(1, 1, Value::Scalar(50.0.into()));
 
         assert_eq!((a.matrix_mul(&b)).unwrap(), c);
     }
 
     #[test]
     fn matrix_3x2_times_2x1_scalar_value_multiplication() {
-        let mut a = Matrix::new_default(3, 2, Value::Scalar(0.0));
-        a.set(0, 0, Value::Scalar(1.0));
-        a.set(0, 1, Value::Scalar(2.0));
-        a.set(1, 0, Value::Scalar(3.0));
-        a.set(1, 1, Value::Scalar(4.0));
-        a.set(2, 0, Value::Scalar(5.0));
-        a.set(2, 1, Value::Scalar(6.0));
-        let mut b = Matrix::new_default(2, 1, Value::Scalar(0.0));
-        b.set(0, 0, Value::Scalar(7.0));
-        b.set(1, 0, Value::Scalar(8.0));
-        let mut c = Matrix::new_default(3, 1, Value::Scalar(0.0));
-        c.set(0, 0, Value::Scalar(23.0));
-        c.set(1, 0, Value::Scalar(53.0));
-        c.set(2, 0, Value::Scalar(83.0));
+        let mut a = Matrix::new_default(3, 2, Value::Scalar(0.0.into()));
+        a.set(0, 0, Value::Scalar(1.0.into()));
+        a.set(0, 1, Value::Scalar(2.0.into()));
+        a.set(1, 0, Value::Scalar(3.0.into()));
+        a.set(1, 1, Value::Scalar(4.0.into()));
+        a.set(2, 0, Value::Scalar(5.0.into()));
+        a.set(2, 1, Value::Scalar(6.0.into()));
+        let mut b = Matrix::new_default(2, 1, Value::Scalar(0.0.into()));
+        b.set(0, 0, Value::Scalar(7.0.into()));
+        b.set(1, 0, Value::Scalar(8.0.into()));
+        let mut c = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
+        c.set(0, 0, Value::Scalar(23.0.into()));
+        c.set(1, 0, Value::Scalar(53.0.into()));
+        c.set(2, 0, Value::Scalar(83.0.into()));
 
         assert_eq!((a.matrix_mul(&b)).unwrap(), c);
     }
 
     #[test]
     fn dot_product_row_column_vectors() {
-        let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0));
-        a.set(0, 0, Value::Scalar(1.0));
-        a.set(0, 1, Value::Scalar(2.0));
-        a.set(0, 2, Value::Scalar(3.0));
-        let mut b = Matrix::new_default(3, 1, Value::Scalar(0.0));
-        b.set(0, 0, Value::Scalar(4.0));
-        b.set(1, 0, Value::Scalar(5.0));
-        b.set(2, 0, Value::Scalar(6.0));
+        let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0.into()));
+        a.set(0, 0, Value::Scalar(1.0.into()));
+        a.set(0, 1, Value::Scalar(2.0.into()));
+        a.set(0, 2, Value::Scalar(3.0.into()));
+        let mut b = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
+        b.set(0, 0, Value::Scalar(4.0.into()));
+        b.set(1, 0, Value::Scalar(5.0.into()));
+        b.set(2, 0, Value::Scalar(6.0.into()));
 
-        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
-        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0.into()));
+        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0.into()));
     }
 
     #[test]
     fn dot_product_row_vectors() {
-        let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0));
-        a.set(0, 0, Value::Scalar(1.0));
-        a.set(0, 1, Value::Scalar(2.0));
-        a.set(0, 2, Value::Scalar(3.0));
-        let mut b = Matrix::new_default(1, 3, Value::Scalar(0.0));
-        b.set(0, 1, Value::Scalar(5.0));
-        b.set(0, 0, Value::Scalar(4.0));
-        b.set(0, 2, Value::Scalar(6.0));
+        let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0.into()));
+        a.set(0, 0, Value::Scalar(1.0.into()));
+        a.set(0, 1, Value::Scalar(2.0.into()));
+        a.set(0, 2, Value::Scalar(3.0.into()));
+        let mut b = Matrix::new_default(1, 3, Value::Scalar(0.0.into()));
+        b.set(0, 1, Value::Scalar(5.0.into()));
+        b.set(0, 0, Value::Scalar(4.0.into()));
+        b.set(0, 2, Value::Scalar(6.0.into()));
 
-        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
-        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0.into()));
+        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0.into()));
     }
 
     #[test]
     fn dot_product_column_vectors() {
-        let mut a = Matrix::new_default(3, 1, Value::Scalar(0.0));
-        a.set(0, 0, Value::Scalar(1.0));
-        a.set(1, 0, Value::Scalar(2.0));
-        a.set(2, 0, Value::Scalar(3.0));
-        let mut b = Matrix::new_default(3, 1, Value::Scalar(0.0));
-        b.set(0, 0, Value::Scalar(4.0));
-        b.set(1, 0, Value::Scalar(5.0));
-        b.set(2, 0, Value::Scalar(6.0));
+        let mut a = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
+        a.set(0, 0, Value::Scalar(1.0.into()));
+        a.set(1, 0, Value::Scalar(2.0.into()));
+        a.set(2, 0, Value::Scalar(3.0.into()));
+        let mut b = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
+        b.set(0, 0, Value::Scalar(4.0.into()));
+        b.set(1, 0, Value::Scalar(5.0.into()));
+        b.set(2, 0, Value::Scalar(6.0.into()));
 
-        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0));
-        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0));
+        assert_eq!(a.dot_product(&b).unwrap(), Value::Scalar(32.0.into()));
+        assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0.into()));
     }
 
     #[test]
     fn cross_product() {
-        let mut x = Matrix::new_default(3, 1, Value::Scalar(0.0));
-        x.set(0, 0, Value::Scalar(1.0));
-        x.set(1, 0, Value::Scalar(0.0));
-        x.set(2, 0, Value::Scalar(0.0));
-        let mut y = Matrix::new_default(3, 1, Value::Scalar(0.0));
-        y.set(0, 0, Value::Scalar(0.0));
-        y.set(1, 0, Value::Scalar(1.0));
-        y.set(2, 0, Value::Scalar(0.0));
-        let mut z = Matrix::new_default(3, 1, Value::Scalar(0.0));
-        z.set(0, 0, Value::Scalar(0.0));
-        z.set(1, 0, Value::Scalar(0.0));
-        z.set(2, 0, Value::Scalar(1.0));
+        let mut x = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
+        x.set(0, 0, Value::Scalar(1.0.into()));
+        x.set(1, 0, Value::Scalar(0.0.into()));
+        x.set(2, 0, Value::Scalar(0.0.into()));
+        let mut y = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
+        y.set(0, 0, Value::Scalar(0.0.into()));
+        y.set(1, 0, Value::Scalar(1.0.into()));
+        y.set(2, 0, Value::Scalar(0.0.into()));
+        let mut z = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
+        z.set(0, 0, Value::Scalar(0.0.into()));
+        z.set(1, 0, Value::Scalar(0.0.into()));
+        z.set(2, 0, Value::Scalar(1.0.into()));
 
         assert_eq!(x.cross_product(&y).unwrap(), z);
-        assert_eq!(y.cross_product(&x).unwrap(), (&z * -1.0).unwrap());
+        assert_eq!(
+            y.cross_product(&x).unwrap(),
+            (&z * &(-1.0).into()).unwrap()
+        );
         assert_eq!(z.cross_product(&x).unwrap(), y);
-        assert_eq!(x.cross_product(&z).unwrap(), (&y * -1.0).unwrap());
+        assert_eq!(
+            x.cross_product(&z).unwrap(),
+            (&y * &(-1.0).into()).unwrap()
+        );
         assert_eq!(y.cross_product(&z).unwrap(), x);
-        assert_eq!(z.cross_product(&y).unwrap(), (&x * -1.0).unwrap());
+        assert_eq!(
+            z.cross_product(&y).unwrap(),
+            (&x * &(-1.0).into()).unwrap()
+        );
     }
 }

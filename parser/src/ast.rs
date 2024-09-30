@@ -1,5 +1,5 @@
 //! AST for representing Latex
-use crate::prelude::*;
+use crate::{number_literal::NumberLiteral, prelude::*};
 
 pub mod derivative;
 pub mod equality;
@@ -21,7 +21,7 @@ pub enum Ast {
 /// or subtracted.
 ///
 /// See Wikipedia article [Expression (mathematics)](https://en.wikipedia.org/wiki/Expression_(mathematics)).
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum MathExpr {
     /// A [Term] containing the rest of the syntax that go before in evaluation
     Term(Term),
@@ -37,9 +37,9 @@ pub enum MathExpr {
     ///     Ast::Expression(
     ///         MathExpr::Add(
     ///             Box::new(
-    ///                 Factor::Constant(2.0).into()
+    ///                 Factor::Constant(2.0.into()).into()
     ///             ),
-    ///             Factor::Constant(2.0).into()
+    ///             Factor::Constant(2.0.into()).into()
     ///         )
     ///     )
     /// );
@@ -57,9 +57,9 @@ pub enum MathExpr {
     ///     Ast::Expression(
     ///         MathExpr::Subtract(
     ///             Box::new(
-    ///                 Factor::Constant(2.0).into()
+    ///                 Factor::Constant(2.0.into()).into()
     ///             ),
-    ///             Factor::Constant(2.0).into()
+    ///             Factor::Constant(2.0.into()).into()
     ///         )
     ///     )
     /// );
@@ -73,7 +73,7 @@ pub enum MathExpr {
 /// For scalar multiplication, the type of multiplication makes no difference,
 /// but in some cases, for example when multiplying vectors, the symbol used
 /// for multiplication makes a difference.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum MulType {
     /// 2 * x
     ///
@@ -109,7 +109,7 @@ pub enum MulType {
 /// > 1 + 2x + 8yzx
 ///
 /// *1*, *2x*, and *8yzx* are three separate terms.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum Term {
     /// A [Factor] containing the rest of the syntax that go before in
     /// evaluation
@@ -127,9 +127,9 @@ pub enum Term {
     ///         Term::Multiply(
     ///             MulType::Asterisk,
     ///             Box::new(Term::Factor(
-    ///                 Factor::Constant(2.0)
+    ///                 Factor::Constant(2.0.into())
     ///             )),
-    ///             Factor::Constant(2.0)
+    ///             Factor::Constant(2.0.into())
     ///         ).into()
     ///     )
     /// );
@@ -148,9 +148,9 @@ pub enum Term {
     ///     Ast::Expression(
     ///         Term::Divide(
     ///             Box::new(Term::Factor(
-    ///                 Factor::Constant(2.0)
+    ///                 Factor::Constant(2.0.into())
     ///             )),
-    ///             Factor::Constant(2.0)
+    ///             Factor::Constant(2.0.into())
     ///         ).into()
     ///     )
     /// );
@@ -167,7 +167,7 @@ pub enum Term {
 /// Factors also represent most of the mathematical syntax, like roots and
 /// functions. This is because they operate on the same level in terms of
 /// order of operations.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub enum Factor {
     /// Normal numbers
     /// ## Examples
@@ -179,17 +179,17 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("2", &context),
     ///     Ast::Expression(
-    ///         Factor::Constant(2.0).into()
+    ///         Factor::Constant(2.0.into()).into()
     ///     )
     /// );
     /// assert_eq!(
     ///     parse("1.1", &context),
     ///     Ast::Expression(
-    ///         Factor::Constant(1.1).into()
+    ///         Factor::Constant(1.1.into()).into()
     ///     )
     /// );
     /// ```
-    Constant(f64),
+    Constant(NumberLiteral),
     /// Parenthesis with a MathExpr
     /// ## Examples
     /// ```
@@ -202,7 +202,7 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("(1)", &context),
     ///     Ast::Expression(
-    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0).into())).into()
+    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0.into()).into())).into()
     ///     )
     /// );
 
@@ -281,8 +281,8 @@ pub enum Factor {
     ///     parse("3^2", &context),
     ///     Ast::Expression(
     ///         Factor::Power {
-    ///             base: Box::new(Factor::Constant(3.0)),
-    ///             exponent: Box::new(Factor::Constant(2.0).into())
+    ///             base: Box::new(Factor::Constant(3.0.into())),
+    ///             exponent: Box::new(Factor::Constant(2.0.into()).into())
     ///         }
     ///         .into()
     ///     )
@@ -309,8 +309,8 @@ pub enum Factor {
     ///     parse("\\sqrt[3]{2}", &context),
     ///     Ast::Expression(
     ///         Factor::Root {
-    ///             degree: Some(Box::new(Factor::Constant(3.0).into())),
-    ///             radicand: Box::new(Factor::Constant(2.0).into()),
+    ///             degree: Some(Box::new(Factor::Constant(3.0.into()).into())),
+    ///             radicand: Box::new(Factor::Constant(2.0.into()).into()),
     ///         }
     ///         .into()
     ///     )
@@ -345,8 +345,8 @@ pub enum Factor {
     ///     parse("\\frac{1}{2}", &context),
     ///     Ast::Expression(
     ///         Factor::Fraction(
-    ///             Box::new(Factor::Constant(1.0).into()),
-    ///             Box::new(Factor::Constant(2.0).into()),
+    ///             Box::new(Factor::Constant(1.0.into()).into()),
+    ///             Box::new(Factor::Constant(2.0.into()).into()),
     ///         )
     ///         .into()
     ///     )
@@ -365,7 +365,7 @@ pub enum Factor {
     /// assert_eq!(
     ///     parse("|3|", &context),
     ///     Ast::Expression(
-    ///         Factor::Abs(Box::new(Factor::Constant(3.0).into())).into()
+    ///         Factor::Abs(Box::new(Factor::Constant(3.0.into()).into())).into()
     ///     )
     /// );
     /// ```
@@ -387,8 +387,8 @@ pub enum Factor {
     ///     Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
-    ///                 Factor::Constant(1.0).into(),
-    ///                 Factor::Constant(1.0).into()
+    ///                 Factor::Constant(1.0.into()).into(),
+    ///                 Factor::Constant(1.0.into()).into()
     ///             ],
     ///             1,
     ///             2
@@ -411,8 +411,8 @@ pub enum Factor {
     ///     Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
-    ///                 Factor::Constant(1.0).into(),
-    ///                 Factor::Constant(1.0).into()
+    ///                 Factor::Constant(1.0.into()).into(),
+    ///                 Factor::Constant(1.0.into()).into()
     ///             ],
     ///             1,
     ///             2
@@ -437,8 +437,8 @@ pub enum Factor {
     ///         Factor::Abs(Box::new(
     ///             Factor::Matrix(Matrix::new(
     ///                 vec![
-    ///                     Factor::Constant(1.0).into(),
-    ///                     Factor::Constant(1.0).into()
+    ///                     Factor::Constant(1.0.into()).into(),
+    ///                     Factor::Constant(1.0.into()).into()
     ///                 ],
     ///                 1,
     ///                 2
@@ -453,7 +453,7 @@ pub enum Factor {
 }
 
 /// an identified function
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash)]
 pub struct FunctionCall {
     ///The name for the function called
     pub function_name: MathIdentifier,

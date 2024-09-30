@@ -190,7 +190,7 @@ impl Parser {
         // be evaluated before multiplications.
         //
         let factor = match self.reader.read().await {
-            Token::NumberLiteral(val) => Factor::Constant(val.parsed),
+            Token::NumberLiteral(val) => Factor::Constant(val),
             Token::LeftParenthesis => {
                 // In most cases, this is one value, for example (1+1).
                 // But parse many values since it could be a vector (1,2,3)
@@ -231,7 +231,7 @@ impl Parser {
                     self.math_identifier_tail(math_identifier).await?;
                 self.factor_identifier(math_identifier).await?
             }
-            Token::Minus => Factor::Constant(-1.0),
+            Token::Minus => Factor::Constant((-1.0).into()),
             token => return Err(ParseError::InvalidFactor { token }),
         };
 
@@ -411,15 +411,18 @@ impl Parser {
                 )))
             }
             Token::NumberLiteral(num) => {
-                if num.raw.len() != 1 {
+                if num.0.len() != 1 {
                     panic!(
                         "The normalizer did not correctly handle exponent, got num = {:?}",
                         num
                     );
                 }
-                let parsed = num.parsed;
+                // Get the lifetime of the &NumberLiteral to end before
+                // the reader gets used twice
+                let res =
+                    MathExpr::Term(Term::Factor(Factor::Constant(num.clone())));
                 self.reader.skip().await;
-                MathExpr::Term(Term::Factor(Factor::Constant(parsed)))
+                res
             }
             token => {
                 return Err(ParseError::Invalid {
@@ -695,9 +698,9 @@ mod tests {
             "2^{3}",
             Ast::Expression(
                 Factor::Power {
-                    base: Box::new(Factor::Constant(2.0)),
+                    base: Box::new(Factor::Constant(2.0.into())),
                     exponent: Box::new(MathExpr::Term(Term::Factor(
-                        Factor::Constant(3.0),
+                        Factor::Constant(3.0.into()),
                     ))),
                 }
                 .into(),
@@ -734,13 +737,13 @@ mod tests {
                 MulType::Implicit,
                 //2^0
                 Box::new(Term::Factor(Factor::Power {
-                    base: Box::new(Factor::Constant(2.0)),
+                    base: Box::new(Factor::Constant("2.0".into())),
                     exponent: Box::new(MathExpr::Term(Term::Factor(
-                        Factor::Constant(0.0),
+                        Factor::Constant("0.0".into()),
                     ))),
                 })),
                 // 25
-                Factor::Constant(25.0),
+                Factor::Constant("25.0".into()),
             ))),
         )
         .await;
@@ -773,14 +776,14 @@ mod tests {
                 Box::new(MathExpr::Term(Term::Multiply(
                     MulType::Implicit,
                     // 2
-                    Box::new(Term::Factor(Factor::Constant(2.0))),
+                    Box::new(Term::Factor(Factor::Constant("2.0".into()))),
                     // x^{2}
                     Factor::Power {
                         base: Box::new(Factor::Variable(
                             MathIdentifier::from_single_ident("x"),
                         )),
                         exponent: Box::new(MathExpr::Term(Term::Factor(
-                            Factor::Constant(2.0),
+                            Factor::Constant("2.0".into()),
                         ))),
                     },
                 ))),
@@ -892,15 +895,15 @@ mod tests {
                     // 5/2
                     Box::new(Term::Divide(
                         // 5
-                        Box::new(Term::Factor(Factor::Constant(5.0))),
+                        Box::new(Term::Factor(Factor::Constant("5.0".into()))),
                         // 2
-                        Factor::Constant(2.0),
+                        Factor::Constant("2.0".into()),
                     )),
                     // x
                     Factor::Variable(MathIdentifier::from_single_ident("x")),
                 ))),
                 // 3
-                Term::Factor(Factor::Constant(3.0)),
+                Term::Factor(Factor::Constant("3.0".into())),
             )),
         )
         .await;
@@ -1045,7 +1048,7 @@ mod tests {
             Ast::Expression(
                 Factor::Variable(MathIdentifier::Index {
                     name: Box::new(MathIdentifier::from_single_ident("x")),
-                    index: Box::new(Factor::Constant(1.0).into()),
+                    index: Box::new(Factor::Constant("1.0".into()).into()),
                 })
                 .into(),
             ),

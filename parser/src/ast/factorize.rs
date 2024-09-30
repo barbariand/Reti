@@ -39,14 +39,29 @@ impl FactorVec {
                     Err(e) => return Some(Err(e)),
                 },
             );
-            Some(Ok(simples.mul_wrapped(MulType::Implicit)))
+            Some(Ok(simples.mul(MulType::Implicit)))
         } else {
-            let mut iter = self.vec.into_iter();
+            let cap = self.vec.capacity();
+            let (mut iter, dependants) = match self.vec.into_iter().fold(
+                Ok((Vec::with_capacity(cap), Vec::new())),
+                |acc: Result<(Vec<Factor>, Vec<u32>), EvalError>, v| {
+                    acc.and_then(|(mut vals, mut deps)| {
+                        let (val, dep) = v.simple(cont)?.destruct();
+                        vals.push(val);
+                        deps.extend(dep);
+                        Ok((vals, deps))
+                    })
+                },
+            ) {
+                Ok((v_1, v_2)) => (v_1.into_iter(), v_2),
+                Err(e) => return Some(Err(e)),
+            };
+
             let mut term = Term::Factor(iter.next().expect("Not empty."));
             for next in iter {
                 term = Term::Multiply(MulType::Implicit, term.boxed(), next);
             }
-            Some(Ok(Simple(term)))
+            Some(Ok(Simple::new_unchecked(term, dependants)))
         }
     }
 }

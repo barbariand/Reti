@@ -16,6 +16,7 @@ pub mod identifier;
 pub mod lexer;
 pub mod matrix;
 pub mod normalizer;
+pub mod number_literal;
 pub mod parsing;
 pub mod prelude;
 pub mod token;

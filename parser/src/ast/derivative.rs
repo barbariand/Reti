@@ -112,11 +112,11 @@ impl Factor {
         dependent: &MathIdentifier,
     ) -> Result<MathExpr, EvalError> {
         Ok(match self {
-            Factor::Constant(_) => Factor::Constant(0.0).into(),
+            Factor::Constant(_) => Factor::Constant(0.0.into()).into(),
             Factor::Parenthesis(e) => e.derivative(dependent)?,
             Factor::Variable(v) => match v == dependent {
-                true => Factor::Constant(1.0).into(),
-                false => Factor::Constant(0.0).into(),
+                true => Factor::Constant(1.0.into()).into(),
+                false => Factor::Constant(0.0.into()).into(),
             },
             Factor::FunctionCall(_) => todo!("function call"),
             Factor::Power { base, exponent } => MathExpr::Add(
@@ -130,7 +130,7 @@ impl Factor {
                             base: base.clone(),
                             exponent: MathExpr::Subtract(
                                 exponent.clone(),
-                                Factor::Constant(1.0).into(),
+                                Factor::Constant(1.0.into()).into(),
                             )
                             .boxed(),
                         },
