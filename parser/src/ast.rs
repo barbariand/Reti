@@ -9,7 +9,7 @@ pub mod into;
 pub mod simplify;
 pub mod to_latex;
 ///The root of the AST that is non recursive
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Ast {
     /// A mathematical expression that can be evaluated.
     Expression(MathExpr),
@@ -28,40 +28,41 @@ pub enum MathExpr {
     /// Addition between a MathExpr and a Term.
     ///  ## Examples
     ///  ```
+
     /// # use parser::ast::*;
     /// # use parser::prelude::*;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
     ///     parse("2+2", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         MathExpr::Add(
     ///             Box::new(
     ///                 Factor::Constant(2.0.into()).into()
     ///             ),
     ///             Factor::Constant(2.0.into()).into()
     ///         )
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     Add(Box<MathExpr>, Term),
     /// Subtraction between a MathExpr and a Term.
     /// ## Examples
     ///  ```
+
     /// # use parser::ast::*;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
     ///     parse("2-2", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         MathExpr::Subtract(
     ///             Box::new(
     ///                 Factor::Constant(2.0.into()).into()
     ///             ),
     ///             Factor::Constant(2.0.into()).into()
     ///         )
-    ///     )
+    ///     ))
     /// );
 
     /// ```
@@ -74,6 +75,12 @@ pub enum MathExpr {
 /// but in some cases, for example when multiplying vectors, the symbol used
 /// for multiplication makes a difference.
 #[derive(PartialEq, Debug, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum MulType {
     /// 2 * x
     ///
@@ -117,13 +124,13 @@ pub enum Term {
     ///Multiplication of Term and Factor
     /// ## Examples
     ///  ```
+
     /// # use parser::ast::*;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
     ///     parse("2*2", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Term::Multiply(
     ///             MulType::Asterisk,
     ///             Box::new(Term::Factor(
@@ -131,7 +138,7 @@ pub enum Term {
     ///             )),
     ///             Factor::Constant(2.0.into())
     ///         ).into()
-    ///     )
+    ///     ))
     /// );
 
     /// ```
@@ -139,20 +146,20 @@ pub enum Term {
     /// Division between a Term and Factor.
     /// ## Examples
     ///  ```
+
     /// # use parser::ast::*;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
     ///     parse("2/2", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Term::Divide(
     ///             Box::new(Term::Factor(
     ///                 Factor::Constant(2.0.into())
     ///             )),
     ///             Factor::Constant(2.0.into())
     ///         ).into()
-    ///     )
+    ///     ))
     /// );
 
     /// ```
@@ -172,38 +179,39 @@ pub enum Factor {
     /// Normal numbers
     /// ## Examples
     ///  ```
+
     /// # use parser::ast::*;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let context=MathContext::standard_math();
     /// assert_eq!(
     ///     parse("2", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Constant(2.0.into()).into()
-    ///     )
+    ///     ))
     /// );
     /// assert_eq!(
     ///     parse("1.1", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Constant(1.1.into()).into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     Constant(NumberLiteral),
     /// Parenthesis with a MathExpr
     /// ## Examples
     /// ```
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing `(1)`
     /// assert_eq!(
     ///     parse("(1)", &context),
-    ///     Ast::Expression(
-    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0.into()).into())).into()
-    ///     )
+    ///     Ok(Ast::Expression(
+    ///         Factor::Parenthesis(Box::new(Factor::Constant(1.0.into()).
+    /// into())).into()     ))
     /// );
 
     /// ```
@@ -221,49 +229,53 @@ pub enum Factor {
     /// Variables are identified using the [MathIdentifier] struct.
     /// ## Examples
     /// ```
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
+    /// # use parser::prelude::*;
     /// # use parser::value::Value;
     /// # use parser::identifier::MathIdentifier;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # let mut context=MathContext::standard_math();
     /// // parsing x
     ///
     /// assert_eq!(
     ///     parse("x", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Variable(MathIdentifier::from_single_ident("x")).into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     Variable(MathIdentifier),
     /// An expression that represents a function that is being invoked.
     /// ## Examples
     /// ```
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
     /// # use parser::prelude::*;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
     /// # use std::sync::Arc;
     /// # use parser::value::Value;
     /// # use parser::identifier::MathIdentifier;
     /// # let mut context=MathContext::standard_math();
     /// # context.add_ident_function("f", |_x:f64|{2.0});
     /// // parsing f(x)
-    /// // where f needs to be defined for it to be interpreted as a function call
+    /// // where f needs to be defined for it to be interpreted as a function
+    /// //call
     ///
     /// assert_eq!(
     ///     parse("f(x)", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::FunctionCall(FunctionCall::new(
     ///             MathIdentifier::from_single_ident("f"),
-    ///             vec![Factor::Variable(MathIdentifier::from_single_ident("x"))
+    ///             
+    /// vec![Factor::Variable(MathIdentifier::from_single_ident("x"))
     ///                 .into()],
     ///         ))
     ///         .into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     FunctionCall(FunctionCall),
 
@@ -273,20 +285,20 @@ pub enum Factor {
     /// ```
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing 3^2
     /// assert_eq!(
     ///     parse("3^2", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Power {
     ///             base: Box::new(Factor::Constant(3.0.into())),
     ///             exponent: Box::new(Factor::Constant(2.0.into()).into())
     ///         }
     ///         .into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     Power {
         /// The base of the ^ so in our example about it would be 3.0 for
@@ -299,22 +311,23 @@ pub enum Factor {
     /// The root of a MathExpr
     /// ## Examples
     /// ```
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing \sqrt[3]{2}
     /// assert_eq!(
     ///     parse("\\sqrt[3]{2}", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Root {
-    ///             degree: Some(Box::new(Factor::Constant(3.0.into()).into())),
-    ///             radicand: Box::new(Factor::Constant(2.0.into()).into()),
-    ///         }
+    ///             degree:
+    /// Some(Box::new(Factor::Constant(3.0.into()).into())),             
+    /// radicand: Box::new(Factor::Constant(2.0.into()).into()),         }
     ///         .into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     Root {
         ///Optional degree of the root, otherwise understood as sqrt
@@ -335,38 +348,39 @@ pub enum Factor {
     ///
     /// ## Examples
     /// ```
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing \frac{1}{2}
     /// assert_eq!(
     ///     parse("\\frac{1}{2}", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Fraction(
     ///             Box::new(Factor::Constant(1.0.into()).into()),
     ///             Box::new(Factor::Constant(2.0.into()).into()),
     ///         )
     ///         .into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     Fraction(Box<MathExpr>, Box<MathExpr>),
     /// Take the absolute value of an expression.
     /// ## Examples
     /// ```
+
     /// # use parser::ast::*;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing |3|
     /// assert_eq!(
     ///     parse("|3|", &context),
-    ///     Ast::Expression(
-    ///         Factor::Abs(Box::new(Factor::Constant(3.0.into()).into())).into()
-    ///     )
+    ///     Ok(Ast::Expression(
+    ///         Factor::Abs(Box::new(Factor::Constant(3.0.into()).into())).
+    /// into()     ))
     /// );
     /// ```
     Abs(Box<MathExpr>),
@@ -378,13 +392,12 @@ pub enum Factor {
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing (1,1)
     /// assert_eq!(
     ///     parse("(1,1)", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
     ///                 Factor::Constant(1.0.into()).into(),
@@ -394,7 +407,7 @@ pub enum Factor {
     ///             2
     ///         ))
     ///         .into()
-    ///     )
+    ///     ))
     /// );
     /// ```
     /// "Normal" matrix
@@ -402,13 +415,12 @@ pub enum Factor {
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing \begin{bmatrix}1\\1\end{bmatrix}
     /// assert_eq!(
     ///     parse("\\begin{bmatrix}1&1\\end{bmatrix}", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Matrix(Matrix::new(
     ///             vec![
     ///                 Factor::Constant(1.0.into()).into(),
@@ -418,22 +430,23 @@ pub enum Factor {
     ///             2
     ///         ))
     ///         .into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     /// Vmatrix means it is a determinant for witch absolute is wrapping the
     /// matrix
     /// ```
+
     /// # use parser::ast::*;
     /// # use parser::matrix::Matrix;
     /// # use parser::token::Token;
-    /// # use parser::prelude::MathContext;
-    /// # use parser::prelude::_private::parse_sync_doc_test as parse;
+    /// # use parser::prelude::*;
     /// # let mut context=MathContext::standard_math();
     /// // parsing \begin{Vmatrix}1\\1\end{Vmatrix}
     /// assert_eq!(
     ///     parse("\\begin{Vmatrix}1&1\\end{Vmatrix}", &context),
-    ///     Ast::Expression(
+    ///     Ok(Ast::Expression(
     ///         Factor::Abs(Box::new(
     ///             Factor::Matrix(Matrix::new(
     ///                 vec![
@@ -446,8 +459,9 @@ pub enum Factor {
     ///             .into()
     ///         ))
     ///         .into()
-    ///     )
+    ///     ))
     /// );
+
     /// ```
     Matrix(Matrix<MathExpr>),
 }

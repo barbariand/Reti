@@ -1,20 +1,25 @@
-<script>
-    import Button from "./Button.svelte";
+
+<script lang="ts">
+
     import CalculatorRow from "./CalculatorRow.svelte";
-    import { init_wasm, RetiJS } from "reti-js";
-    init_wasm();
+    import { start, RetiJS } from "reti-js";
+    start();
     const reti = new RetiJS();
-    let rows = 2;
+    let rows = [{ id: 1 }];
+    function addRow() {
+        console.log("adding row");
+        let next_id = rows[rows.length - 1].id + 1;
+        rows = [...rows, { id: next_id }];
+    }
 </script>
 
 <div class="calculator-view">
     <div class="rows">
-        {#each { length: rows } as _, index}
-            <CalculatorRow {reti} rowNumber={index + 1} />
+
+        {#each rows as row}
+            <CalculatorRow {reti} rowNumber={row.id} on_first_input={addRow} />
         {/each}
-        <Button primary on:click={() => rows++} style="align-self: center;">
-            Add row
-        </Button>
+
     </div>
 </div>
 

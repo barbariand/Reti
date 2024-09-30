@@ -2,11 +2,7 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{
-        helper::Simple,
-        simplify::Simplify,
-        to_latex::{LaTeX, ToLaTeX},
-    },
+    ast::{helper::Simple, simplify::Simplify, to_latex::ToLaTeX},
     prelude::*,
 };
 
@@ -22,6 +18,10 @@ impl Evaluator {
     ///creates a new Evaluator with a empty [MathContext]
     pub fn new_empty() -> Self {
         Self(MathContext::new())
+    }
+    /// from math_context
+    pub fn with_context(context: MathContext) -> Self {
+        Self(context)
     }
     ///Get the context to it
     pub const fn context(&self) -> &MathContext {
@@ -60,14 +60,18 @@ impl Evaluator {
                         ))) = *f
                         {
                             let variable_name = arg.clone();
+                            let rhs_simple = rhs.simple(self.context())?;
+                            let res = Evaluation::AddedFunction(
+                                rhs_simple.to_latex(),
+                            );
                             self.0.add_function(
                                 function_name.clone(),
                                 MathFunction::new_foreign(
-                                    rhs.simple(self.context())?,
+                                    rhs_simple,
                                     vec![variable_name],
                                 ),
                             );
-                            Ok(Evaluation::AddedFunction)
+                            Ok(res)
                         } else {
                             todo!("you cant have anything but a variable in a function definition")
                         }
@@ -85,16 +89,20 @@ impl Evaluator {
                                     _ => None,
                                 })
                                 .collect();
+                            let rhs_simple = rhs.simple(self.context())?;
+                            let res = Evaluation::AddedFunction(
+                                rhs_simple.to_latex(),
+                            );
                             self.0.add_function(
                                 function_name.clone(),
                                 MathFunction::new_foreign(
-                                    rhs.simple(self.context())?,
+                                    rhs_simple,
                                     args.expect(
                                         "The values uses was not identifiers only",
                                     ),
                                 ),
                             );
-                            Ok(Evaluation::AddedFunction)
+                            Ok(res)
                         } else {
                             todo!("Could not understand equals. is it a 2d matrix as input?")
                         }
@@ -119,8 +127,10 @@ impl Evaluator {
         } else if let MathExpr::Term(Term::Factor(Factor::Variable(ident))) =
             lhs
         {
-            self.0.variables.insert(ident, rhs.simple(self.context())?);
-            Ok(Evaluation::AddedVariable)
+            let rhs_simple = rhs.simple(self.context())?;
+            let res = Evaluation::AddedVariable(rhs_simple.to_latex());
+            self.0.variables.insert(ident, rhs_simple);
+            return Ok(res);
         } else {
             todo!("Could not understand equals. got:{:#?}", lhs);
         }
@@ -129,25 +139,26 @@ impl Evaluator {
 ///The response for the Approximator
 #[derive(PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum Evaluation {
     ///Added a function to the context
-    AddedFunction,
+    AddedFunction(String),
     ///Added a variable to the context
-    AddedVariable,
+    AddedVariable(String),
     ///Got a value from it
-    LaTeX(LaTeX),
+    LaTeX(String),
 }
 impl Display for Evaluation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Evaluation::AddedFunction => "Added a function".to_owned(),
-                Evaluation::AddedVariable => "Added a variable".to_owned(),
-                Evaluation::LaTeX(v) => v.clone(),
-            }
-        )
+        match self {
+            Evaluation::AddedFunction(s) => write!(f, "Added Function: {}", s),
+            Evaluation::AddedVariable(s) => write!(f, "Added variable: {}", s),
+            Evaluation::LaTeX(s) => write!(f, "{}", s),
+        }
     }
 }
 impl From<&str> for Evaluation {
@@ -163,6 +174,8 @@ impl From<f64> for Evaluation {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use super::Evaluator;
     use crate::{ast::simplify::Simplify, prelude::*};
 
@@ -179,12 +192,13 @@ mod tests {
         assert_eq!(expected.into(), value);
     }
 
-    async fn eval_test_from_str(expected: impl Into<Evaluation>, text: &str) {
-        let ast = parse(text, &MathContext::new()).await.unwrap();
+    fn eval_test_from_str(expected: impl Into<Evaluation>, text: &str) {
+        let ast = parse(text, &MathContext::new()).unwrap();
 
         eval_test_from_ast(expected, ast);
     }
 
+    #[traced_test]
     #[test]
     fn eval_1_plus_1() {
         eval_test_from_ast(
@@ -193,6 +207,7 @@ mod tests {
         );
     }
 
+    #[traced_test]
     #[test]
     fn eval_multiplication() {
         eval_test_from_ast(
@@ -209,17 +224,18 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn parenthesis_and_exponent() {
-        eval_test_from_str(54.0, "2(3)^3").await;
+    #[traced_test]
+    #[test]
+    fn parenthesis_and_exponent() {
+        eval_test_from_str(54.0, "2(3)^3");
     }
 
-    #[tokio::test]
-    async fn fraction_sqrt_cube_root() {
+    #[traced_test]
+    #[test]
+    fn fraction_sqrt_cube_root() {
         eval_test_from_str(
             3.0,
             "\\frac{2( 1+1)^{3} +5}{\\sqrt{\\frac{49}{3}\\sqrt[3]{27}}}",
-        )
-        .await;
+        );
     }
 }

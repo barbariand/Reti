@@ -2,46 +2,62 @@
 
 use std::{
     fmt::Display,
+    hash::Hash,
     num::ParseFloatError,
     ops::{Add, Div, Mul, MulAssign, Sub},
     str::FromStr,
 };
 
 ///The number representation
-#[derive(Debug, Clone, Hash, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub struct NumberLiteral(
     ///the raw string without being parsed as a number
     pub String,
 );
 impl NumberLiteral {
+    ///Checks if it is zero
     pub fn is_zero(&self) -> bool {
         self.parse_or_panic("is zero check").abs() < f64::EPSILON
     }
-
+    ///Checks if it is one
     pub fn is_one(&self) -> bool {
         (self.parse_or_panic("is one check") - 1.0).abs() < f64::EPSILON
     }
-
+    ///checks if they are equal to another
     pub fn equals(&self, other: &Self) -> bool {
         (self.parse_or_panic("equals") - other.parse_or_panic("equals")).abs()
             < f64::EPSILON
     }
+    ///Gets the absolute value of it
     pub fn abs(&self) -> NumberLiteral {
         self.parse_or_panic("abs").abs().into()
     }
+    ///Gets the Sqrt of the number
     pub fn sqrt(&self) -> NumberLiteral {
         self.parse_or_panic("sqrt").sqrt().into()
     }
-    pub fn parse_or_panic(&self, msg: &'static str) -> f64 {
+    /// parses the number or panics
+    pub(crate) fn parse_or_panic(&self, msg: &'static str) -> f64 {
         self.0.parse().expect(msg)
     }
-
+    /// Raise a numberliteral to another numberliteral
     pub(crate) fn pow(&self, exponent: &NumberLiteral) -> NumberLiteral {
         (self
             .parse_or_panic("sub")
             .powf(exponent.parse_or_panic("sub")))
         .into()
+    }
+    ///checks that the number is actually a correct number BUUUT that it but
+    /// does not use the display value of this number
+    pub fn checked_new_unchanged_str(s: String) -> Self {
+        assert!(s.parse::<f64>().is_ok());
+        Self(s.to_owned())
     }
 }
 impl PartialEq for NumberLiteral {
@@ -50,6 +66,16 @@ impl PartialEq for NumberLiteral {
             ("-0", "0") => true,
             ("0", "-0") => true,
             (l, r) => l.eq(r),
+        }
+    }
+}
+
+impl Hash for NumberLiteral {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Making sure that the hash implementation agrees with the PartialEq
+        match &*self.0 {
+            "-0" => "0".hash(state),
+            other => other.hash(state),
         }
     }
 }
@@ -88,9 +114,7 @@ impl Display for NumberLiteral {
 }
 impl MulAssign<&Self> for NumberLiteral {
     fn mul_assign(&mut self, rhs: &Self) {
-        println!("input self:{}, rhs:{}", self, rhs);
         let mut awns = &*self * rhs;
-        println!("awns:{}", awns);
         std::mem::swap(self, &mut awns);
     }
 }
@@ -103,6 +127,7 @@ impl FromStr for NumberLiteral {
     type Err = ParseFloatError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<f64>()?;
         Ok(Self(s.to_owned()))
     }
 }
@@ -154,37 +179,46 @@ impl From<usize> for NumberLiteral {
 mod test {
     use crate::number_literal::NumberLiteral;
     use pretty_assertions::assert_eq;
+    use tracing_test::traced_test;
     fn num(f: impl Into<NumberLiteral>) -> NumberLiteral {
         f.into()
     }
+    #[traced_test]
     #[test]
     fn from_f64_is_zero() {
         assert!(num(0.0).is_zero())
     }
+    #[traced_test]
     #[test]
     fn addition() {
         assert_eq!(num(2.0) + num(3.0), num(5.0))
     }
+    #[traced_test]
     #[test]
     fn subtraction() {
         assert_eq!(num(2.0) - num(3.0), num(-1.0))
     }
+    #[traced_test]
     #[test]
     fn mul() {
         assert_eq!(num(2.0) * num(3.0), num(6.0))
     }
+    #[traced_test]
     #[test]
     fn div() {
         assert_eq!(num(2.0) / num(3.0), num(2.0 / 3.0))
     }
+    #[traced_test]
     #[test]
     fn abs() {
         assert_eq!(num(-2.0).abs(), num(2.0))
     }
+    #[traced_test]
     #[test]
     fn pow() {
         assert_eq!(num(2.0).pow(&num(3.0)), num(8.0))
     }
+    #[traced_test]
     #[test]
     fn sqrt() {
         assert_eq!(num(16.0).sqrt(), num(4.0))

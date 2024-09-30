@@ -1,22 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+    </head>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-
-</head>
-
-<body>
-    <script type="module">
-        import init, { RetiJS } from "./wasm/reti_js.js"
-        async function run() {
-            await init()
-            window.RetiJS=RetiJS;
-        }
-        run()
-    </script>
-</body>
-
+    <body>
+        <script type="module">
+            import init, { RetiJS } from "./pkg/reti_js.js";
+            async function run() {
+                await init();
+                window.RetiJS = RetiJS;
+            }
+            run();
+        </script>
+    </body>
 </html>

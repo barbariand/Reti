@@ -4,6 +4,7 @@
     clippy::missing_docs_in_private_items,
     clippy::missing_const_for_fn
 )]
+#![allow(non_snake_case)]
 
 pub mod approximator;
 pub mod ast;

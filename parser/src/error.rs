@@ -2,9 +2,14 @@
 use crate::prelude::{MulType, Token};
 use slicedisplay::SliceDisplay;
 use snafu::Snafu;
-use tokio::task::JoinError;
 ///The errors that can happen while parsing latex
-#[derive(Debug, Snafu)]
+#[derive(Debug, Snafu, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum ParseError {
     ///Unexpected token, expected one off
     #[snafu(display(
@@ -15,6 +20,14 @@ pub enum ParseError {
         expected: Vec<Token>,
         ///but found this one instead
         found: Token,
+    },
+    #[snafu(display(
+        "Expected one of Tokens:\"{}\" found End", expected.display()
+    ))]
+    ///Unexpected end of content
+    UnexpectedEndOfContent {
+        ///Expected one of tokens
+        expected: Vec<Token>,
     },
     ///Invalid token
     #[snafu(display("Got invalid token:\"{token}\""))]
@@ -37,7 +50,7 @@ pub enum ParseError {
     /// When an unexpected command is encountered when parsing a
     /// MathIdentifier.
     #[snafu(display("Unexpected command {{{command}}}, I expected either a greek letter like \\alpha or a modifier like \\overline{{x}}"))]
-    InvalidIdentifierCommmand {
+    InvalidIdentifierCommand {
         /// The command that was unexpected.
         command: String,
     },
@@ -67,12 +80,19 @@ pub enum ParseError {
 }
 ///The errors that can happen when generating the AST
 #[derive(Debug, Snafu)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
+#[derive(PartialEq)]
 pub enum AstError {
     ///could not join the threads
-    #[snafu(transparent)]
+    #[snafu(display("Could not join threads {joined}"))]
     Join {
         ///the source of what crashed
-        source: JoinError,
+        joined: String,
     },
     ///Thread panicked
     #[snafu(whatever)]
@@ -89,6 +109,12 @@ pub enum AstError {
 }
 /// The errors that can happen when evaluating a AST
 #[derive(Debug, Snafu)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum EvalError {
     ///Expected a scalar but found a matrix
     #[snafu(display(
@@ -141,6 +167,12 @@ pub enum EvalError {
 }
 /// The error for when it required another size of the matrix
 #[derive(Debug, Snafu)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub enum IncompatibleMatrixSizes {
     // TODO I don't like how we say that something is "expected" here. We
     // can't say something is expected, we just know that they are
@@ -189,7 +221,13 @@ pub enum IncompatibleMatrixSizes {
     },
 }
 #[derive(Debug, Snafu)]
-///All the ways we cant derive
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "wasm",
+    derive(tsify_next::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
+///All the errors that can happen when you derive, this is non at the moment
 pub enum DeriveError {
     ///So it don't complain
     #[snafu(whatever, display("The types are not compatible: {message}"))]

@@ -1,43 +1,64 @@
 //! Creating a token stream from a string
-use crate::prelude::*;
-use std::mem::take;
+use crate::{number_literal::NumberLiteral, prelude::*};
+use std::{fmt::Debug, iter::Peekable, mem::take};
 use tracing::{debug, trace, trace_span};
 ///The lexer creating tokens from a string
-pub struct Lexer {
-    ///where it sends the tokens
-    channel: TokenSender,
+pub struct Lexer<I>
+where
+    I: IntoIterator<Item = char>,
+{
+    input: Peekable<I::IntoIter>,
+    temp_ident: String,
+    temp_number: String,
+}
+impl<I> Lexer<I>
+where
+    I: IntoIterator<Item = char>,
+{
+    ///creating a new Lexer
+    pub fn new(s: I) -> Lexer<I>
+    where
+        I: Debug,
+    {
+        debug!("Creating a lexer with: {:?}", s);
+        Lexer {
+            input: s.into_iter().peekable(),
+            temp_ident: String::new(),
+            temp_number: String::new(),
+        }
+    }
 }
 
-impl Lexer {
-    ///creating a new Lexer
-    pub fn new(channel: TokenSender) -> Self {
-        trace!("created Lexer");
-        Self { channel }
-    }
-    ///for sending or crashing when the pipe is broken
-    async fn send_or_crash(&self, token: Token) {
-        trace!("send_or_crash token={token}");
-        self.channel.send(token).await.expect("Broken Pipe")
-    }
-    ///The main function of the Lexer, will create tokens and send them away
-    pub async fn tokenize(self, s: &str) {
+const KNOWN_CHARS: [char; 29] = [
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '\\', '{', '}', '[', ']',
+    '-', '\'', '_', '^', '|', '*', '+', '/', ',', '&', '=', '(', ')', ' ',
+];
+impl<I> Iterator for Lexer<I>
+where
+    I: IntoIterator<Item = char>,
+{
+    type Item = Token;
+    fn next(&mut self) -> Option<Self::Item> {
         let span = trace_span!("lexer::tokenize");
         let _enter = span.enter();
-        debug!("tokenizing: {s:?}");
-        let mut temp_ident = String::new();
-        let mut temp_number = String::new();
-        for c in s.chars() {
+        debug!("tokenizing: {:?}", self.input.peek());
+        while let Some(c) = self.input.next() {
             trace!("char = {c:?}");
             let t = match c {
                 '0'..='9' | '.' => {
-                    if !temp_ident.is_empty() {
-                        self.send_or_crash(Token::Identifier(take(
-                            &mut temp_ident,
-                        )))
-                        .await;
-                    }
                     trace!("temp_number::push char={c:?}");
-                    temp_number.push(c);
+                    self.temp_number.push(c);
+                    if self
+                        .input
+                        .peek()
+                        .is_some_and(|v| !matches!(v, '0'..='9' | '.'))
+                    {
+                        return Some(Token::NumberLiteral(
+                            NumberLiteral::checked_new_unchanged_str(take(
+                                &mut self.temp_number,
+                            )),
+                        ));
+                    }
                     continue;
                 }
                 '\\' => Token::Backslash,
@@ -59,85 +80,58 @@ impl Lexer {
                 '(' => Token::LeftParenthesis,
                 ')' => Token::RightParenthesis,
                 ' ' => {
-                    if !temp_number.is_empty() {
-                        let num = Token::NumberLiteral(temp_number.into());
-                        temp_number = String::new();
-                        self.send_or_crash(num).await;
-                    }
-                    if !temp_ident.is_empty() {
-                        self.send_or_crash(Token::Identifier(take(
-                            &mut temp_ident,
-                        )))
-                        .await;
-                    }
+                    assert!(self.temp_ident.is_empty());
+                    assert!(self.temp_number.is_empty());
                     continue;
                 }
-                _ => {
-                    if !temp_number.is_empty() {
-                        let num = Token::NumberLiteral(temp_number.into());
-                        temp_number = String::new();
-                        self.send_or_crash(num).await;
+                c => {
+                    self.temp_ident.push(c);
+                    if self
+                        .input
+                        .peek()
+                        .is_some_and(|v| KNOWN_CHARS.contains(v))
+                    {
+                        return Some(Token::Identifier(take(
+                            &mut self.temp_ident,
+                        )));
                     }
-
-                    trace!("temp_ident::push char={c:?}");
-                    temp_ident.push(c);
                     continue;
                 }
             };
-            if !temp_number.is_empty() {
-                let num = Token::NumberLiteral(temp_number.into());
-                temp_number = String::new();
-                self.send_or_crash(num).await;
-            }
-            if !temp_ident.is_empty() {
-                self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
-                    .await;
-            }
+            return Some(t);
+        }
+        trace!("no more chars");
+        if !self.temp_number.is_empty() {
+            let num =
+                Token::NumberLiteral(NumberLiteral::checked_new_unchanged_str(
+                    take(&mut self.temp_number),
+                ));
 
-            self.send_or_crash(t).await;
+            return Some(num);
         }
-        if !temp_number.is_empty() {
-            let num = Token::NumberLiteral(
-                temp_number
-                    .parse()
-                    .expect("THIS NEEDS FIXING IT FAILED TO PARSE NUMBER"),
-            );
-
-            self.send_or_crash(num).await;
+        if !self.temp_ident.is_empty() {
+            return Some(Token::Identifier(take(&mut self.temp_ident)));
         }
-        if !temp_ident.is_empty() {
-            self.send_or_crash(Token::Identifier(take(&mut temp_ident)))
-                .await;
-        }
-        self.send_or_crash(Token::EndOfContent).await;
+        trace!("returning none");
+        None
     }
 }
-
 #[cfg(test)]
 mod tests {
 
-    use crate::prelude::*;
+    use crate::{number_literal::NumberLiteral, prelude::*};
     use pretty_assertions::assert_eq;
-    async fn tokenize(text: &str) -> Vec<Token> {
-        let (tx, mut rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
-        let lexer = Lexer::new(tx);
-
-        lexer.tokenize(text).await;
-
-        let mut vec = Vec::new();
-        while let Some(t) = rx.recv().await {
-            if t == Token::EndOfContent {
-                break;
-            }
-            vec.push(t);
-        }
-        vec
+    use tracing_test::traced_test;
+    fn tokenize(text: &str) -> Vec<Token> {
+        let lexer = Lexer::new(text.chars());
+        lexer.collect()
     }
 
-    #[tokio::test]
-    async fn test_simple_sqrt() {
+    #[traced_test]
+    #[test]
+    fn test_simple_sqrt() {
         assert_eq!(
-            tokenize("\\sqrt{1+2x}").await,
+            tokenize("\\sqrt{1+2x}"),
             vec![
                 Token::Backslash,
                 Token::Identifier("sqrt".to_string()),
@@ -150,18 +144,20 @@ mod tests {
             ]
         );
     }
-    #[tokio::test]
-    async fn test_all_simple_operations() {
+    #[traced_test]
+    #[test]
+    fn test_all_simple_operations() {
         assert_eq!(
-            tokenize("-+*/").await,
-            vec![Token::Minus, Token::Plus, Token::Asterisk, Token::Slash]
+            tokenize("-+*/"),
+            vec![Token::Minus, Token::Plus, Token::Asterisk, Token::Slash,]
         );
     }
 
-    #[tokio::test]
-    async fn test_single_character_tokens() {
+    #[traced_test]
+    #[test]
+    fn test_single_character_tokens() {
         assert_eq!(
-            tokenize("()[]{}^'|").await,
+            tokenize("()[]{}^'|"),
             vec![
                 Token::LeftParenthesis,
                 Token::RightParenthesis,
@@ -175,20 +171,22 @@ mod tests {
             ]
         );
     }
-    #[tokio::test]
-    async fn test_number_literals() {
+    #[traced_test]
+    #[test]
+    fn test_number_literals() {
         assert_eq!(
-            tokenize("3.14 42").await,
+            tokenize("3.14 42"),
             vec![
                 Token::NumberLiteral("3.14".to_owned().into()),
                 Token::NumberLiteral(42.into()),
             ]
         );
     }
-    #[tokio::test]
-    async fn test_identifiers_and_commands() {
+    #[traced_test]
+    #[test]
+    fn test_identifiers_and_commands() {
         assert_eq!(
-            tokenize("\\pi R").await,
+            tokenize("\\pi R"),
             vec![
                 Token::Backslash,
                 Token::Identifier("pi".to_string()),
@@ -196,10 +194,11 @@ mod tests {
             ]
         );
     }
-    #[tokio::test]
-    async fn test_complex_expressions() {
+    #[traced_test]
+    #[test]
+    fn test_complex_expressions() {
         assert_eq!(
-            tokenize("{3.14*R^2}").await,
+            tokenize("{3.14*R^2}"),
             vec![
                 Token::LeftCurlyBracket,
                 Token::NumberLiteral("3.14".to_owned().into()),
@@ -211,10 +210,11 @@ mod tests {
             ]
         );
     }
-    #[tokio::test]
-    async fn test_number_followed_by_identifier() {
+    #[traced_test]
+    #[test]
+    fn test_number_followed_by_identifier() {
         assert_eq!(
-            tokenize("42x + 3.14y").await,
+            tokenize("42x + 3.14y"),
             vec![
                 Token::NumberLiteral(42.into()),
                 Token::Identifier("x".to_string()),
@@ -224,10 +224,11 @@ mod tests {
             ]
         );
     }
-    #[tokio::test]
-    async fn test_number_followed_by_command() {
+    #[traced_test]
+    #[test]
+    fn test_number_followed_by_command() {
         assert_eq!(
-            tokenize("3.14\\piR").await,
+            tokenize("3.14\\piR"),
             vec![
                 Token::NumberLiteral("3.14".to_owned().into()),
                 Token::Backslash,
@@ -235,10 +236,11 @@ mod tests {
             ]
         );
     }
-    #[tokio::test]
-    async fn test_mixed_number_and_text_sequences() {
+    #[traced_test]
+    #[test]
+    fn test_mixed_number_and_text_sequences() {
         assert_eq!(
-            tokenize("2a + 4b - 5\\sqrt{c}").await,
+            tokenize("2a + 4b - 5\\sqrt{c}"),
             vec![
                 Token::NumberLiteral(2.into()),
                 Token::Identifier("a".to_string()),
@@ -254,5 +256,19 @@ mod tests {
                 Token::RightCurlyBracket,
             ]
         );
+    }
+    #[traced_test]
+    #[test]
+    fn test_space_priority() {
+        assert_eq!(
+            tokenize("2^025"),
+            vec![
+                Token::NumberLiteral(2.into()),
+                Token::Caret,
+                Token::NumberLiteral(NumberLiteral::checked_new_unchanged_str(
+                    "025".to_owned()
+                )),
+            ]
+        )
     }
 }

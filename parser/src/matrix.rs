@@ -696,6 +696,8 @@ mod tests {
     use super::Matrix;
     use crate::prelude::*;
     use pretty_assertions::assert_eq;
+    use tracing_test::traced_test;
+    #[traced_test]
     #[test]
     fn matrix_scalar_value_addition() {
         let a = Matrix::new_default(2, 3, Value::Scalar(1.0.into()));
@@ -705,6 +707,7 @@ mod tests {
         assert_eq!((a + b).unwrap(), c);
     }
 
+    #[traced_test]
     #[test]
     fn matrix_scalar_value_subtraction() {
         let a = Matrix::new_default(2, 3, Value::Scalar(3.0.into()));
@@ -714,6 +717,7 @@ mod tests {
         assert_eq!((a - b).unwrap(), c);
     }
 
+    #[traced_test]
     #[test]
     fn matrix_2x2_scalar_value_multiplication() {
         let mut a = Matrix::new_default(2, 2, Value::Scalar(0.0.into()));
@@ -735,6 +739,7 @@ mod tests {
         assert_eq!((a.matrix_mul(&b)).unwrap(), c);
     }
 
+    #[traced_test]
     #[test]
     fn matrix_3x2_times_2x1_scalar_value_multiplication() {
         let mut a = Matrix::new_default(3, 2, Value::Scalar(0.0.into()));
@@ -755,6 +760,7 @@ mod tests {
         assert_eq!((a.matrix_mul(&b)).unwrap(), c);
     }
 
+    #[traced_test]
     #[test]
     fn dot_product_row_column_vectors() {
         let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0.into()));
@@ -770,6 +776,7 @@ mod tests {
         assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0.into()));
     }
 
+    #[traced_test]
     #[test]
     fn dot_product_row_vectors() {
         let mut a = Matrix::new_default(1, 3, Value::Scalar(0.0.into()));
@@ -785,6 +792,7 @@ mod tests {
         assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0.into()));
     }
 
+    #[traced_test]
     #[test]
     fn dot_product_column_vectors() {
         let mut a = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));
@@ -800,6 +808,7 @@ mod tests {
         assert_eq!(b.dot_product(&a).unwrap(), Value::Scalar(32.0.into()));
     }
 
+    #[traced_test]
     #[test]
     fn cross_product() {
         let mut x = Matrix::new_default(3, 1, Value::Scalar(0.0.into()));

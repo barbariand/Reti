@@ -1,6 +1,11 @@
 //! the implementations of simplification
 
-use crate::{ast::helper::SimpleCompareMultipleMathExprs, number_literal::NumberLiteral, prelude::*};
+use std::hash::{DefaultHasher, Hash, Hasher};
+
+use crate::{
+    ast::helper::SimpleCompareMultipleMathExprs, number_literal::NumberLiteral,
+    prelude::*,
+};
 use tracing::trace;
 
 use super::{
@@ -59,7 +64,6 @@ impl Simplify for MathExpr {
                         Term::Factor(Factor::Constant(b)),
                     ) => Simple::<Factor>::add(a, b).into(),
                     (MathExpr::Term(Term::Factor(Factor::Constant(a))), _) => {
-                        println!("first");
                         if a.is_zero() {
                             simple.1.into()
                         } else {
@@ -67,7 +71,6 @@ impl Simplify for MathExpr {
                         }
                     }
                     (_, Term::Factor(Factor::Constant(b))) => {
-                        println!("second");
                         if b.is_zero() {
                             simple.0
                         } else {
@@ -143,7 +146,7 @@ impl FactorVec {
         }
         trace!("simple, before: {:?}", self.vec);
         let mut result = Vec::with_capacity(self.vec.len());
-        let mut constant_term:NumberLiteral = 1.0.into();
+        let mut constant_term: NumberLiteral = 1.0.into();
         for factor in self.vec {
             if let Factor::Constant(c) = factor {
                 if c.is_one() {
@@ -191,9 +194,8 @@ impl Term {
 
 impl Simplify for Term {
     fn simple(self, cont: &MathContext) -> Result<Simple<Term>, EvalError> {
-        println!("hello");
         let factors = self.simple_inner(cont)?.inner().factorize();
-        
+
         let factors_num = factors.factors_num.simplify_factors(cont)?.simple();
         let numerator = factors_num
             .to_term_ast(cont)
@@ -246,10 +248,14 @@ impl Simplify for Factor {
                     .variables
                     .get(&m)
                     .map(|v| {
-                        let (val,dependants)=v.clone().destruct();
-                        Ok(Simple::new_unchecked(Factor::Parenthesis(
-                            Box::new(val),
-                        ),dependants))
+                        let (val, mut dependants) = v.clone().destruct();
+                        let mut hasher = DefaultHasher::default();
+                        val.hash(&mut hasher);
+                        dependants.push(hasher.finish());
+                        Ok(Simple::new_unchecked(
+                            Factor::Parenthesis(Box::new(val)),
+                            dependants,
+                        ))
                     })
                     .unwrap_or(Ok(Simple::variable(m)))
             }
@@ -276,7 +282,6 @@ impl Simplify for Factor {
                                         f.input.iter().zip(func_call.arguments.iter())
                                         .try_fold(MathContext::new(),
                                         |mut context:MathContext,(ident,expr)|
-                                        
                                         Ok::<MathContext,EvalError>({
                                             context.variables.insert(ident.clone(), expr.clone().simple(cont)?);
                                             context}))?;
@@ -435,15 +440,14 @@ mod test {
 
     use crate::{ast::simplify::Simplify, ast::to_latex::ToLaTeX, prelude::*};
     use pretty_assertions::assert_eq;
-    async fn ast_test_simplify(text: &str, expected_latex: &str) {
+    use tracing_test::traced_test;
+    fn ast_test_simplify(text: &str, expected_latex: &str) {
         let context = MathContext::standard_math();
         let found_ast = parse(text, &context)
-            .await
             .expect("failed to parse AST")
             .simple(&context)
             .unwrap();
         let expected_ast = parse(expected_latex, &context)
-            .await
             .expect("failed to parse latex to ast")
             .simple(&context)
             .unwrap();
@@ -453,54 +457,65 @@ mod test {
         // Compare and print with debug and formatting otherwise.
         assert_eq!(found, expected, "\nfound/expected")
     }
-    #[tokio::test]
-    async fn simplify_one() {
-        println!("hello 1");
+    #[traced_test]
+    #[test]
+    fn simplify_one() {
         io::stdout().flush().unwrap();
-        ast_test_simplify("1", "1").await;
+        ast_test_simplify("1", "1");
     }
-    #[tokio::test]
-    async fn one_minus_one() {
-        ast_test_simplify("1-1", "0").await;
+    #[traced_test]
+    #[test]
+    fn one_minus_one() {
+        ast_test_simplify("1-1", "0");
     }
-    #[tokio::test]
-    async fn one_plus_one() {
-        ast_test_simplify("1+1", "2").await;
+    #[traced_test]
+    #[test]
+    fn one_plus_one() {
+        ast_test_simplify("1+1", "2");
     }
-    #[tokio::test]
-    async fn one_times_one() {
-        ast_test_simplify("1*1", "1").await;
+    #[traced_test]
+    #[test]
+    fn one_times_one() {
+        ast_test_simplify("1*1", "1");
     }
-    #[tokio::test]
-    async fn one_times_zero() {
-        ast_test_simplify("1*0", "0").await;
+    #[traced_test]
+    #[test]
+    fn one_times_zero() {
+        ast_test_simplify("1*0", "0");
     }
-    #[tokio::test]
-    async fn zero_times_parenthesis() {
-        ast_test_simplify("0*(1+1+1+1+1*2)", "0").await;
+    #[traced_test]
+    #[test]
+    fn zero_times_parenthesis() {
+        ast_test_simplify("0*(1+1+1+1+1*2)", "0");
     }
-    #[tokio::test]
-    async fn two_minus_one() {
-        ast_test_simplify("2-1", "1").await;
+    #[traced_test]
+    #[test]
+    fn two_minus_one() {
+        ast_test_simplify("2-1", "1");
     }
-    #[tokio::test]
-    async fn two_x_minus_two_x() {
-        ast_test_simplify("2x-2x", "0").await;
+    #[traced_test]
+    #[test]
+    fn two_x_minus_two_x() {
+        ast_test_simplify("2x-2x", "0");
     }
-    #[tokio::test]
-    async fn test() {
-        ast_test_simplify("2x^{2-1}1+\\ln(2)x^{2}0", "2x").await;
+    #[traced_test]
+    #[test]
+    fn test() {
+        ast_test_simplify("2x^{2-1}1+\\ln(2)x^{2}0", "2x");
     }
-    #[tokio::test]
-    async fn multiply_remove_parenthesis() {
-        ast_test_simplify("2(2x)", "4x").await;
+    #[traced_test]
+    #[test]
+    fn multiply_remove_parenthesis() {
+        ast_test_simplify("2(2x)", "4x");
     }
-    #[tokio::test]
-    async fn multiply_remove_parenthesis_2() {
-        ast_test_simplify("3(2x)+2", "6x+2").await;
+    #[traced_test]
+    #[test]
+    fn multiply_remove_parenthesis_2() {
+        ast_test_simplify("3(2x)+2", "6x+2");
     }
-    #[tokio::test]
-    async fn simple_test() {
-        ast_test_simplify("((1)+(2x))", "1+2x").await;
+    #[traced_test]
+    #[test]
+    fn simple_test() {
+        ast_test_simplify("((1)+(2x))", "1+2x");
     }
 }

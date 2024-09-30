@@ -158,13 +158,11 @@ impl<'a> Approximator<'a> {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use super::Approximator;
     use crate::{
         ast::simplify::Simplify, number_literal::NumberLiteral, prelude::*,
-    };
-    use tokio::{
-        join,
-        sync::mpsc::{self},
     };
 
     fn eval_test_from_ast(expected: NumberLiteral, ast: Ast) {
@@ -193,26 +191,15 @@ mod tests {
         }
     }
 
-    async fn eval_test_from_str(
-        expected: impl Into<NumberLiteral>,
-        text: &str,
-    ) {
-        let (tx, rx): (TokenSender, TokenReceiver) = mpsc::channel(32);
-
+    fn eval_test_from_str(expected: impl Into<NumberLiteral>, text: &str) {
         let context = MathContext::new();
-        let lexer = Lexer::new(tx);
-
-        let parser = Parser::new(rx, context);
-
-        let future1 = lexer.tokenize(text);
-        let future2 = parser.parse();
-
-        let ((), ast) = join!(future1, future2);
+        let ast = parse(text, &context);
         let ast = ast.unwrap();
 
         eval_test_from_ast(expected.into(), ast);
     }
 
+    #[traced_test]
     #[test]
     fn eval_1_plus_1() {
         eval_test_from_ast(
@@ -221,6 +208,7 @@ mod tests {
         );
     }
 
+    #[traced_test]
     #[test]
     fn eval_multiplication() {
         eval_test_from_ast(
@@ -236,22 +224,23 @@ mod tests {
             )),
         );
     }
-
-    #[tokio::test]
-    async fn parenthesis_and_exponent() {
-        eval_test_from_str(54.0, "2(3)^3").await;
+    #[traced_test]
+    #[test]
+    fn aprox_parenthesis_and_exponent() {
+        eval_test_from_str(54.0, "2(3)^3");
     }
 
-    #[tokio::test]
-    async fn fraction_sqrt_cube_root() {
+    #[traced_test]
+    #[test]
+    fn fraction_sqrt_cube_root() {
         eval_test_from_str(
             3.0,
             "\\frac{2( 1+1)^{3} +5}{\\sqrt{\\frac{49}{3}\\sqrt[3]{27}}}",
-        )
-        .await;
+        );
     }
-    #[tokio::test]
-    async fn markdown_example() {
-        eval_test_from_str(0.5, "\\frac{2\\sqrt{9}+5}{3(3+4)+1}").await;
+    #[traced_test]
+    #[test]
+    fn markdown_example() {
+        eval_test_from_str(0.5, "\\frac{2\\sqrt{9}+5}{3(3+4)+1}");
     }
 }

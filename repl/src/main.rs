@@ -3,11 +3,7 @@ use std::ops::ControlFlow;
 use clap::{command, Parser as ClapParser};
 use colored::Colorize;
 use directories::ProjectDirs;
-use parser::{
-    ast::{simplify::Simplify, Factor, MathExpr, Term},
-    identifier::MathIdentifier,
-    prelude::*,
-};
+use parser::{ast::simplify::Simplify, prelude::*};
 use rustyline::{
     error::ReadlineError, history::FileHistory, DefaultEditor, Editor,
 };
@@ -15,7 +11,6 @@ use tokio::time::Instant;
 use tracing::{debug, error, info, trace_span};
 use tracing_subscriber::filter::LevelFilter;
 
-use parser::functions::MathFunction;
 #[tokio::main]
 pub async fn main() {
     let project_dirs = ProjectDirs::from("", "", "Reti");
@@ -110,8 +105,8 @@ impl Repl {
                 })?;
                 let time_eval = start_eval.elapsed();
                 if self.time_it {
-                    println!("Parsing took:{}ns", time_parse.as_nanos());
-                    println!("Evaluating took:{}ns", time_eval.as_nanos());
+                    println!("Parsing took:{}s", time_parse.as_secs_f64());
+                    println!("Evaluating took:{}s", time_eval.as_secs_f64());
                 }
                 println!("{}", s);
             }
@@ -174,7 +169,7 @@ impl Repl {
         Ok(())
     }
     async fn parse(&mut self, line: &str) -> Result<Ast, AstError> {
-        parse(line, self.evaluator.context()).await
+        parse(line, self.evaluator.context())
     }
     fn eval(&mut self, ast: Ast) -> Result<String, EvalError> {
         if self.ast_mode {

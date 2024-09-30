@@ -6,6 +6,7 @@ use crate::{
 };
 /// type alias for convenience, i would rather this be a newtype pattern but it
 /// is hard
+
 pub type LaTeX = String;
 
 ///Converting the AST to latex
